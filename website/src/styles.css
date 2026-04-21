@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  --color-page-bg: #11141a;
+  --color-term-bg: #0a0e14;
+  --color-term-titlebar: #181b22;
+  --color-term-border: #2a2f3a;
+  --color-fg: #b3b1ad;
+  --color-fg-bright: #ffffff;
+  --color-dim: #5c6370;
+  --color-accent: #a8ff60;
+  --color-meta: #ffcc66;
+  --color-link: #7fdbff;
+  --color-pipe: #ff79c6;
+  --color-flag: #ffcc66;
+  --color-path: #7fdbff;
+  --color-red: #ff5f57;
+  --color-yellow: #febc2e;
+  --color-green: #28c840;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  background: var(--color-page-bg);
+  color: var(--color-fg);
+  min-height: 100vh;
+}
+
+body {
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+@keyframes blink-cursor {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+.animate-blink-cursor {
+  display: inline-block;
+  width: 0.55ch;
+  height: 1em;
+  background-color: var(--color-accent);
+  vertical-align: text-bottom;
+  margin-left: 1px;
+  animation: blink-cursor 1s step-end infinite;
+}
+
+.resize-handle-grip {
+  background-image:
+    linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 45%,
+      currentColor 45%,
+      currentColor 55%,
+      transparent 55%,
+      transparent 70%,
+      currentColor 70%,
+      currentColor 80%,
+      transparent 80%
+    );
+}

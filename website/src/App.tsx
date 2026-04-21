@@ -1,23 +1,13 @@
 import postsData from "./generated/posts.json";
 import type { Post } from "./types.ts";
+import { TerminalBlog } from "./TerminalBlog.tsx";
 
 const posts = postsData as Post[];
 
 export default function App() {
   return (
-    <main>
-      <h1>blog</h1>
-      {posts.length === 0 ? (
-        <p>No posts yet.</p>
-      ) : (
-        <ul>
-          {posts.map((p) => (
-            <li key={p.slug}>
-              {p.date} — {p.title}
-            </li>
-          ))}
-        </ul>
-      )}
+    <main className="flex min-h-screen items-start justify-center px-6 py-12">
+      <TerminalBlog posts={posts} />
     </main>
   );
 }

@@ -86,7 +86,7 @@ This project is a small personal blog, not a shipped library. The following `OSS
 - **§8.4 `CHANGELOG.md`** — kept as a one-line stub. The blog is continuously deployed on every push; there is no release cadence to record.
 - **§10.3 release pipeline / §10.5 local-CI parity** — `release.yml` and `version-bump.yml` are inert scaffolding. The only active deployment path is `pages.yml` (§10.4) on push-to-`main`.
 - **§11.2 required website content** — hero / feature showcase / providers / hosted-docs / footer checklist replaced by the post list view. Hosted-docs rendering will land when there is content worth rendering.
-- **§11.2 recommended stack** — TypeScript is adopted. Tailwind, `react-markdown`, and `remark-gfm` are deferred until markdown rendering and a full theme are implemented.
+- **§11.2 recommended stack** — TypeScript and Tailwind (v4, via `@tailwindcss/vite`) are adopted. `react-markdown` and `remark-gfm` remain deferred until markdown rendering is wired up.
 - **§12 CLI obligations** — N/A. This project ships no CLI binary.
 - **§13.5 prompt versioning** — the `write-post` / `update-post` / `delete-post` skills inline their rules in `SKILL.md`. Versioned templates under `prompts/<skill>/<version>.md` will be introduced if and when any skill's rule set grows past roughly one screen.
 - **§20 test organization** — `tests/` is empty. The extractor is small enough that `cd website && npm run build` is the entire regression signal.

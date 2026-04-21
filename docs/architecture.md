@@ -5,12 +5,19 @@
 ```
 posts/                          markdown source files (one per post, slug-as-filename)
 src/                            placeholder top-level TypeScript module (unused)
-website/                        Vite + React + TypeScript frontend
+website/                        Vite + React + TypeScript + Tailwind v4 frontend
   scripts/
     extract-posts.ts            reads posts/ → writes src/generated/posts.json
   src/
     types.ts                    Post interface (single source of truth for the JSON shape)
-    App.tsx                     list view
+    terminalTypes.ts            terminal line/step union types
+    App.tsx                     page layout (centres the terminal window)
+    TerminalBlog.tsx            blog-specific transcript controller (ls / cat / head / tail)
+    Terminal.tsx                window chrome + drag-to-resize handle
+    TerminalLine.tsx            renders one transcript line by kind
+    CommandHighlighter.tsx      shell-syntax colouring for commands
+    useTerminalAnimation.ts     sequence-driven typing animation hook
+    styles.css                  Tailwind entry + theme variables + blink-cursor keyframes
     main.tsx                    React entry point
     generated/                  extractor output — never edit by hand
 prompts/                        reserved for versioned Claude prompt templates (none active yet)
@@ -38,7 +45,7 @@ The extractor owns the boundary between raw markdown and the frontend. It valida
 
 ## Frontend
 
-The React app is statically exported via Vite — no server runtime. On build, it imports `posts.json` and renders a list of `<date> — <title>` rows. Per-post pages and markdown-to-HTML rendering are deferred.
+The React app is statically exported via Vite — no server runtime. The landing page is a single interactive terminal window: on mount it auto-runs `$ ls posts/`, each filename is clickable, clicking runs `cat … | head -n 10` (instant output), and a `[ show more ]` action runs `cat … | tail -n +11` with a character-by-character typing animation. The terminal chrome has a bottom-right drag handle for resizing. Per-post pages and markdown-to-HTML rendering are deferred.
 
 ## Cross-cutting concerns
 
