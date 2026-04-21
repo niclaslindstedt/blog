@@ -12,9 +12,9 @@ export function AudienceTabs({
       role="tablist"
       aria-label="Audience"
       data-no-drag
-      className="flex border-b border-term-border bg-term-titlebar"
+      className="flex bg-term-titlebar font-ui text-[13px]"
     >
-      {AUDIENCES.map((a) => {
+      {AUDIENCES.map((a, i) => {
         const active = a === audience;
         return (
           <button
@@ -24,16 +24,18 @@ export function AudienceTabs({
             aria-selected={active}
             onClick={() => onSwitch(a)}
             className={[
-              "cursor-pointer select-none border-r border-term-border bg-transparent px-3 py-1.5 text-xs font-[inherit] tracking-wide",
+              "cursor-pointer select-none border-b px-4 py-1.5 tracking-wide",
+              i > 0 ? "border-l border-l-term-border" : "",
               active
-                ? "text-fg-bright underline underline-offset-4"
-                : "text-dim hover:text-fg-bright",
+                ? "border-b-term-bg bg-term-bg text-fg-bright"
+                : "border-b-term-border bg-term-titlebar text-dim hover:text-fg-bright",
             ].join(" ")}
           >
             {a}
           </button>
         );
       })}
+      <div className="flex-1 border-b border-term-border" aria-hidden="true" />
     </div>
   );
 }

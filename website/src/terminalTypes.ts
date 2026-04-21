@@ -25,6 +25,7 @@ export type Step =
       wpm?: number;
     }
   | { kind: "blank" }
+  | { kind: "clear" }
   | {
       kind: "clickable";
       label: string;

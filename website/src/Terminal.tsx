@@ -207,7 +207,9 @@ export function Terminal({
           <span className="h-3 w-3 rounded-full bg-yellow" />
           <span className="h-3 w-3 rounded-full bg-green" />
         </div>
-        <div className="flex-1 text-center text-xs tracking-wide text-dim">{computedTitle}</div>
+        <div className="flex-1 text-center font-ui text-[13px] tracking-wide text-dim">
+          {computedTitle}
+        </div>
         <div className="w-14" aria-hidden="true" />
       </div>
 
