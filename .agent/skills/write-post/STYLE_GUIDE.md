@@ -92,11 +92,11 @@ null when Y" — cite the source file you verified it against with an inline
 superscript footnote:
 
 ```markdown
-The extractor merges versions by slug<sup>[1](https://github.com/niclaslindstedt/blog/blob/main/website/scripts/extract-posts.ts)</sup>
-before emitting `posts.json`<sup>[2](https://github.com/niclaslindstedt/blog/blob/main/website/scripts/extract-posts.ts#L120-L140)</sup>.
+The extractor merges versions by slug<sup>[1](https://github.com/niclaslindstedt/blog/blob/7b3f5a2c9e1d4f6a8b2c0d9e7f3a1b5c8d6e4f2a/website/scripts/extract-posts.ts)</sup>
+before emitting `posts.json`<sup>[2](https://github.com/niclaslindstedt/blog/blob/7b3f5a2c9e1d4f6a8b2c0d9e7f3a1b5c8d6e4f2a/website/scripts/extract-posts.ts#L120-L140)</sup>.
 ```
 
-- **Syntax.** Raw HTML: `<sup>[<n>](https://github.com/<owner>/<repo>/blob/<branch>/<path>)</sup>`. Append `#L<start>-L<end>` (GitHub's own line-range fragment) to point at a specific block. `<branch>` comes from `scripts/default-branch.sh <slug>` — use the branch, not a commit SHA, so the link tracks `HEAD`.
+- **Syntax.** Raw HTML: `<sup>[<n>](https://github.com/<owner>/<repo>/blob/<sha>/<path>)</sup>`. Append `#L<start>-L<end>` (GitHub's own line-range fragment) to point at a specific block. `<sha>` is the full 40-character commit SHA returned by `scripts/latest-commit.sh <slug>` — pin the SHA, not a branch, so the cited line range stays accurate even if the file is later rewritten, moved, or deleted.
 - **Numbering.** `[1]`, `[2]`, … in first-appearance order per post. Reuse the same number when citing the same target again.
 - **What to cite.** Concrete code claims only. Don't cite framing, opinions, or generalities.
 - **Don't invent URLs.** Every `<sup>` must correspond to a file you actually opened under `${BLOG_REPO_CACHE:-/tmp/blog-skill-cache}/<slug>/`. If you didn't read it, don't cite it.
