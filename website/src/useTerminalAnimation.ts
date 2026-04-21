@@ -10,6 +10,13 @@ const OUTPUT_CHARS_PER_TICK_NORMAL = 3;
 const OUTPUT_CHARS_PER_TICK_FAST = 20;
 const IDLE_POLL_MS = 80;
 const BETWEEN_STEP_MS = 60;
+const ENTER_PAUSE_MIN_MS = 200;
+const ENTER_PAUSE_MAX_MS = 400;
+
+function enterPauseMs(): number {
+  const span = ENTER_PAUSE_MAX_MS - ENTER_PAUSE_MIN_MS;
+  return ENTER_PAUSE_MIN_MS + Math.floor(Math.random() * (span + 1));
+}
 
 interface Active {
   kind: "command" | "output";
@@ -110,7 +117,9 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
       const current = activeRef.current;
       if (current) {
         if (current.shown.length >= current.full.length) {
-          if (current.kind === "command") {
+          const wasCommand = current.kind === "command";
+          const wasFast = current.fast === true;
+          if (wasCommand) {
             commit({ kind: "command", text: current.full, prompt: current.prompt });
           } else {
             commit({
@@ -121,7 +130,7 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
             });
           }
           clearActive();
-          schedule(BETWEEN_STEP_MS);
+          schedule(wasCommand && !wasFast ? enterPauseMs() : BETWEEN_STEP_MS);
           return;
         }
         let chunk: number;
