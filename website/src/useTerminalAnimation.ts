@@ -22,23 +22,67 @@ interface Active {
   prompt?: string;
 }
 
+interface SessionState {
+  committed: LineData[];
+  queue: Step[];
+  active: Active | null;
+}
+
 export interface UseTerminalAnimation {
   lines: LineData[];
   enqueue: (steps: Step[]) => void;
   idle: boolean;
+  hasSession: (id: string) => boolean;
 }
 
-export function useTerminalAnimation(): UseTerminalAnimation {
+function newSession(): SessionState {
+  return { committed: [], queue: [], active: null };
+}
+
+// Multi-session terminal animator. Each `sessionId` keeps its own scrollback,
+// pending step queue, and in-flight animation. Changing the id snapshots the
+// previous session into the map and loads the target's state, so tabs behave
+// like real terminal tabs — focusing one restores exactly what was there.
+export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
   const [committed, setCommitted] = useState<LineData[]>([]);
   const [active, setActive] = useState<Active | null>(null);
   const [idle, setIdle] = useState(true);
   const queueRef = useRef<Step[]>([]);
   const activeRef = useRef<Active | null>(null);
+  const committedRef = useRef<LineData[]>([]);
+  const currentIdRef = useRef<string>(sessionId);
+  const sessionsRef = useRef<Map<string, SessionState>>(new Map());
+
+  useEffect(() => {
+    committedRef.current = committed;
+  }, [committed]);
+
+  useEffect(() => {
+    if (currentIdRef.current === sessionId) return;
+    sessionsRef.current.set(currentIdRef.current, {
+      committed: committedRef.current,
+      queue: queueRef.current,
+      active: activeRef.current,
+    });
+    const target = sessionsRef.current.get(sessionId) ?? newSession();
+    queueRef.current = target.queue;
+    activeRef.current = target.active;
+    committedRef.current = target.committed;
+    setCommitted(target.committed);
+    setActive(target.active);
+    setIdle(target.queue.length === 0 && target.active === null);
+    currentIdRef.current = sessionId;
+  }, [sessionId]);
 
   const enqueue = useCallback((steps: Step[]) => {
     queueRef.current.push(...steps);
     setIdle(false);
   }, []);
+
+  const hasSession = useCallback(
+    (id: string) => id === currentIdRef.current || sessionsRef.current.has(id),
+    [],
+  );
 
   useEffect(() => {
     let canceled = false;
@@ -161,6 +205,7 @@ export function useTerminalAnimation(): UseTerminalAnimation {
           schedule(BETWEEN_STEP_MS);
           return;
         case "clear":
+          committedRef.current = [];
           setCommitted([]);
           schedule(BETWEEN_STEP_MS);
           return;
@@ -209,5 +254,5 @@ export function useTerminalAnimation(): UseTerminalAnimation {
       ]
     : committed;
 
-  return { lines, enqueue, idle };
+  return { lines, enqueue, idle, hasSession };
 }
