@@ -1,11 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { Post } from "../src/types.ts";
+import { AUDIENCES, type Audience, type Post, type PostVersion } from "../src/types.ts";
 
 const POSTS_DIR = path.resolve("..", "posts");
 const OUT_DIR = path.join("src", "generated");
 const OUT_FILE = path.join(OUT_DIR, "posts.json");
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+// ISO 8601 datetime, UTC-only. Example: 2026-04-21T14:30:00Z or 2026-04-21T14:30:00.123Z.
+// Date-only values are rejected — authoring skills must emit a full UTC timestamp.
+const ISO_DATETIME_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
 
 function die(msg: string): never {
   process.stderr.write(`extract-posts: ${msg}\n`);
@@ -36,37 +38,70 @@ function parseFrontmatter(
   return { fields, body };
 }
 
-function loadPost(file: string): Post {
-  const slug = path.basename(file, ".md");
+function loadVersion(file: string): PostVersion {
   const raw = fs.readFileSync(file, "utf8");
   const { fields, body } = parseFrontmatter(raw, file);
   const { title, date } = fields;
   const edited_at = fields.edited_at ?? date;
   if (!title) die(`${file}: frontmatter missing required 'title'`);
   if (!date) die(`${file}: frontmatter missing required 'date'`);
-  if (!ISO_DATE.test(date)) die(`${file}: 'date' must be YYYY-MM-DD, got '${date}'`);
-  if (!ISO_DATE.test(edited_at)) die(`${file}: 'edited_at' must be YYYY-MM-DD, got '${edited_at}'`);
-  return { slug, title, date, edited_at, body };
+  if (!ISO_DATETIME_UTC.test(date))
+    die(`${file}: 'date' must be ISO 8601 UTC datetime (YYYY-MM-DDTHH:MM:SSZ), got '${date}'`);
+  if (!ISO_DATETIME_UTC.test(edited_at))
+    die(
+      `${file}: 'edited_at' must be ISO 8601 UTC datetime (YYYY-MM-DDTHH:MM:SSZ), got '${edited_at}'`,
+    );
+  return { title, date, edited_at, body };
 }
 
 function main(): void {
   fs.mkdirSync(OUT_DIR, { recursive: true });
-  const posts: Post[] = [];
-  const seen = new Set<string>();
-  if (fs.existsSync(POSTS_DIR)) {
+  const bySlug = new Map<string, Post>();
+
+  for (const audience of AUDIENCES) {
+    const dir = path.join(POSTS_DIR, audience);
+    if (!fs.existsSync(dir)) continue;
     const files = fs
-      .readdirSync(POSTS_DIR)
+      .readdirSync(dir)
       .filter((f) => f.endsWith(".md"))
-      .map((f) => path.join(POSTS_DIR, f));
+      .map((f) => path.join(dir, f));
     for (const file of files) {
-      const post = loadPost(file);
-      if (seen.has(post.slug))
-        die(`duplicate slug '${post.slug}' (two files would produce the same URL)`);
-      seen.add(post.slug);
-      posts.push(post);
+      const slug = path.basename(file, ".md");
+      const version = loadVersion(file);
+      const existing = bySlug.get(slug);
+      if (existing) {
+        existing.versions[audience] = version;
+        if (version.date < existing.date) existing.date = version.date;
+        if (audience === "technical") existing.title = version.title;
+      } else {
+        const post: Post = {
+          slug,
+          date: version.date,
+          title: version.title,
+          versions: { [audience]: version } as Partial<Record<Audience, PostVersion>>,
+        };
+        bySlug.set(slug, post);
+      }
     }
   }
-  posts.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+  // Stray files directly under posts/ are almost always a mistake — flag them
+  // so contributors don't silently produce a post that never reaches the site.
+  if (fs.existsSync(POSTS_DIR)) {
+    const stray = fs
+      .readdirSync(POSTS_DIR, { withFileTypes: true })
+      .filter((e) => e.isFile() && e.name.endsWith(".md"))
+      .map((e) => e.name);
+    if (stray.length > 0)
+      die(
+        `posts under posts/ must live in posts/technical/ or posts/non-technical/ — found stray file(s): ${stray.join(", ")}`,
+      );
+  }
+
+  const posts = [...bySlug.values()].sort((a, b) =>
+    a.date < b.date ? 1 : a.date > b.date ? -1 : 0,
+  );
+
   fs.writeFileSync(OUT_FILE, JSON.stringify(posts, null, 2) + "\n");
   process.stderr.write(
     `extract-posts: wrote ${OUT_FILE} (${posts.length} post${posts.length === 1 ? "" : "s"})\n`,
