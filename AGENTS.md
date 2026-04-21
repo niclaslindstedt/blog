@@ -27,6 +27,14 @@ make fmt           # format in place
 make fmt-check     # verify formatting (CI)
 ```
 
+**Before pushing, run the same gate CI runs — not just `make build`.** CI runs `npm run fmt:check`, `npm run lint`, `npm run build`, `npm test` from the repo root, and a `make build` alone will let a prettier or eslint failure slip through. The one-liner that matches CI exactly:
+
+```sh
+npm run fmt:check && npm run lint && npm run build && npm test
+```
+
+`cd website && npm run build` is only the extractor + vite gate; it does not run prettier or eslint.
+
 ## Commit and PR conventions
 
 - All commits follow [Conventional Commits](https://www.conventionalcommits.org/).
