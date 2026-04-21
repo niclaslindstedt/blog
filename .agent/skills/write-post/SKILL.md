@@ -84,15 +84,15 @@ See `STYLE_GUIDE.md` for the full list of LLM tics to avoid (throat-clearing ope
 
 Collect from the user before starting:
 
-| Input                  | Required | Notes                                                                      |
-| ---------------------- | -------- | -------------------------------------------------------------------------- |
-| Title                  | yes      | Becomes the `title` frontmatter field                                      |
-| Slug                   | no       | Derived from title if omitted (see below)                                  |
-| Date                   | no       | Defaults to the current UTC timestamp in ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`) |
+| Input                  | Required | Notes                                                                                                                                                                                                                                |
+| ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Title                  | yes      | Becomes the `title` frontmatter field                                                                                                                                                                                                |
+| Slug                   | no       | Derived from title if omitted (see below)                                                                                                                                                                                            |
+| Date                   | no       | Defaults to the current UTC timestamp in ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`)                                                                                                                                                           |
 | Tags                   | no       | Subject tags. Include the project slug from `project-index/INDEX.md` when the post is about one specific project, plus a few topic tags (language, theme). Optional but strongly encouraged — this is how future runs find the post. |
-| Technical body         | one of   | The post contents for technical readers                                    |
-| Non-technical body     | one of   | The post contents for non-technical readers                                |
-| Adapt across audiences | no       | If only one body is supplied, whether to generate the other one            |
+| Technical body         | one of   | The post contents for technical readers                                                                                                                                                                                              |
+| Non-technical body     | one of   | The post contents for non-technical readers                                                                                                                                                                                          |
+| Adapt across audiences | no       | If only one body is supplied, whether to generate the other one                                                                                                                                                                      |
 
 At least one of the two bodies must be supplied. If both are supplied, use
 each verbatim. If one is supplied, ask whether to adapt it for the other
