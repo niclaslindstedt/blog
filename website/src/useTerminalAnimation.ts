@@ -160,6 +160,10 @@ export function useTerminalAnimation(): UseTerminalAnimation {
           commit({ kind: "blank" });
           schedule(BETWEEN_STEP_MS);
           return;
+        case "clear":
+          setCommitted([]);
+          schedule(BETWEEN_STEP_MS);
+          return;
         case "clickable":
           commit({
             kind: "clickable",

@@ -5,6 +5,11 @@
   --color-term-bg: #0a0e14;
   --color-term-titlebar: #181b22;
   --color-term-border: #2a2f3a;
+  /* UI chrome (titlebar + tabs) uses the system sans, like real terminal
+     emulators. Content keeps the monospace body font. */
+  --font-ui:
+    ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
   /* Single foreground — every text token collapses to white so the terminal
      reads like a plain xterm: one color, no semantic highlighting. */
   --color-fg: #ffffff;

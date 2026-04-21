@@ -225,19 +225,25 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Audience tab switch (after initial mount): animate the cd + re-ls,
-  // and re-open the current post under the new audience if there is one.
+  // Audience tab switch (after initial mount): clear the screen, animate the
+  // cd + re-ls, and re-open the current post under the new audience if there
+  // is one. `clear` before `cd` mirrors what a real terminal user would do —
+  // wipe the scrollback, then navigate.
   useEffect(() => {
     if (!startedRef.current) return;
     if (audience === audienceRef.current) return;
+    const previous = audienceRef.current;
     audienceRef.current = audience;
 
     const visible = postsForAudience(posts, audience);
+    const previousPrompt = codePrompt(previous);
     enqueue([
+      { kind: "type-command", text: "clear", prompt: previousPrompt, wpm: BLOG_WPM },
+      { kind: "clear" },
       {
         kind: "type-command",
         text: `cd ../${audience}`,
-        prompt: codePrompt(audience === "technical" ? "non-technical" : "technical"),
+        prompt: previousPrompt,
         wpm: BLOG_WPM,
       },
     ]);
