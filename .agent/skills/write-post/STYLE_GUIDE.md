@@ -57,6 +57,7 @@ them.
 - **No meta-commentary on the post itself.** "In this section we'll cover"
   → delete.
 - **No emojis unless the user asked for them.**
+- **No decorative citations.** Every `<sup>[n](...)</sup>` must correspond to a file you opened under `${BLOG_REPO_CACHE:-/tmp/blog-skill-cache}/<slug>/`. If you didn't read it, don't cite it.
 
 ## Structure
 
@@ -82,6 +83,30 @@ that file so you know:
 
 Don't invent links. If a project is not in the index, leave the name bare
 and flag it to the user — the index may be stale.
+
+### Source-code references
+
+When the post makes a concrete code claim about an open-source project —
+"the extractor filters by suffix", "the default is X", "the function returns
+null when Y" — cite the source file you verified it against with an inline
+superscript footnote:
+
+```markdown
+The extractor merges versions by slug<sup>[1](https://github.com/niclaslindstedt/blog/blob/main/website/scripts/extract-posts.ts)</sup>
+before emitting `posts.json`<sup>[2](https://github.com/niclaslindstedt/blog/blob/main/website/scripts/extract-posts.ts#L120-L140)</sup>.
+```
+
+- **Syntax.** Raw HTML: `<sup>[<n>](https://github.com/<owner>/<repo>/blob/<branch>/<path>)</sup>`. Append `#L<start>-L<end>` (GitHub's own line-range fragment) to point at a specific block. `<branch>` comes from `scripts/default-branch.sh <slug>` — use the branch, not a commit SHA, so the link tracks `HEAD`.
+- **Numbering.** `[1]`, `[2]`, … in first-appearance order per post. Reuse the same number when citing the same target again.
+- **What to cite.** Concrete code claims only. Don't cite framing, opinions, or generalities.
+- **Don't invent URLs.** Every `<sup>` must correspond to a file you actually opened under `${BLOG_REPO_CACHE:-/tmp/blog-skill-cache}/<slug>/`. If you didn't read it, don't cite it.
+
+Rendering contract (informational — the author doesn't have to do anything
+to get it): on the site, `<sup>` renders as a small dim superscript link.
+Clicking it animates `vi <path>` at the current terminal prompt and opens
+the in-app vi simulator with the file prism-highlighted, jumping to the
+line range if one was specified. Plain GitHub blob links in body prose
+behave the same way.
 
 ## Tags
 

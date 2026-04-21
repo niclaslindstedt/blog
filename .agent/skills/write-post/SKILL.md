@@ -55,6 +55,18 @@ When the post is about a project in `../../project-index/INDEX.md`, commit histo
 
 The scripts clone repos on demand into `${BLOG_REPO_CACHE:-/tmp/blog-skill-cache}`. `scripts/clone-repos.sh` (no args) refreshes every project in the index at once.
 
+## Citing source code
+
+Once brainstorm mode is over and the user's body prose makes concrete code claims about an indexed project — "the extractor filters by suffix", "the default cache is `/tmp/...`", "the flag short-circuits when X" — verify each claim against the checked-out source in `${BLOG_REPO_CACHE:-/tmp/blog-skill-cache}/<slug>/` and add an inline superscript citation to the file you read. The vi simulator on the site opens the cited file in prism-highlighted view when the reader clicks the footnote. If a claim doesn't survive a read, flag it back to the user; don't soften it into something vague.
+
+1. `scripts/clone-repos.sh --only <slug>` — idempotent; fast-forwards if the clone already exists. Read files from the cache with Read / Grep.
+2. `scripts/default-branch.sh <slug>` — prints the default branch (e.g. `main`). Use it as the `<branch>` segment of the citation URL so the link tracks `HEAD` rather than a pinned SHA.
+3. Owner and repo come from the `- GitHub: <https://github.com/<owner>/<repo>>` line in `INDEX.md`. Do not hard-code `niclaslindstedt`.
+
+Format is defined in [`STYLE_GUIDE.md`](STYLE_GUIDE.md) under "Source-code references": inline `<sup>[n](https://github.com/<owner>/<repo>/blob/<branch>/<path>)</sup>`, optional `#L<start>-L<end>` fragment.
+
+**Required when** the post is about a project in `INDEX.md` and the user's prose names a specific feature, file, function, or behavior. Optional for announcement / high-level posts.
+
 ## Audiences
 
 Every post targets one or two audiences. A post is published as long as it
@@ -173,6 +185,8 @@ If the user does not supply a slug:
 - [ ] `date` is identical across audience versions of the same slug
 - [ ] Body contains no top-level `# ` heading (the title comes from frontmatter)
 - [ ] Files saved under `posts/technical/` and/or `posts/non-technical/` — never directly under `posts/`
+- [ ] For indexed projects with specific-feature prose: ran `scripts/clone-repos.sh --only <slug>` and read every cited file directly from `${BLOG_REPO_CACHE}/<slug>/`
+- [ ] Every `<sup>[n](...)</sup>` points at a file actually read, uses the branch returned by `scripts/default-branch.sh`, and follows `STYLE_GUIDE.md` § "Source-code references"
 
 ## Verification
 
