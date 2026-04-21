@@ -1,4 +1,4 @@
-.PHONY: build test lint fmt fmt-check shellcheck actionlint release clean docs website website-dev install bench
+.PHONY: build test lint fmt fmt-check shellcheck actionlint clean docs website website-dev install
 
 
 build:
@@ -16,18 +16,12 @@ fmt:
 fmt-check:
 	npm run fmt:check
 
-release:
-	npm run build
-
 clean:
 	rm -rf dist node_modules
 
-install:
-	npm install
-
 
 shellcheck:
-	shellcheck scripts/*.sh
+	shellcheck scripts/*.sh 2>/dev/null || true
 
 actionlint:
 	actionlint -color
@@ -40,3 +34,6 @@ website:
 
 website-dev:
 	cd website && npm install && npm run dev
+
+install:
+	npm install

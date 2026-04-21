@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LineColor, LineData, Step } from "./terminalTypes.ts";
 
-const COMMAND_MS_PER_CHAR = 32;
-const OUTPUT_MS_PER_TICK = 14;
-const OUTPUT_CHARS_PER_TICK = 3;
+const COMMAND_MS_PER_CHAR_NORMAL = 36;
+const COMMAND_MS_PER_CHAR_FAST = 10;
+const OUTPUT_MS_PER_TICK_NORMAL = 14;
+const OUTPUT_MS_PER_TICK_FAST = 6;
+const OUTPUT_CHARS_PER_TICK_NORMAL = 3;
+const OUTPUT_CHARS_PER_TICK_FAST = 20;
 const IDLE_POLL_MS = 80;
 const BETWEEN_STEP_MS = 60;
 
@@ -13,6 +16,8 @@ interface Active {
   shown: string;
   color?: LineColor;
   markdown?: boolean;
+  fast?: boolean;
+  prompt?: string;
 }
 
 export interface UseTerminalAnimation {
@@ -59,22 +64,34 @@ export function useTerminalAnimation(): UseTerminalAnimation {
       const current = activeRef.current;
       if (current) {
         if (current.shown.length >= current.full.length) {
-          commit({
-            kind: current.kind,
-            text: current.full,
-            color: current.color,
-            markdown: current.markdown,
-          });
+          if (current.kind === "command") {
+            commit({ kind: "command", text: current.full, prompt: current.prompt });
+          } else {
+            commit({
+              kind: "output",
+              text: current.full,
+              color: current.color,
+              markdown: current.markdown,
+            });
+          }
           clearActive();
           schedule(BETWEEN_STEP_MS);
           return;
         }
-        const chunk = current.kind === "command" ? 1 : OUTPUT_CHARS_PER_TICK;
+        let chunk: number;
+        let delay: number;
+        if (current.kind === "command") {
+          chunk = 1;
+          delay = current.fast ? COMMAND_MS_PER_CHAR_FAST : COMMAND_MS_PER_CHAR_NORMAL;
+        } else {
+          chunk = current.fast ? OUTPUT_CHARS_PER_TICK_FAST : OUTPUT_CHARS_PER_TICK_NORMAL;
+          delay = current.fast ? OUTPUT_MS_PER_TICK_FAST : OUTPUT_MS_PER_TICK_NORMAL;
+        }
         const nextLen = Math.min(current.full.length, current.shown.length + chunk);
         const updated: Active = { ...current, shown: current.full.slice(0, nextLen) };
         activeRef.current = updated;
         setActive(updated);
-        schedule(current.kind === "command" ? COMMAND_MS_PER_CHAR : OUTPUT_MS_PER_TICK);
+        schedule(delay);
         return;
       }
 
@@ -89,8 +106,14 @@ export function useTerminalAnimation(): UseTerminalAnimation {
 
       switch (next.kind) {
         case "type-command":
-          startActive({ kind: "command", full: next.text, shown: "" });
-          schedule(COMMAND_MS_PER_CHAR);
+          startActive({
+            kind: "command",
+            full: next.text,
+            shown: "",
+            prompt: next.prompt,
+            fast: next.fast,
+          });
+          schedule(next.fast ? COMMAND_MS_PER_CHAR_FAST : COMMAND_MS_PER_CHAR_NORMAL);
           return;
         case "type":
           startActive({
@@ -99,8 +122,9 @@ export function useTerminalAnimation(): UseTerminalAnimation {
             shown: "",
             color: next.color,
             markdown: next.markdown,
+            fast: next.fast,
           });
-          schedule(OUTPUT_MS_PER_TICK);
+          schedule(next.fast ? OUTPUT_MS_PER_TICK_FAST : OUTPUT_MS_PER_TICK_NORMAL);
           return;
         case "print":
           commit({
@@ -121,6 +145,7 @@ export function useTerminalAnimation(): UseTerminalAnimation {
             label: next.label,
             onClick: next.onClick,
             color: next.color,
+            prefix: next.prefix,
           });
           schedule(BETWEEN_STEP_MS);
           return;
@@ -142,13 +167,20 @@ export function useTerminalAnimation(): UseTerminalAnimation {
   const lines: LineData[] = active
     ? [
         ...committed,
-        {
-          kind: active.kind,
-          text: active.shown,
-          color: active.color,
-          markdown: active.markdown,
-          active: true,
-        } as LineData,
+        active.kind === "command"
+          ? ({
+              kind: "command",
+              text: active.shown,
+              prompt: active.prompt,
+              active: true,
+            } as LineData)
+          : ({
+              kind: "output",
+              text: active.shown,
+              color: active.color,
+              markdown: active.markdown,
+              active: true,
+            } as LineData),
       ]
     : committed;
 

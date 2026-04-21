@@ -6,6 +6,9 @@ import { Terminal } from "./Terminal.tsx";
 import { useTerminalAnimation } from "./useTerminalAnimation.ts";
 
 const HEAD_LINES = 10;
+const HOME_PROMPT = "~ $";
+const CODE_PROMPT = "~/code $";
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function rawFile(p: Post): string {
   const fm = `---\ntitle: ${p.title}\ndate: ${p.date}\nedited_at: ${p.edited_at}\n---`;
@@ -23,6 +26,18 @@ function tailBlock(raw: string, startLine: number): string {
     .join("\n");
 }
 
+function fmtLsDate(iso: string): string {
+  const [, m, d] = iso.split("-");
+  const month = MONTHS[parseInt(m, 10) - 1] ?? "---";
+  const day = String(parseInt(d, 10)).padStart(2, " ");
+  return `${month} ${day}`;
+}
+
+function lsPrefix(p: Post, bytes: number): string {
+  const size = String(bytes).padStart(6, " ");
+  return `-rw-r--r-- 1 niclas staff ${size} ${fmtLsDate(p.date)} `;
+}
+
 export function TerminalBlog({ posts }: { posts: Post[] }) {
   const { lines, enqueue, idle } = useTerminalAnimation();
   const { slug: slugParam } = useParams<{ slug: string }>();
@@ -38,10 +53,14 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     if (!post) {
       notFoundRef.current.add(slug);
       enqueue([
-        { kind: "type-command", text: `cat posts/${slug}.md | head -n ${HEAD_LINES}` },
+        {
+          kind: "type-command",
+          text: `cat ${slug}.md | head -n ${HEAD_LINES}`,
+          prompt: CODE_PROMPT,
+        },
         {
           kind: "print",
-          text: `cat: posts/${slug}.md: No such file or directory`,
+          text: `cat: ${slug}.md: No such file or directory`,
           color: "error",
         },
         { kind: "blank" },
@@ -53,7 +72,11 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     const totalLines = raw.split("\n").length;
     const head = headBlock(raw, HEAD_LINES);
     const steps: Step[] = [
-      { kind: "type-command", text: `cat posts/${slug}.md | head -n ${HEAD_LINES}` },
+      {
+        kind: "type-command",
+        text: `cat ${slug}.md | head -n ${HEAD_LINES}`,
+        prompt: CODE_PROMPT,
+      },
       { kind: "print", text: head },
       { kind: "blank" },
     ];
@@ -77,45 +100,78 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     const raw = rawFile(post);
     const tail = tailBlock(raw, HEAD_LINES + 1);
     enqueue([
-      { kind: "type-command", text: `cat posts/${slug}.md | tail -n +${HEAD_LINES + 1}` },
+      {
+        kind: "type-command",
+        text: `cat ${slug}.md | tail -n +${HEAD_LINES + 1}`,
+        prompt: CODE_PROMPT,
+      },
       { kind: "type", text: tail, markdown: true },
       { kind: "blank" },
     ]);
   };
 
-  // First mount: run ls and, if a slug is in the URL, open it afterward.
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
-    const steps: Step[] = [{ kind: "type-command", text: "ls posts/" }];
+    const steps: Step[] = [
+      { kind: "type-command", text: "cd code", prompt: HOME_PROMPT },
+      { kind: "type-command", text: "ls -l", prompt: CODE_PROMPT },
+    ];
+
     if (posts.length === 0) {
+      steps.push({
+        kind: "print",
+        text: "total 0",
+        color: "dim",
+      });
       steps.push({
         kind: "print",
         text: "(no posts yet — write one with the /write-post skill)",
         color: "dim",
       });
+      steps.push({ kind: "blank" });
     } else {
+      steps.push({ kind: "print", text: `total ${posts.length}`, color: "dim" });
       for (const p of posts) {
+        const bytes = rawFile(p).length;
         steps.push({
           kind: "clickable",
+          prefix: lsPrefix(p, bytes),
           label: `${p.slug}.md`,
           color: "accent",
           onClick: () => openPostFromClick(p.slug),
         });
       }
+      steps.push({ kind: "blank" });
+
+      if (slugParam) {
+        // deep-link: skip the latest-auto-cat and open the requested post
+        // (enqueued below via the slug-effect)
+      } else {
+        // default: fast-cat the latest post so the page isn't empty
+        const latest = posts[0];
+        openedRef.current.add(latest.slug);
+        steps.push({
+          kind: "type-command",
+          text: `cat ${latest.slug}.md`,
+          prompt: CODE_PROMPT,
+          fast: true,
+        });
+        steps.push({ kind: "type", text: rawFile(latest), markdown: true, fast: true });
+        steps.push({ kind: "blank" });
+      }
     }
-    steps.push({ kind: "blank" });
+
     enqueue(steps);
     if (slugParam) enqueueOpen(slugParam);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Subsequent navigation (e.g., Back/Forward) to a new slug.
   useEffect(() => {
     if (!startedRef.current) return;
     if (slugParam) enqueueOpen(slugParam);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slugParam]);
 
-  return <Terminal lines={lines} idle={idle} />;
+  return <Terminal lines={lines} idle={idle} idlePrompt={CODE_PROMPT} />;
 }

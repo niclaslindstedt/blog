@@ -84,7 +84,7 @@ Dependency direction: `posts/*.md` → `website/scripts/extract-posts.ts` → `w
 This project is a small personal blog, not a shipped library. The following `OSS_SPEC.md` obligations are intentionally skipped or stubbed. When `sync-oss-spec` or an equivalent check flags one of these, **leave it alone** — the deviation is a design choice, not drift.
 
 - **§8.4 `CHANGELOG.md`** — kept as a one-line stub. The blog is continuously deployed on every push; there is no release cadence to record.
-- **§10.3 release pipeline / §10.5 local-CI parity** — `release.yml` and `version-bump.yml` are inert scaffolding. The only active deployment path is `pages.yml` (§10.4) on push-to-`main`.
+- **§10.3 release pipeline** — removed entirely. No `release.yml`, no `version-bump.yml`, no `scripts/release.sh` / `update-versions.sh` / `generate-changelog.sh`. The only deployment path is `pages.yml` (§10.4) on push-to-`main`; there are no tagged releases, no semver bumps, and no published artifacts.
 - **§11.2 required website content** — hero / feature showcase / providers / hosted-docs / footer checklist replaced by the post list view. Hosted-docs rendering will land when there is content worth rendering.
 - **§11.2 recommended stack** — TypeScript, Tailwind (v4, via `@tailwindcss/vite`), `react-markdown`, and `remark-gfm` are all adopted.
 - **§12 CLI obligations** — N/A. This project ships no CLI binary.

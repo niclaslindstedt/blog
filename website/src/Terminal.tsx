@@ -34,13 +34,15 @@ function initialPos(size: { width: number; height: number }): { x: number; y: nu
 }
 
 export function Terminal({
-  title = "niclas@blog ~ /posts",
+  title = "niclas@blog ~ /code",
   lines,
   idle,
+  idlePrompt = "~/code $",
 }: {
   title?: string;
   lines: LineData[];
   idle: boolean;
+  idlePrompt?: string;
 }) {
   const [size, setSize] = useState(() => initialSize());
   const [pos, setPos] = useState(() => initialPos(initialSize()));
@@ -52,7 +54,6 @@ export function Terminal({
     if (el) el.scrollTop = el.scrollHeight;
   }, [lines]);
 
-  // Re-clamp when viewport shrinks so the window can't end up off-screen.
   useEffect(() => {
     const onResize = () => {
       setSize((s) => {
@@ -154,13 +155,13 @@ export function Terminal({
         <div className="w-14" aria-hidden="true" />
       </div>
 
-      <div ref={bodyRef} className="flex-1 overflow-y-auto px-4 pb-4 pt-3 text-fg">
+      <div ref={bodyRef} className="flex-1 overflow-y-auto px-4 pt-3 pb-4 text-fg">
         {lines.map((l, i) => (
           <TerminalLine key={i} line={l} />
         ))}
         {idle && (
           <div className="flex gap-2">
-            <span className="shrink-0 text-accent">$</span>
+            <span className="shrink-0 text-accent">{idlePrompt}</span>
             <span className="flex-1">
               <span className="animate-blink-cursor" aria-hidden="true" />
             </span>

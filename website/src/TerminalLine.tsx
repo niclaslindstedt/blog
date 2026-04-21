@@ -22,7 +22,7 @@ export function TerminalLine({ line }: { line: LineData }) {
     case "command":
       return (
         <div className="flex gap-2 whitespace-pre-wrap break-words">
-          <span className="shrink-0 text-accent">$</span>
+          <span className="shrink-0 text-accent">{line.prompt ?? "$"}</span>
           <span className="flex-1 text-fg-bright">
             {highlightCommand(line.text)}
             {line.active && <span className="animate-blink-cursor" aria-hidden="true" />}
@@ -52,7 +52,8 @@ export function TerminalLine({ line }: { line: LineData }) {
       return <div className="h-[1em]">&nbsp;</div>;
     case "clickable":
       return (
-        <div>
+        <div className="whitespace-pre">
+          {line.prefix && <span className="text-dim">{line.prefix}</span>}
           <button
             type="button"
             onClick={line.onClick}
