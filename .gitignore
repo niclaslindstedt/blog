@@ -30,3 +30,7 @@ dist/
 
 # TypeScript
 *.tsbuildinfo
+
+# Claude Code
+.claude/worktrees/
+.claude/settings.local.json
