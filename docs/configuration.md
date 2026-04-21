@@ -27,6 +27,7 @@ exactly these fields:
 | `title`     | string          | yes      | Display title shown in the list                                                |
 | `date`      | ISO 8601 UTC dt | yes      | Publication timestamp (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required)                   |
 | `edited_at` | ISO 8601 UTC dt | no       | Last-edit timestamp (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required); defaults to `date` |
+| `tags`      | comma-separated single line | no | Subject tags, lowercase and hyphenated (e.g. `tags: juris, python, release-notes`). First tag is the project slug from `.agent/project-index/INDEX.md` when the post is about one specific project. Used by the authoring skills to locate the most recent post about a subject and summarise commit history since then. |
 
 Timestamps must be ISO 8601 datetimes in UTC — i.e. end with `Z`. Local
 timezones and date-only values (`YYYY-MM-DD`) are rejected by the extractor.

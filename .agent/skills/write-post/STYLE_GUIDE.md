@@ -83,6 +83,24 @@ that file so you know:
 Don't invent links. If a project is not in the index, leave the name bare
 and flag it to the user — the index may be stale.
 
+## Tags
+
+Every post should carry subject tags in frontmatter so future runs (and plain
+`grep`) can find it. Format: a single line, lowercase, hyphenated,
+comma-separated.
+
+```yaml
+tags: juris, python, release-notes
+```
+
+- When the post is about a project in `../../project-index/INDEX.md`, the
+  first tag is the project slug from the index. That's how
+  `scripts/find-posts-by-tag.sh <slug>` locates the last post about a
+  project before drafting the next one.
+- Add a handful of topic tags (language, theme, post type) — no more than
+  six total.
+- Omit the line only when the post has no meaningful subject tags.
+
 ## Formatting conventions
 
 - `date` and `edited_at` in frontmatter are ISO 8601 UTC datetimes (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required). Local-timezone or date-only values are rejected by the extractor.
