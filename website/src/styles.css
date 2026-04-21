@@ -5,15 +5,18 @@
   --color-term-bg: #0a0e14;
   --color-term-titlebar: #181b22;
   --color-term-border: #2a2f3a;
-  --color-fg: #b3b1ad;
+  /* Single foreground — every text token collapses to white so the terminal
+     reads like a plain xterm: one color, no semantic highlighting. */
+  --color-fg: #ffffff;
   --color-fg-bright: #ffffff;
-  --color-dim: #5c6370;
-  --color-accent: #a8ff60;
-  --color-meta: #ffcc66;
-  --color-link: #7fdbff;
-  --color-pipe: #ff79c6;
-  --color-flag: #ffcc66;
-  --color-path: #7fdbff;
+  --color-dim: #ffffff;
+  --color-accent: #ffffff;
+  --color-meta: #ffffff;
+  --color-link: #ffffff;
+  --color-pipe: #ffffff;
+  --color-flag: #ffffff;
+  --color-path: #ffffff;
+  /* Traffic-light dots only — these tokens are used as backgrounds. */
   --color-red: #ff5f57;
   --color-yellow: #febc2e;
   --color-green: #28c840;

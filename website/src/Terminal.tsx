@@ -59,17 +59,30 @@ function initialPos(size: { width: number; height: number }): { x: number; y: nu
   return { x, y };
 }
 
+function cwdFromLines(lines: LineData[]): string {
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const l = lines[i];
+    if (l.kind === "command" && l.prompt) {
+      return l.prompt.replace(/\s*\$\s*$/, "").trim();
+    }
+  }
+  return "~";
+}
+
 export function Terminal({
-  title = "niclas@blog ~ /code/blog",
+  user = "niclaslindstedt",
+  title,
   lines,
   idle,
   idlePrompt = "~/code/blog $",
 }: {
+  user?: string;
   title?: string;
   lines: LineData[];
   idle: boolean;
   idlePrompt?: string;
 }) {
+  const computedTitle = title ?? `${user} — ${cwdFromLines(lines)}`;
   const small = useSmallViewport();
   const [size, setSize] = useState(() => initialSize());
   const [pos, setPos] = useState(() => initialPos(initialSize()));
@@ -191,7 +204,7 @@ export function Terminal({
           <span className="h-3 w-3 rounded-full bg-yellow" />
           <span className="h-3 w-3 rounded-full bg-green" />
         </div>
-        <div className="flex-1 text-center text-xs tracking-wide text-dim">{title}</div>
+        <div className="flex-1 text-center text-xs tracking-wide text-dim">{computedTitle}</div>
         <div className="w-14" aria-hidden="true" />
       </div>
 

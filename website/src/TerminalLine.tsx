@@ -2,19 +2,9 @@ import type { LineColor, LineData } from "./terminalTypes.ts";
 import { highlightCommand } from "./CommandHighlighter.tsx";
 import { MarkdownBody } from "./MarkdownBody.tsx";
 
-function outputColor(color?: LineColor): string {
-  switch (color) {
-    case "accent":
-      return "text-accent";
-    case "meta":
-      return "text-meta";
-    case "dim":
-      return "text-dim";
-    case "error":
-      return "text-red";
-    default:
-      return "text-fg";
-  }
+function outputColor(_color?: LineColor): string {
+  // Plain-terminal look: every output line renders in the single fg color.
+  return "text-fg";
 }
 
 export function TerminalLine({ line }: { line: LineData }) {
