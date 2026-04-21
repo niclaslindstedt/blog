@@ -5,16 +5,17 @@ export interface GithubFile {
   path: string;
   href: string;
   rawUrl: string;
+  fragment?: string;
 }
 
 const GITHUB_FILE_RE =
-  /^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+?)(?:[?#].*)?$/;
+  /^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/([^?#]+)(?:\?[^#]*)?(?:#(.*))?$/;
 
 export function parseGithubFileUrl(href: string | undefined): GithubFile | null {
   if (!href) return null;
   const m = GITHUB_FILE_RE.exec(href);
   if (!m) return null;
-  const [, owner, repo, ref, path] = m;
+  const [, owner, repo, ref, path, fragment] = m;
   return {
     owner,
     repo,
@@ -22,7 +23,25 @@ export function parseGithubFileUrl(href: string | undefined): GithubFile | null 
     path,
     href,
     rawUrl: `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`,
+    fragment: fragment || undefined,
   };
+}
+
+// Parse GitHub's own line-range fragment syntax: `L10` or `L10-L20`.
+// Case-insensitive on the `L`. Returns null for anything else (including
+// empty / unrelated fragments).
+const LINE_RANGE_RE = /^L(\d+)(?:-L(\d+))?$/i;
+
+export function parseLineRange(
+  fragment: string | undefined,
+): { start: number; end: number } | null {
+  if (!fragment) return null;
+  const m = LINE_RANGE_RE.exec(fragment);
+  if (!m) return null;
+  const start = Number.parseInt(m[1], 10);
+  const end = m[2] === undefined ? start : Number.parseInt(m[2], 10);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start < 1 || end < 1) return null;
+  return start <= end ? { start, end } : { start: end, end: start };
 }
 
 const EXT_LANG: Record<string, string> = {

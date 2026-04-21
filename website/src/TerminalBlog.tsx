@@ -1,10 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Audience, Post, PostVersion } from "./types.ts";
 import type { Step } from "./terminalTypes.ts";
+import type { GithubFile } from "./github.ts";
 import { Terminal } from "./Terminal.tsx";
 import { AudienceTabs } from "./AudienceTabs.tsx";
 import { useAudience } from "./AudienceContext.tsx";
+import { useFileViewer } from "./FileViewerContext.tsx";
+import { ViOpenerContext } from "./ViOpenerContext.tsx";
 import { useTerminalAnimation } from "./useTerminalAnimation.ts";
 import { BLOG_WPM } from "./typing.ts";
 
@@ -65,6 +68,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   const navigate = useNavigate();
   const { audience, setAudience } = useAudience();
   const { lines, enqueue, idle } = useTerminalAnimation(audience);
+  const openFile = useFileViewer();
   const startedRef = useRef(false);
   // Keyed by `${audience}:${slug}` — a post is "opened" independently in each audience.
   const openedRef = useRef(new Set<string>());
@@ -74,6 +78,21 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   const audienceRef = useRef<Audience>(audience);
 
   const openKey = (a: Audience, slug: string) => `${a}:${slug}`;
+
+  const openInVi = useCallback(
+    (file: GithubFile) => {
+      enqueue([
+        {
+          kind: "type-command",
+          text: `vi ${file.path}`,
+          prompt: codePrompt(audienceRef.current),
+          wpm: BLOG_WPM,
+        },
+        { kind: "effect", run: () => openFile(file) },
+      ]);
+    },
+    [enqueue, openFile],
+  );
 
   const enqueueOpen = (slug: string, a: Audience) => {
     const key = openKey(a, slug);
@@ -257,11 +276,13 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   }, [slugParam]);
 
   return (
-    <Terminal
-      lines={lines}
-      idle={idle}
-      idlePrompt={codePrompt(audience)}
-      tabs={<AudienceTabs audience={audience} onSwitch={setAudience} />}
-    />
+    <ViOpenerContext.Provider value={openInVi}>
+      <Terminal
+        lines={lines}
+        idle={idle}
+        idlePrompt={codePrompt(audience)}
+        tabs={<AudienceTabs audience={audience} onSwitch={setAudience} />}
+      />
+    </ViOpenerContext.Provider>
   );
 }

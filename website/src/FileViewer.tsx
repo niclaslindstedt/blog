@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Highlight, themes, type Language } from "prism-react-renderer";
 import type { GithubFile } from "./github.ts";
-import { guessLanguage } from "./github.ts";
+import { guessLanguage, parseLineRange } from "./github.ts";
 
 type LoadState =
   | { status: "loading" }
@@ -10,6 +10,8 @@ type LoadState =
 
 export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () => void }) {
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const range = parseLineRange(file.fragment);
+  const firstRangeRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let canceled = false;
@@ -44,6 +46,11 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  useEffect(() => {
+    if (state.status !== "loaded" || !range) return;
+    firstRangeRef.current?.scrollIntoView({ block: "center" });
+  }, [state.status, range?.start, range?.end]);
 
   const lang = guessLanguage(file.path);
   const displayTitle = `${file.owner}/${file.repo}:${file.path} @ ${file.ref}`;
@@ -97,10 +104,22 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
               >
                 {tokens.map((line, i) => {
                   const { key: _lk, ...rest } = getLineProps({ line });
+                  const lineNumber = i + 1;
+                  const inRange =
+                    range !== null && lineNumber >= range.start && lineNumber <= range.end;
+                  const isFirstInRange = range !== null && lineNumber === range.start;
+                  const rowClass = `flex${inRange ? " bg-accent/15" : ""}`;
                   return (
-                    <div key={i} {...rest} className="flex">
-                      <span className="mr-4 w-10 shrink-0 select-none text-right text-dim">
-                        {i + 1}
+                    <div
+                      key={i}
+                      {...rest}
+                      ref={isFirstInRange ? firstRangeRef : undefined}
+                      className={rowClass}
+                    >
+                      <span
+                        className={`mr-4 w-10 shrink-0 select-none text-right ${inRange ? "text-accent" : "text-dim"}`}
+                      >
+                        {lineNumber}
                       </span>
                       <span className="flex-1 whitespace-pre">
                         {line.map((token, ti) => {
@@ -127,7 +146,7 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
       <div className="flex items-center justify-between border-t border-term-border bg-term-titlebar px-3 py-1 text-xs text-dim">
         <span>
           {state.status === "loaded"
-            ? `"${file.path}" ${lineCount} lines, ${charCount} chars`
+            ? `"${file.path}" ${lineCount} lines, ${charCount} chars${range ? ` [L${range.start}${range.end !== range.start ? `-L${range.end}` : ""}]` : ""}`
             : state.status === "error"
               ? "-- error --"
               : "-- loading --"}
