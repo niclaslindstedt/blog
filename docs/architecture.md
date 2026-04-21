@@ -13,14 +13,19 @@ website/                        Vite + React + TypeScript + Tailwind v4 frontend
   src/
     types.ts                    Post / PostVersion / Audience (single source of truth)
     terminalTypes.ts            terminal line/step union types
-    App.tsx                     page layout (centres the terminal, wraps AudienceProvider)
+    App.tsx                     page layout (centres the terminal, wraps AudienceProvider + FileViewerProvider)
     AudienceContext.tsx         React context + localStorage-backed audience preference
     AudienceTabs.tsx            two-tab strip rendered in the terminal chrome
     TerminalBlog.tsx            audience-aware transcript controller (ls / cat / head / tail)
-    Terminal.tsx                window chrome + drag-to-resize + tabs slot
+    Terminal.tsx                window chrome + drag-to-resize + tabs slot + live-cwd titlebar
     TerminalLine.tsx            renders one transcript line by kind
     CommandHighlighter.tsx      shell-syntax colouring for commands
-    useTerminalAnimation.ts     sequence-driven typing animation hook
+    MarkdownBody.tsx            shared react-markdown + remark-gfm renderer with terminal overrides
+    FileViewer.tsx              full-viewport vi-style overlay for github.com/.../blob/ links
+    FileViewerContext.tsx       React context exposing the file-viewer open() callback
+    github.ts                   GitHub blob-URL parser and raw-content fetcher
+    typing.ts                   WPM-aware keystroke timing model (finger-aware delays)
+    useTerminalAnimation.ts     sequence-driven typing animation hook (consumes typing.ts)
     styles.css                  Tailwind entry + theme variables + blink-cursor keyframes
     main.tsx                    React entry point
     generated/                  extractor output — never edit by hand
@@ -84,6 +89,9 @@ it; if the slug exists only in the other audience, the terminal prints
 The reader's audience choice persists in `localStorage` under the key
 `blog:audience`; it is _not_ reflected in the URL — `/posts/<slug>` renders
 whichever version the reader has selected.
+
+On small viewports the terminal fills the screen via CSS; the drag-to-resize
+state is preserved but ignored so the chrome stays full-bleed on mobile.
 
 ## GitHub file viewer
 
