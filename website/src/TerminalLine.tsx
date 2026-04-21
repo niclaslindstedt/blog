@@ -9,6 +9,8 @@ function outputColor(color?: LineColor): string {
       return "text-meta";
     case "dim":
       return "text-dim";
+    case "error":
+      return "text-red";
     default:
       return "text-fg";
   }

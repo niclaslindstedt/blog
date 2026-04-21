@@ -45,7 +45,16 @@ The extractor owns the boundary between raw markdown and the frontend. It valida
 
 ## Frontend
 
-The React app is statically exported via Vite — no server runtime. The landing page is a single interactive terminal window: on mount it auto-runs `$ ls posts/`, each filename is clickable, clicking runs `cat … | head -n 10` (instant output), and a `[ show more ]` action runs `cat … | tail -n +11` with a character-by-character typing animation. The terminal chrome has a bottom-right drag handle for resizing. Per-post pages and markdown-to-HTML rendering are deferred.
+The React app is statically exported via Vite — no server runtime. The landing page is a single interactive terminal window: on mount it auto-runs `$ ls posts/`, each filename is clickable, clicking runs `cat … | head -n 10` (instant output), and a `[ show more ]` action runs `cat … | tail -n +11` with a character-by-character typing animation. The terminal chrome has a bottom-right drag handle for resizing. Markdown-to-HTML rendering is deferred.
+
+## Routing
+
+`react-router-dom`'s `BrowserRouter` (basename = Vite's `BASE_URL`) exposes two routes:
+
+- `/` — landing terminal (no post opened).
+- `/posts/<slug>` — terminal that runs `ls` first, then auto-opens that post with `cat … | head -n 10`. An unknown slug prints `cat: posts/<slug>.md: No such file or directory` in red.
+
+Clicking a filename updates the URL via `navigate`, keeping deep-links and the address bar in sync. The transcript is append-only — back/forward navigation doesn't wipe previously-printed output (terminal scrollback semantics). The `build` script runs `cp dist/index.html dist/404.html` so GitHub Pages's 404 fallback serves the SPA shell for unknown paths.
 
 ## Cross-cutting concerns
 

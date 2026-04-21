@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import type { Post } from "./types.ts";
 import type { Step } from "./terminalTypes.ts";
 import { Terminal } from "./Terminal.tsx";
@@ -21,15 +22,30 @@ function tailBlock(raw: string, startLine: number): string {
 
 export function TerminalBlog({ posts }: { posts: Post[] }) {
   const { lines, enqueue, idle } = useTerminalAnimation();
+  const { slug: slugParam } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const startedRef = useRef(false);
   const openedRef = useRef(new Set<string>());
   const expandedRef = useRef(new Set<string>());
+  const notFoundRef = useRef(new Set<string>());
 
-  const openPost = (slug: string) => {
-    if (openedRef.current.has(slug)) return;
-    openedRef.current.add(slug);
+  const enqueueOpen = (slug: string) => {
+    if (openedRef.current.has(slug) || notFoundRef.current.has(slug)) return;
     const post = posts.find((p) => p.slug === slug);
-    if (!post) return;
+    if (!post) {
+      notFoundRef.current.add(slug);
+      enqueue([
+        { kind: "type-command", text: `cat posts/${slug}.md | head -n ${HEAD_LINES}` },
+        {
+          kind: "print",
+          text: `cat: posts/${slug}.md: No such file or directory`,
+          color: "error",
+        },
+        { kind: "blank" },
+      ]);
+      return;
+    }
+    openedRef.current.add(slug);
     const raw = rawFile(post);
     const totalLines = raw.split("\n").length;
     const head = headBlock(raw, HEAD_LINES);
@@ -43,6 +59,11 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       steps.push({ kind: "blank" });
     }
     enqueue(steps);
+  };
+
+  const openPostFromClick = (slug: string) => {
+    if (slugParam !== slug) navigate(`/posts/${slug}`);
+    enqueueOpen(slug);
   };
 
   const showMore = (slug: string) => {
@@ -59,6 +80,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     ]);
   };
 
+  // First mount: run ls and, if a slug is in the URL, open it afterward.
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
@@ -75,14 +97,22 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
           kind: "clickable",
           label: `${p.slug}.md`,
           color: "accent",
-          onClick: () => openPost(p.slug),
+          onClick: () => openPostFromClick(p.slug),
         });
       }
     }
     steps.push({ kind: "blank" });
     enqueue(steps);
+    if (slugParam) enqueueOpen(slugParam);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Subsequent navigation (e.g., Back/Forward) to a new slug.
+  useEffect(() => {
+    if (!startedRef.current) return;
+    if (slugParam) enqueueOpen(slugParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slugParam]);
 
   return <Terminal lines={lines} idle={idle} />;
 }

@@ -1,4 +1,4 @@
-export type LineColor = "default" | "dim" | "accent" | "meta";
+export type LineColor = "default" | "dim" | "accent" | "meta" | "error";
 
 export type LineData =
   | { kind: "command"; text: string; active?: boolean }
