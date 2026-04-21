@@ -7,7 +7,7 @@ import { useTerminalAnimation } from "./useTerminalAnimation.ts";
 
 const HEAD_LINES = 10;
 const HOME_PROMPT = "~ $";
-const CODE_PROMPT = "~/code $";
+const CODE_PROMPT = "~/code/blog $";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function rawFile(p: Post): string {
@@ -114,7 +114,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     if (startedRef.current) return;
     startedRef.current = true;
     const steps: Step[] = [
-      { kind: "type-command", text: "cd code", prompt: HOME_PROMPT },
+      { kind: "type-command", text: "cd code/blog", prompt: HOME_PROMPT },
       { kind: "type-command", text: "ls -l", prompt: CODE_PROMPT },
     ];
 

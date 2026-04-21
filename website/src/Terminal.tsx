@@ -60,10 +60,10 @@ function initialPos(size: { width: number; height: number }): { x: number; y: nu
 }
 
 export function Terminal({
-  title = "niclas@blog ~ /code",
+  title = "niclas@blog ~ /code/blog",
   lines,
   idle,
-  idlePrompt = "~/code $",
+  idlePrompt = "~/code/blog $",
 }: {
   title?: string;
   lines: LineData[];
