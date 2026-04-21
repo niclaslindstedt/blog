@@ -14,9 +14,16 @@ export type LineData =
   | { kind: "action"; label: string; onClick: () => void };
 
 export type Step =
-  | { kind: "type-command"; text: string; prompt?: string; fast?: boolean }
+  | { kind: "type-command"; text: string; prompt?: string; fast?: boolean; wpm?: number }
   | { kind: "print"; text: string; color?: LineColor; markdown?: boolean }
-  | { kind: "type"; text: string; color?: LineColor; markdown?: boolean; fast?: boolean }
+  | {
+      kind: "type";
+      text: string;
+      color?: LineColor;
+      markdown?: boolean;
+      fast?: boolean;
+      wpm?: number;
+    }
   | { kind: "blank" }
   | {
       kind: "clickable";

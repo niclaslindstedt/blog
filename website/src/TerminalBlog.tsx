@@ -4,6 +4,7 @@ import type { Post } from "./types.ts";
 import type { Step } from "./terminalTypes.ts";
 import { Terminal } from "./Terminal.tsx";
 import { useTerminalAnimation } from "./useTerminalAnimation.ts";
+import { BLOG_WPM } from "./typing.ts";
 
 const HEAD_LINES = 10;
 const HOME_PROMPT = "~ $";
@@ -57,6 +58,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
           kind: "type-command",
           text: `cat ${slug}.md | head -n ${HEAD_LINES}`,
           prompt: CODE_PROMPT,
+          wpm: BLOG_WPM,
         },
         {
           kind: "print",
@@ -76,6 +78,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         kind: "type-command",
         text: `cat ${slug}.md | head -n ${HEAD_LINES}`,
         prompt: CODE_PROMPT,
+        wpm: BLOG_WPM,
       },
       { kind: "print", text: head },
       { kind: "blank" },
@@ -104,8 +107,9 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         kind: "type-command",
         text: `cat ${slug}.md | tail -n +${HEAD_LINES + 1}`,
         prompt: CODE_PROMPT,
+        wpm: BLOG_WPM,
       },
-      { kind: "type", text: tail, markdown: true },
+      { kind: "type", text: tail, markdown: true, wpm: BLOG_WPM },
       { kind: "blank" },
     ]);
   };
@@ -114,8 +118,8 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     if (startedRef.current) return;
     startedRef.current = true;
     const steps: Step[] = [
-      { kind: "type-command", text: "cd code/blog", prompt: HOME_PROMPT },
-      { kind: "type-command", text: "ls -l", prompt: CODE_PROMPT },
+      { kind: "type-command", text: "cd code/blog", prompt: HOME_PROMPT, wpm: BLOG_WPM },
+      { kind: "type-command", text: "ls -l", prompt: CODE_PROMPT, wpm: BLOG_WPM },
     ];
 
     if (posts.length === 0) {

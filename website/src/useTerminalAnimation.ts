@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LineColor, LineData, Step } from "./terminalTypes.ts";
+import { charDelayMs } from "./typing.ts";
 
 const COMMAND_MS_PER_CHAR_NORMAL = 36;
 const COMMAND_MS_PER_CHAR_FAST = 10;
@@ -17,6 +18,7 @@ interface Active {
   color?: LineColor;
   markdown?: boolean;
   fast?: boolean;
+  wpm?: number;
   prompt?: string;
 }
 
@@ -80,7 +82,12 @@ export function useTerminalAnimation(): UseTerminalAnimation {
         }
         let chunk: number;
         let delay: number;
-        if (current.kind === "command") {
+        if (current.wpm !== undefined) {
+          chunk = 1;
+          const prev = current.shown.length === 0 ? null : current.shown[current.shown.length - 1];
+          const next = current.full[current.shown.length];
+          delay = charDelayMs(prev, next, current.wpm);
+        } else if (current.kind === "command") {
           chunk = 1;
           delay = current.fast ? COMMAND_MS_PER_CHAR_FAST : COMMAND_MS_PER_CHAR_NORMAL;
         } else {
@@ -112,8 +119,15 @@ export function useTerminalAnimation(): UseTerminalAnimation {
             shown: "",
             prompt: next.prompt,
             fast: next.fast,
+            wpm: next.wpm,
           });
-          schedule(next.fast ? COMMAND_MS_PER_CHAR_FAST : COMMAND_MS_PER_CHAR_NORMAL);
+          schedule(
+            next.wpm !== undefined
+              ? charDelayMs(null, next.text[0] ?? "", next.wpm)
+              : next.fast
+                ? COMMAND_MS_PER_CHAR_FAST
+                : COMMAND_MS_PER_CHAR_NORMAL,
+          );
           return;
         case "type":
           startActive({
@@ -123,8 +137,15 @@ export function useTerminalAnimation(): UseTerminalAnimation {
             color: next.color,
             markdown: next.markdown,
             fast: next.fast,
+            wpm: next.wpm,
           });
-          schedule(next.fast ? OUTPUT_MS_PER_TICK_FAST : OUTPUT_MS_PER_TICK_NORMAL);
+          schedule(
+            next.wpm !== undefined
+              ? charDelayMs(null, next.text[0] ?? "", next.wpm)
+              : next.fast
+                ? OUTPUT_MS_PER_TICK_FAST
+                : OUTPUT_MS_PER_TICK_NORMAL,
+          );
           return;
         case "print":
           commit({
