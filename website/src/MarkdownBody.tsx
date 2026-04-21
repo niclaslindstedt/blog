@@ -72,11 +72,7 @@ const components: Components = {
 
 export function MarkdownBody({ text }: { text: string }) {
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      rehypePlugins={[rehypeRaw]}
-      components={components}
-    >
+    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
       {text}
     </ReactMarkdown>
   );

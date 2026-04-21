@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Highlight, themes, type Language } from "prism-react-renderer";
 import type { GithubFile } from "./github.ts";
 import { guessLanguage, parseLineRange } from "./github.ts";
@@ -10,7 +10,7 @@ type LoadState =
 
 export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () => void }) {
   const [state, setState] = useState<LoadState>({ status: "loading" });
-  const range = parseLineRange(file.fragment);
+  const range = useMemo(() => parseLineRange(file.fragment), [file.fragment]);
   const firstRangeRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
   useEffect(() => {
     if (state.status !== "loaded" || !range) return;
     firstRangeRef.current?.scrollIntoView({ block: "center" });
-  }, [state.status, range?.start, range?.end]);
+  }, [state.status, range]);
 
   const lang = guessLanguage(file.path);
   const displayTitle = `${file.owner}/${file.repo}:${file.path} @ ${file.ref}`;
