@@ -61,15 +61,16 @@ function postsForAudience(posts: Post[], audience: Audience): Post[] {
 }
 
 export function TerminalBlog({ posts }: { posts: Post[] }) {
-  const { lines, enqueue, idle } = useTerminalAnimation();
   const { slug: slugParam } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { audience, setAudience } = useAudience();
+  const { lines, enqueue, idle } = useTerminalAnimation(audience);
   const startedRef = useRef(false);
   // Keyed by `${audience}:${slug}` — a post is "opened" independently in each audience.
   const openedRef = useRef(new Set<string>());
   const expandedRef = useRef(new Set<string>());
   const notFoundRef = useRef(new Set<string>());
+  const visitedRef = useRef(new Set<Audience>());
   const audienceRef = useRef<Audience>(audience);
 
   const openKey = (a: Audience, slug: string) => `${a}:${slug}`;
@@ -187,32 +188,28 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     enqueue(steps);
   };
 
-  useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
-    audienceRef.current = audience;
-
-    const visible = postsForAudience(posts, audience);
+  const runIntro = (a: Audience) => {
+    const visible = postsForAudience(posts, a);
     enqueue([
       {
         kind: "type-command",
-        text: `cd code/blog/${audience}`,
+        text: `cd code/blog/${a}`,
         prompt: HOME_PROMPT,
         wpm: BLOG_WPM,
       },
     ]);
-    enqueueListing(audience, visible);
+    enqueueListing(a, visible);
 
     if (!slugParam && visible.length > 0) {
       const latest = visible[0];
-      const version = latest.versions[audience];
+      const version = latest.versions[a];
       if (version) {
-        openedRef.current.add(openKey(audience, latest.slug));
+        openedRef.current.add(openKey(a, latest.slug));
         enqueue([
           {
             kind: "type-command",
             text: `cat ${latest.slug}.md`,
-            prompt: codePrompt(audience),
+            prompt: codePrompt(a),
             fast: true,
           },
           { kind: "type", text: rawFile(version), markdown: true, fast: true },
@@ -221,33 +218,34 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       }
     }
 
-    if (slugParam) enqueueOpen(slugParam, audience);
+    if (slugParam) enqueueOpen(slugParam, a);
+  };
+
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    audienceRef.current = audience;
+    visitedRef.current.add(audience);
+    runIntro(audience);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Audience tab switch (after initial mount): clear the screen, animate the
-  // cd + re-ls, and re-open the current post under the new audience if there
-  // is one. `clear` before `cd` mirrors what a real terminal user would do —
-  // wipe the scrollback, then navigate.
+  // Audience tab switch (after initial mount): each audience owns its own
+  // terminal session, so swapping just swaps the scrollback — no `clear`, no
+  // re-animated `cd`. The first time a tab is focused we run the intro from
+  // scratch (cd, ls, cat latest) in that session; subsequent visits resume
+  // the session exactly where it was left.
   useEffect(() => {
     if (!startedRef.current) return;
     if (audience === audienceRef.current) return;
-    const previous = audienceRef.current;
     audienceRef.current = audience;
 
-    const visible = postsForAudience(posts, audience);
-    const previousPrompt = codePrompt(previous);
-    enqueue([
-      { kind: "type-command", text: "clear", prompt: previousPrompt, wpm: BLOG_WPM },
-      { kind: "clear" },
-      {
-        kind: "type-command",
-        text: `cd ../${audience}`,
-        prompt: previousPrompt,
-        wpm: BLOG_WPM,
-      },
-    ]);
-    enqueueListing(audience, visible);
+    if (!visitedRef.current.has(audience)) {
+      visitedRef.current.add(audience);
+      runIntro(audience);
+      return;
+    }
+
     if (slugParam) enqueueOpen(slugParam, audience);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audience]);
