@@ -45,7 +45,7 @@ The extractor owns the boundary between raw markdown and the frontend. It valida
 
 ## Frontend
 
-The React app is statically exported via Vite — no server runtime. The landing page is a single interactive terminal window: on mount it auto-runs `$ ls posts/`, each filename is clickable, clicking runs `cat … | head -n 10` (instant output), and a `[ show more ]` action runs `cat … | tail -n +11` with a character-by-character typing animation. The terminal chrome has a bottom-right drag handle for resizing. Markdown-to-HTML rendering is deferred.
+The React app is statically exported via Vite — no server runtime. The landing page is a single interactive terminal window: on mount it auto-runs `$ ls posts/`, each filename is clickable, clicking runs `cat … | head -n 10` (instant raw output), and a `[ show more ]` action runs `cat … | tail -n +11` with a character-by-character typing animation. The tail output is rendered through `react-markdown` + `remark-gfm` with terminal-styled overrides: every element keeps the body's monospace font and base size; `h1` is bold + uppercase + wide-tracked, `h2`-`h6` are bold, inline code is accent-coloured, code blocks use the titlebar background, and blockquotes/tables/hr use the dim border colour. The terminal chrome has a titlebar you can drag to move the window and a bottom-right corner for resizing.
 
 ## Routing
 

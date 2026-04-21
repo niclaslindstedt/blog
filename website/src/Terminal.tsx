@@ -12,6 +12,26 @@ const MIN_WIDTH = 320;
 const MIN_HEIGHT = 220;
 const DEFAULT_WIDTH = 820;
 const DEFAULT_HEIGHT = 560;
+const VIEWPORT_MARGIN = 12;
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n));
+}
+
+function initialSize(): { width: number; height: number } {
+  if (typeof window === "undefined") return { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT };
+  return {
+    width: Math.min(DEFAULT_WIDTH, window.innerWidth - VIEWPORT_MARGIN * 2),
+    height: Math.min(DEFAULT_HEIGHT, window.innerHeight - VIEWPORT_MARGIN * 2),
+  };
+}
+
+function initialPos(size: { width: number; height: number }): { x: number; y: number } {
+  if (typeof window === "undefined") return { x: VIEWPORT_MARGIN, y: VIEWPORT_MARGIN };
+  const x = Math.max(VIEWPORT_MARGIN, (window.innerWidth - size.width) / 2);
+  const y = Math.max(VIEWPORT_MARGIN, Math.min(64, (window.innerHeight - size.height) / 2));
+  return { x, y };
+}
 
 export function Terminal({
   title = "niclas@blog ~ /posts",
@@ -22,7 +42,9 @@ export function Terminal({
   lines: LineData[];
   idle: boolean;
 }) {
-  const [size, setSize] = useState({ width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT });
+  const [size, setSize] = useState(() => initialSize());
+  const [pos, setPos] = useState(() => initialPos(initialSize()));
+  const [dragging, setDragging] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,18 +52,40 @@ export function Terminal({
     if (el) el.scrollTop = el.scrollHeight;
   }, [lines]);
 
+  // Re-clamp when viewport shrinks so the window can't end up off-screen.
+  useEffect(() => {
+    const onResize = () => {
+      setSize((s) => {
+        const nextW = Math.min(s.width, window.innerWidth - VIEWPORT_MARGIN);
+        const nextH = Math.min(s.height, window.innerHeight - VIEWPORT_MARGIN);
+        return { width: Math.max(MIN_WIDTH, nextW), height: Math.max(MIN_HEIGHT, nextH) };
+      });
+      setPos((p) => ({
+        x: clamp(p.x, 0, Math.max(0, window.innerWidth - MIN_WIDTH)),
+        y: clamp(p.y, 0, Math.max(0, window.innerHeight - MIN_HEIGHT)),
+      }));
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   const onResizeStart = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
       e.preventDefault();
+      e.stopPropagation();
       const startX = e.clientX;
       const startY = e.clientY;
       const startW = size.width;
       const startH = size.height;
+      const originX = pos.x;
+      const originY = pos.y;
 
       const onMove = (ev: PointerEvent) => {
+        const maxW = Math.max(MIN_WIDTH, window.innerWidth - originX);
+        const maxH = Math.max(MIN_HEIGHT, window.innerHeight - originY);
         setSize({
-          width: Math.max(MIN_WIDTH, startW + (ev.clientX - startX)),
-          height: Math.max(MIN_HEIGHT, startH + (ev.clientY - startY)),
+          width: clamp(startW + (ev.clientX - startX), MIN_WIDTH, maxW),
+          height: clamp(startH + (ev.clientY - startY), MIN_HEIGHT, maxH),
         });
       };
       const onUp = () => {
@@ -51,21 +95,57 @@ export function Terminal({
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
     },
-    [size.width, size.height],
+    [size.width, size.height, pos.x, pos.y],
+  );
+
+  const onDragStart = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
+      e.preventDefault();
+      setDragging(true);
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const originX = pos.x;
+      const originY = pos.y;
+      const w = size.width;
+      const h = size.height;
+
+      const onMove = (ev: PointerEvent) => {
+        const maxX = Math.max(0, window.innerWidth - w);
+        const maxY = Math.max(0, window.innerHeight - h);
+        setPos({
+          x: clamp(originX + (ev.clientX - startX), 0, maxX),
+          y: clamp(originY + (ev.clientY - startY), 0, maxY),
+        });
+      };
+      const onUp = () => {
+        setDragging(false);
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    },
+    [pos.x, pos.y, size.width, size.height],
   );
 
   return (
     <div
-      className="relative flex flex-col overflow-hidden rounded-lg border border-term-border bg-term-bg shadow-2xl"
+      className="absolute flex flex-col overflow-hidden rounded-lg border border-term-border bg-term-bg shadow-2xl"
       style={{
+        left: pos.x,
+        top: pos.y,
         width: size.width,
         height: size.height,
-        maxWidth: "calc(100vw - 3rem)",
-        maxHeight: "calc(100vh - 4rem)",
+        userSelect: dragging ? "none" : undefined,
       }}
     >
-      <div className="flex select-none items-center gap-3 border-b border-term-border bg-term-titlebar px-3 py-2">
-        <div className="flex gap-1.5">
+      <div
+        className={`flex select-none items-center gap-3 border-b border-term-border bg-term-titlebar px-3 py-2 ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
+        onPointerDown={onDragStart}
+        style={{ touchAction: "none" }}
+      >
+        <div className="flex gap-1.5" data-no-drag>
           <span className="h-3 w-3 rounded-full bg-red" />
           <span className="h-3 w-3 rounded-full bg-yellow" />
           <span className="h-3 w-3 rounded-full bg-green" />
@@ -92,6 +172,7 @@ export function Terminal({
         className="resize-handle-grip absolute right-0 bottom-0 h-4 w-4 cursor-nwse-resize text-dim hover:text-accent"
         style={{ touchAction: "none" }}
         onPointerDown={onResizeStart}
+        data-no-drag
         role="separator"
         aria-label="Resize terminal"
       />

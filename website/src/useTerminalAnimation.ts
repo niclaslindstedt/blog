@@ -12,6 +12,7 @@ interface Active {
   full: string;
   shown: string;
   color?: LineColor;
+  markdown?: boolean;
 }
 
 export interface UseTerminalAnimation {
@@ -58,7 +59,12 @@ export function useTerminalAnimation(): UseTerminalAnimation {
       const current = activeRef.current;
       if (current) {
         if (current.shown.length >= current.full.length) {
-          commit({ kind: current.kind, text: current.full, color: current.color });
+          commit({
+            kind: current.kind,
+            text: current.full,
+            color: current.color,
+            markdown: current.markdown,
+          });
           clearActive();
           schedule(BETWEEN_STEP_MS);
           return;
@@ -87,11 +93,22 @@ export function useTerminalAnimation(): UseTerminalAnimation {
           schedule(COMMAND_MS_PER_CHAR);
           return;
         case "type":
-          startActive({ kind: "output", full: next.text, shown: "", color: next.color });
+          startActive({
+            kind: "output",
+            full: next.text,
+            shown: "",
+            color: next.color,
+            markdown: next.markdown,
+          });
           schedule(OUTPUT_MS_PER_TICK);
           return;
         case "print":
-          commit({ kind: "output", text: next.text, color: next.color });
+          commit({
+            kind: "output",
+            text: next.text,
+            color: next.color,
+            markdown: next.markdown,
+          });
           schedule(BETWEEN_STEP_MS);
           return;
         case "blank":
@@ -118,7 +135,16 @@ export function useTerminalAnimation(): UseTerminalAnimation {
   }, []);
 
   const lines: LineData[] = active
-    ? [...committed, { kind: active.kind, text: active.shown, color: active.color, active: true } as LineData]
+    ? [
+        ...committed,
+        {
+          kind: active.kind,
+          text: active.shown,
+          color: active.color,
+          markdown: active.markdown,
+          active: true,
+        } as LineData,
+      ]
     : committed;
 
   return { lines, enqueue, idle };

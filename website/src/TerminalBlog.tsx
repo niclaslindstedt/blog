@@ -75,7 +75,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     const tail = tailBlock(raw, HEAD_LINES + 1);
     enqueue([
       { kind: "type-command", text: `cat posts/${slug}.md | tail -n +${HEAD_LINES + 1}` },
-      { kind: "type", text: tail },
+      { kind: "type", text: tail, markdown: true },
       { kind: "blank" },
     ]);
   };

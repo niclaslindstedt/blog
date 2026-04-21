@@ -7,7 +7,7 @@ const posts = postsData as Post[];
 
 export default function App() {
   return (
-    <main className="flex min-h-screen items-start justify-center px-6 py-12">
+    <main className="relative min-h-screen w-screen overflow-hidden">
       <Routes>
         <Route path="/" element={<TerminalBlog posts={posts} />} />
         <Route path="/posts/:slug" element={<TerminalBlog posts={posts} />} />
