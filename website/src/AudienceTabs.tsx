@@ -1,4 +1,7 @@
 import { AUDIENCES, type Audience } from "./types.ts";
+import { Tabs, type TabItem } from "./Tabs.tsx";
+
+const TAB_ITEMS: readonly TabItem<Audience>[] = AUDIENCES.map((a) => ({ id: a, label: a }));
 
 export function AudienceTabs({
   audience,
@@ -7,35 +10,25 @@ export function AudienceTabs({
   audience: Audience;
   onSwitch: (next: Audience) => void;
 }) {
+  // "Close" in a fixed two-audience model means focusing the other view —
+  // matches iTerm2's close-current → next-tab-takes-focus semantics.
+  const handleClose = (id: Audience) => {
+    const other = AUDIENCES.find((a) => a !== id);
+    if (other) onSwitch(other);
+  };
+
+  // Wrapper carries data-no-drag so the Terminal titlebar drag handler
+  // ignores clicks into the tab row. The generic Tabs component stays
+  // unaware of the surrounding drag behavior.
   return (
-    <div
-      role="tablist"
-      aria-label="Audience"
-      data-no-drag
-      className="flex bg-term-titlebar font-ui text-[13px]"
-    >
-      {AUDIENCES.map((a, i) => {
-        const active = a === audience;
-        return (
-          <button
-            key={a}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            onClick={() => onSwitch(a)}
-            className={[
-              "cursor-pointer select-none border-b px-4 py-1.5 tracking-wide",
-              i > 0 ? "border-l border-l-term-border" : "",
-              active
-                ? "border-b-term-bg bg-term-bg text-fg-bright"
-                : "border-b-term-border bg-term-titlebar text-dim hover:text-fg-bright",
-            ].join(" ")}
-          >
-            {a}
-          </button>
-        );
-      })}
-      <div className="flex-1 border-b border-term-border" aria-hidden="true" />
+    <div data-no-drag>
+      <Tabs
+        tabs={TAB_ITEMS}
+        active={audience}
+        onSelect={onSwitch}
+        onClose={handleClose}
+        ariaLabel="Audience"
+      />
     </div>
   );
 }
