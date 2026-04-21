@@ -1,5 +1,37 @@
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { parseGithubFileUrl } from "./github.ts";
+import { useFileViewer } from "./FileViewerContext.tsx";
+
+function AnchorOverride({ href, children }: { href?: string; children?: React.ReactNode }) {
+  const open = useFileViewer();
+  const parsed = parseGithubFileUrl(href);
+  if (parsed) {
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          open(parsed);
+        }}
+        className="cursor-pointer bg-transparent p-0 font-[inherit] text-accent underline decoration-dotted hover:text-fg-bright focus-visible:text-fg-bright focus-visible:outline-none"
+        title={`vi ${parsed.owner}/${parsed.repo}:${parsed.path}`}
+      >
+        {children}
+      </button>
+    );
+  }
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-link underline decoration-dotted hover:text-accent"
+    >
+      {children}
+    </a>
+  );
+}
 
 const components: Components = {
   h1: ({ children }) => (
@@ -18,16 +50,7 @@ const components: Components = {
   ul: ({ children }) => <ul className="my-1 ml-5 list-disc">{children}</ul>,
   ol: ({ children }) => <ol className="my-1 ml-5 list-decimal">{children}</ol>,
   li: ({ children }) => <li className="mb-0.5">{children}</li>,
-  a: ({ href, children }) => (
-    <a
-      href={href}
-      className="text-link underline decoration-dotted hover:text-accent"
-      target="_blank"
-      rel="noreferrer"
-    >
-      {children}
-    </a>
-  ),
+  a: AnchorOverride,
   code: ({ children, className }) => (
     <code className={`text-meta ${className ?? ""}`}>{children}</code>
   ),

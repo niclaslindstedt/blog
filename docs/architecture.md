@@ -47,6 +47,10 @@ The extractor owns the boundary between raw markdown and the frontend. It valida
 
 The React app is statically exported via Vite — no server runtime. The landing page is a single interactive terminal window: on mount it auto-runs `$ ls posts/`, each filename is clickable, clicking runs `cat … | head -n 10` (instant raw output), and a `[ show more ]` action runs `cat … | tail -n +11` with a character-by-character typing animation. The tail output is rendered through `react-markdown` + `remark-gfm` with terminal-styled overrides: every element keeps the body's monospace font and base size; `h1` is bold + uppercase + wide-tracked, `h2`-`h6` are bold, inline code is accent-coloured, code blocks use the titlebar background, and blockquotes/tables/hr use the dim border colour. The terminal chrome has a titlebar you can drag to move the window and a bottom-right corner for resizing.
 
+## GitHub file viewer
+
+Markdown links whose `href` matches `https://github.com/<owner>/<repo>/blob/<ref>/<path>` are intercepted: clicking opens a full-viewport "vi session" overlay that fetches the file from `raw.githubusercontent.com` and renders it with syntax highlighting (`prism-react-renderer`). Line numbers in a gutter, vim-style `~` tildes past EOF, status line at the bottom, `[ :q ]` button in the top-right. Close with `Esc`, `q`, the button, or by clicking the backdrop. Non-file GitHub links (repo roots, tree paths) fall through to regular external links — extending the viewer to directory browsing would require GitHub's authenticated contents API and is out of scope for now.
+
 ## Routing
 
 `react-router-dom`'s `BrowserRouter` (basename = Vite's `BASE_URL`) exposes two routes:
