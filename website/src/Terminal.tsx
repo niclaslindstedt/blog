@@ -13,13 +13,26 @@ const MIN_HEIGHT = 220;
 const DEFAULT_WIDTH = 820;
 const DEFAULT_HEIGHT = 560;
 const VIEWPORT_MARGIN = 12;
+const MOBILE_BREAKPOINT = 640;
+const MOBILE_MARGIN = 6;
 
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
 
+function isMobileViewport(): boolean {
+  return typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT;
+}
+
 function initialSize(): { width: number; height: number } {
   if (typeof window === "undefined") return { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT };
+  if (isMobileViewport()) {
+    // Mobile: near-fullscreen, leaving just enough margin to see the bezel.
+    return {
+      width: Math.max(MIN_WIDTH, window.innerWidth - MOBILE_MARGIN * 2),
+      height: Math.max(MIN_HEIGHT, window.innerHeight - MOBILE_MARGIN * 2),
+    };
+  }
   return {
     width: Math.min(DEFAULT_WIDTH, window.innerWidth - VIEWPORT_MARGIN * 2),
     height: Math.min(DEFAULT_HEIGHT, window.innerHeight - VIEWPORT_MARGIN * 2),
@@ -28,6 +41,9 @@ function initialSize(): { width: number; height: number } {
 
 function initialPos(size: { width: number; height: number }): { x: number; y: number } {
   if (typeof window === "undefined") return { x: VIEWPORT_MARGIN, y: VIEWPORT_MARGIN };
+  if (isMobileViewport()) {
+    return { x: MOBILE_MARGIN, y: MOBILE_MARGIN };
+  }
   const x = Math.max(VIEWPORT_MARGIN, (window.innerWidth - size.width) / 2);
   const y = Math.max(VIEWPORT_MARGIN, Math.min(64, (window.innerHeight - size.height) / 2));
   return { x, y };
@@ -155,7 +171,7 @@ export function Terminal({
         <div className="w-14" aria-hidden="true" />
       </div>
 
-      <div ref={bodyRef} className="flex-1 overflow-y-auto px-4 pt-3 pb-4 text-fg">
+      <div ref={bodyRef} className="flex-1 overflow-auto px-3 pt-2 pb-4 text-fg sm:px-4 sm:pt-3">
         {lines.map((l, i) => (
           <TerminalLine key={i} line={l} />
         ))}
@@ -170,7 +186,7 @@ export function Terminal({
       </div>
 
       <div
-        className="resize-handle-grip absolute right-0 bottom-0 h-4 w-4 cursor-nwse-resize text-dim hover:text-accent"
+        className="resize-handle-grip absolute right-0 bottom-0 hidden h-4 w-4 cursor-nwse-resize text-dim hover:text-accent sm:block"
         style={{ touchAction: "none" }}
         onPointerDown={onResizeStart}
         data-no-drag

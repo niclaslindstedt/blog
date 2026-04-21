@@ -33,8 +33,15 @@ body {
   font-family:
     "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono",
     monospace;
-  font-size: 13.5px;
+  /* Mobile default — bumped up for legibility and to avoid iOS focus-zoom. */
+  font-size: 15.5px;
   line-height: 1.55;
+}
+
+@media (min-width: 640px) {
+  body {
+    font-size: 13.5px;
+  }
 }
 
 @keyframes blink-cursor {
