@@ -7,6 +7,17 @@ description: "Remove posts/<slug>.md and clean up any internal cross-links that 
 
 Remove `posts/<slug>.md` and resolve any cross-links pointing at the slug in other posts or in `docs/`.
 
+## Read this first
+
+- **Style and voice:** [`../write-post/STYLE_GUIDE.md`](../write-post/STYLE_GUIDE.md) — if cleaning up cross-links requires rewriting a sentence in another post, match the tone rules there. Don't pad the surrounding prose.
+
+## Division of labour
+
+Same rule as the other post skills: the user decides; the agent executes.
+
+- Do not delete a post without explicit confirmation from the user.
+- When rewriting a sentence that used to link to the deleted slug, change as little as possible — ideally just strip the link or point it at a surviving related post. Don't rewrite paragraphs for style while you're in there.
+
 ## Inputs
 
 | Input         | Required | Notes                                                               |
@@ -38,7 +49,7 @@ Remove `posts/<slug>.md` and resolve any cross-links pointing at the slug in oth
 - [ ] Target file identified
 - [ ] User confirmed deletion explicitly
 - [ ] Cross-links searched in `posts/` and `docs/`
-- [ ] Broken references resolved
+- [ ] Broken references resolved (minimal rewrites, per `STYLE_GUIDE.md`)
 - [ ] Post file removed
 
 ## Verification

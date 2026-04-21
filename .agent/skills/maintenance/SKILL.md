@@ -19,12 +19,13 @@ Do **not** use this skill for a targeted fix — if you know exactly which artif
 
 The registry is the single source of truth for which sync skills exist in this repo. Every `update-*` directory under `.agent/skills/` must appear here exactly once. New projects start with the entries below; add rows whenever you create a new sync skill.
 
-| Skill            | Fixes                                                                                                      | Spec sections             | Run order                                                       |
-| ---------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------- | --------------------------------------------------------------- |
-| `sync-oss-spec`  | Repo contents vs. the latest `OSS_SPEC.md` fetched from GitHub (standalone — no external validator binary) | all structural §§ + §21.5 | 1 — run first so every downstream skill reads the freshest spec |
-| `update-docs`    | `docs/*.md` vs. source of truth                                                                            | §11.1                     | 2                                                               |
-| `update-readme`  | `README.md` vs. current public surface                                                                     | §3                        | 3                                                               |
-| `update-prompts` | `prompts/**` vs. code and embedded sources                                                                 | §13.5                     | 4                                                               |
+| Skill                  | Fixes                                                                                                              | Spec sections             | Run order                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------- | --------------------------------------------------------------- |
+| `sync-oss-spec`        | Repo contents vs. the latest `OSS_SPEC.md` fetched from GitHub (standalone — no external validator binary)         | all structural §§ + §21.5 | 1 — run first so every downstream skill reads the freshest spec |
+| `update-docs`          | `docs/*.md` vs. source of truth                                                                                    | §11.1                     | 2                                                               |
+| `update-readme`        | `README.md` vs. current public surface                                                                             | §3                        | 3                                                               |
+| `update-prompts`       | `prompts/**` vs. code and embedded sources                                                                         | §13.5                     | 4                                                               |
+| `update-project-index` | `.agent/project-index/INDEX.md` vs. niclaslindstedt's public GitHub repos; project-name links inside `posts/*.md`  | §11.1 + §21.5             | 5 — runs last; other skills may rewrite files it then relinkifies |
 
 Run order matters:
 

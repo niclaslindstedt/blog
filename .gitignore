@@ -34,3 +34,6 @@ dist/
 # Claude Code
 .claude/worktrees/
 .claude/settings.local.json
+
+# Project index scratch dir (cloned repos for update-project-index)
+.cache/project-index/

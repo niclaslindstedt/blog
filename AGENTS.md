@@ -96,14 +96,15 @@ This project is a small personal blog, not a shipped library. The following `OSS
 
 Per §21 of `OSS_SPEC.md`, this repo ships agent skills for keeping drift-prone artifacts in sync with their sources of truth. Skills live under `.agent/skills/<name>/` and are also accessible via the `.claude/skills` symlink.
 
-| Skill            | When to run                                                                                                                |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `maintenance`    | When several artifacts have likely drifted at once — umbrella skill that runs every `update-*` skill in the correct order. |
-| `update-docs`    | After any change to the post schema, pipeline, or configuration keys.                                                      |
-| `update-readme`  | After any change that alters user-visible behavior, commands, or install instructions.                                     |
-| `update-prompts` | After any change to an LLM prompt's source of truth (tone guidelines, frontmatter schema).                                 |
-| `write-post`     | Draft a new blog post from a topic description.                                                                            |
-| `update-post`    | Revise an existing post in-place.                                                                                          |
-| `delete-post`    | Remove a post and clean up cross-links.                                                                                    |
+| Skill                  | When to run                                                                                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `maintenance`          | When several artifacts have likely drifted at once — umbrella skill that runs every `update-*` skill in the correct order.                      |
+| `update-docs`          | After any change to the post schema, pipeline, or configuration keys.                                                                            |
+| `update-readme`        | After any change that alters user-visible behavior, commands, or install instructions.                                                           |
+| `update-prompts`       | After any change to an LLM prompt's source of truth (tone guidelines, frontmatter schema).                                                       |
+| `update-project-index` | After publishing, renaming, or archiving any public repo under `github.com/niclaslindstedt`; also when a new post mentions a project not indexed. |
+| `write-post`           | Draft a new blog post from a topic description. Reads `.agent/skills/write-post/STYLE_GUIDE.md` and `.agent/project-index/INDEX.md` for context.  |
+| `update-post`          | Revise an existing post in-place. Same style guide + project index inputs as `write-post`.                                                       |
+| `delete-post`          | Remove a post and clean up cross-links.                                                                                                          |
 
 Each skill has a `SKILL.md` (the playbook) and a `.last-updated` file (the baseline commit hash). Run a skill by loading its `SKILL.md` and following the discovery process and update checklist. The skill rewrites `.last-updated` at the end of a successful run, and improves itself in place when it discovers new mapping entries. The `maintenance` skill owns a **Registry** table listing every `update-*` skill — add a row whenever you create a new sync skill.
