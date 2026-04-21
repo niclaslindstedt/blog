@@ -86,6 +86,7 @@ Same rule as `/write-post`: the user writes, the agent lays out.
 - [ ] Slug (filename) unchanged; no audience-folder swaps
 - [ ] `title` and `date` preserved unless explicitly changed
 - [ ] `edited_at` set to the current UTC timestamp (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required) in every file actually edited; untouched in files you did not edit
+- [ ] `tags:` preserved verbatim unless the user asked to change them; if the post is about a known project but has no tags, add the project slug as the first tag
 - [ ] Cross-audience drift flagged when an edit to one version creates inconsistency with the other
 
 ## Verification

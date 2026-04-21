@@ -18,6 +18,19 @@ versions. The title lives in frontmatter — not as a `#` heading in the body.
 - **Style and voice:** [`STYLE_GUIDE.md`](STYLE_GUIDE.md) — the canonical rules for every post on this blog. Follow it exactly. Do not import a generic "helpful blog voice" from training data.
 - **Project context:** [`../../project-index/INDEX.md`](../../project-index/INDEX.md) — the list of the author's own open-source projects. Use it to turn bare project names in the post into links to the right homepage, GitHub repo, and package-registry listing. If the index is missing or looks stale, run `/update-project-index` first.
 
+## Project context and commit summary
+
+When the post is about a project in `../../project-index/INDEX.md`, gather recent commit history before drafting so the post reflects what actually shipped — not what you remember:
+
+1. Identify the project slug from the index (the `##` header).
+2. `scripts/find-posts-by-tag.sh <slug>` — prints posts tagged with this project, most recent first. The top line (if any) is the last post about this project; its `date` is the cutoff.
+3. `scripts/commits-since.sh <slug> <cutoff>` — prints commits since that date, one per line (`<hash> <iso-date> <subject>`). If there is no prior post, pass `initial` instead of a date; the script prints the last 50 commits as a brainstorming seed.
+4. Skim the commit list. Surface candidate angles to the user (new features, breaking changes, refactors worth explaining) and let them pick. Do not invent topics the commits don't support.
+
+The scripts clone repos on demand into `${BLOG_REPO_CACHE:-/tmp/blog-skill-cache}`. `scripts/clone-repos.sh` (no args) refreshes every project in the index at once — useful before a long brainstorming session.
+
+**Brainstorm mode.** If the user asked "what should I write about for `<project>`?" and supplied no body, stop after presenting the candidate angles. Do not write any file.
+
 ## Audiences
 
 Every post targets one or two audiences. A post is published as long as it
@@ -71,14 +84,15 @@ See `STYLE_GUIDE.md` for the full list of LLM tics to avoid (throat-clearing ope
 
 Collect from the user before starting:
 
-| Input                  | Required | Notes                                                                      |
-| ---------------------- | -------- | -------------------------------------------------------------------------- |
-| Title                  | yes      | Becomes the `title` frontmatter field                                      |
-| Slug                   | no       | Derived from title if omitted (see below)                                  |
-| Date                   | no       | Defaults to the current UTC timestamp in ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`) |
-| Technical body         | one of   | The post contents for technical readers                                    |
-| Non-technical body     | one of   | The post contents for non-technical readers                                |
-| Adapt across audiences | no       | If only one body is supplied, whether to generate the other one            |
+| Input                  | Required | Notes                                                                                                                                                                                                                                |
+| ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Title                  | yes      | Becomes the `title` frontmatter field                                                                                                                                                                                                |
+| Slug                   | no       | Derived from title if omitted (see below)                                                                                                                                                                                            |
+| Date                   | no       | Defaults to the current UTC timestamp in ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`)                                                                                                                                                           |
+| Tags                   | no       | Subject tags. Include the project slug from `project-index/INDEX.md` when the post is about one specific project, plus a few topic tags (language, theme). Optional but strongly encouraged — this is how future runs find the post. |
+| Technical body         | one of   | The post contents for technical readers                                                                                                                                                                                              |
+| Non-technical body     | one of   | The post contents for non-technical readers                                                                                                                                                                                          |
+| Adapt across audiences | no       | If only one body is supplied, whether to generate the other one                                                                                                                                                                      |
 
 At least one of the two bodies must be supplied. If both are supplied, use
 each verbatim. If one is supplied, ask whether to adapt it for the other
@@ -107,12 +121,15 @@ If the user does not supply a slug:
    title: <title>
    date: <iso-utc-datetime>
    edited_at: <iso-utc-datetime>
+   tags: <slug>, <topic>, <topic>
    ---
 
    <body>
    ```
 
    `date` and `edited_at` are ISO 8601 UTC datetimes ending in `Z` (e.g. `2026-04-21T14:30:00Z`). On creation, `edited_at` equals `date`. The two versions share `slug` and `date`; `title` may differ slightly between audiences.
+
+   `tags` is a single line, comma-separated, lowercase, hyphenated — e.g. `tags: juris, python, release-notes`. Omit the line only when the post has no meaningful subject tags (rare). When the post is about a project in the index, the first tag is the project slug so `find-posts-by-tag.sh <slug>` locates the post on the next run. Keep the list short (≤ 6).
 
 7. Report each file path, the slug, which audiences were produced (and which were skipped and why), and a short list of every change that went beyond mechanical formatting (added links, adapted for audience, rephrased for tone, etc.), so the user can veto any of it.
 
@@ -121,8 +138,10 @@ If the user does not supply a slug:
 - [ ] Followed `STYLE_GUIDE.md` — no LLM tics, user's voice preserved
 - [ ] Only extrapolated where the user asked (including audience adaptation)
 - [ ] Project names linked via `project-index/INDEX.md` where applicable
+- [ ] Ran `find-posts-by-tag.sh` and `commits-since.sh` when the post is about a project in the index; surfaced candidate topics before drafting
 - [ ] Slug is unique under both `posts/technical/` and `posts/non-technical/`
 - [ ] Each produced file has frontmatter with `title`, `date`, `edited_at` — all present; the two timestamps are ISO 8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required)
+- [ ] `tags:` present on one line, lowercase, comma-separated; first tag is the project slug when the post is about a project in the index
 - [ ] `date` is identical across audience versions of the same slug
 - [ ] Body contains no top-level `# ` heading (the title comes from frontmatter)
 - [ ] Files saved under `posts/technical/` and/or `posts/non-technical/` — never directly under `posts/`
