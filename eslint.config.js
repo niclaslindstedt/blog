@@ -9,6 +9,7 @@ export default tseslint.config(
       "**/node_modules/**",
       "**/dist/**",
       "website/src/generated/**",
+      ".cache/**",
       ".claude/worktrees/**",
       "**/package-lock.json",
     ],

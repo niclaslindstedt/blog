@@ -25,7 +25,8 @@ The registry is the single source of truth for which sync skills exist in this r
 | `update-docs`          | `docs/*.md` vs. source of truth                                                                                   | §11.1                     | 2                                                                 |
 | `update-readme`        | `README.md` vs. current public surface                                                                            | §3                        | 3                                                                 |
 | `update-prompts`       | `prompts/**` vs. code and embedded sources                                                                        | §13.5                     | 4                                                                 |
-| `update-project-index` | `.agent/project-index/INDEX.md` vs. niclaslindstedt's public GitHub repos; project-name links inside `posts/*.md` | §11.1 + §21.5             | 5 — runs last; other skills may rewrite files it then relinkifies |
+| `update-website`       | `website/` source-derived content vs. `README.md`, `docs/`, `OSS_SPEC.md`                                         | §11.2                     | 5 — runs after `update-readme` / `update-docs` so it sees them    |
+| `update-project-index` | `.agent/project-index/INDEX.md` vs. niclaslindstedt's public GitHub repos; project-name links inside `posts/*.md` | §11.1 + §21.5             | 6 — runs last; other skills may rewrite files it then relinkifies |
 
 Run order matters:
 
