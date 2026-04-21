@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import type { LineData } from "./terminalTypes.ts";
@@ -13,26 +14,38 @@ const MIN_HEIGHT = 220;
 const DEFAULT_WIDTH = 820;
 const DEFAULT_HEIGHT = 560;
 const VIEWPORT_MARGIN = 12;
-const MOBILE_BREAKPOINT = 640;
-const MOBILE_MARGIN = 6;
+const MOBILE_BREAKPOINT = 900;
 
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
 
-function isMobileViewport(): boolean {
-  return typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT;
+function detectSmall(): boolean {
+  if (typeof window === "undefined") return false;
+  if (window.innerWidth < MOBILE_BREAKPOINT) return true;
+  const coarse = window.matchMedia?.("(pointer: coarse)");
+  return !!coarse?.matches;
+}
+
+function useSmallViewport(): boolean {
+  const [small, setSmall] = useState<boolean>(() => detectSmall());
+  useEffect(() => {
+    const update = () => setSmall(detectSmall());
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
+    const mq = window.matchMedia?.("(pointer: coarse)");
+    mq?.addEventListener?.("change", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+      mq?.removeEventListener?.("change", update);
+    };
+  }, []);
+  return small;
 }
 
 function initialSize(): { width: number; height: number } {
   if (typeof window === "undefined") return { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT };
-  if (isMobileViewport()) {
-    // Mobile: near-fullscreen, leaving just enough margin to see the bezel.
-    return {
-      width: Math.max(MIN_WIDTH, window.innerWidth - MOBILE_MARGIN * 2),
-      height: Math.max(MIN_HEIGHT, window.innerHeight - MOBILE_MARGIN * 2),
-    };
-  }
   return {
     width: Math.min(DEFAULT_WIDTH, window.innerWidth - VIEWPORT_MARGIN * 2),
     height: Math.min(DEFAULT_HEIGHT, window.innerHeight - VIEWPORT_MARGIN * 2),
@@ -41,9 +54,6 @@ function initialSize(): { width: number; height: number } {
 
 function initialPos(size: { width: number; height: number }): { x: number; y: number } {
   if (typeof window === "undefined") return { x: VIEWPORT_MARGIN, y: VIEWPORT_MARGIN };
-  if (isMobileViewport()) {
-    return { x: MOBILE_MARGIN, y: MOBILE_MARGIN };
-  }
   const x = Math.max(VIEWPORT_MARGIN, (window.innerWidth - size.width) / 2);
   const y = Math.max(VIEWPORT_MARGIN, Math.min(64, (window.innerHeight - size.height) / 2));
   return { x, y };
@@ -60,6 +70,7 @@ export function Terminal({
   idle: boolean;
   idlePrompt?: string;
 }) {
+  const small = useSmallViewport();
   const [size, setSize] = useState(() => initialSize());
   const [pos, setPos] = useState(() => initialPos(initialSize()));
   const [dragging, setDragging] = useState(false);
@@ -71,6 +82,7 @@ export function Terminal({
   }, [lines]);
 
   useEffect(() => {
+    if (small) return; // mobile fills the viewport via CSS; size/pos state is ignored.
     const onResize = () => {
       setSize((s) => {
         const nextW = Math.min(s.width, window.innerWidth - VIEWPORT_MARGIN);
@@ -84,10 +96,11 @@ export function Terminal({
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, []);
+  }, [small]);
 
   const onResizeStart = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
+      if (small) return;
       e.preventDefault();
       e.stopPropagation();
       const startX = e.clientX;
@@ -112,11 +125,12 @@ export function Terminal({
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
     },
-    [size.width, size.height, pos.x, pos.y],
+    [small, size.width, size.height, pos.x, pos.y],
   );
 
   const onDragStart = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
+      if (small) return;
       if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
       e.preventDefault();
       setDragging(true);
@@ -143,24 +157,34 @@ export function Terminal({
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
     },
-    [pos.x, pos.y, size.width, size.height],
+    [small, pos.x, pos.y, size.width, size.height],
   );
 
-  return (
-    <div
-      className="absolute flex flex-col overflow-hidden rounded-lg border border-term-border bg-term-bg shadow-2xl"
-      style={{
+  const wrapperClass = small
+    ? "fixed inset-0 flex flex-col overflow-hidden border-b border-term-border bg-term-bg"
+    : "absolute flex flex-col overflow-hidden rounded-lg border border-term-border bg-term-bg shadow-2xl";
+
+  const wrapperStyle: CSSProperties = small
+    ? {
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
+      }
+    : {
         left: pos.x,
         top: pos.y,
         width: size.width,
         height: size.height,
         userSelect: dragging ? "none" : undefined,
-      }}
-    >
+      };
+
+  return (
+    <div className={wrapperClass} style={wrapperStyle}>
       <div
-        className={`flex select-none items-center gap-3 border-b border-term-border bg-term-titlebar px-3 py-2 ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
-        onPointerDown={onDragStart}
-        style={{ touchAction: "none" }}
+        className={`flex select-none items-center gap-3 border-b border-term-border bg-term-titlebar px-3 py-2 ${small ? "" : dragging ? "cursor-grabbing" : "cursor-grab"}`}
+        onPointerDown={small ? undefined : onDragStart}
+        style={{ touchAction: small ? undefined : "none" }}
       >
         <div className="flex gap-1.5" data-no-drag>
           <span className="h-3 w-3 rounded-full bg-red" />
@@ -185,14 +209,16 @@ export function Terminal({
         )}
       </div>
 
-      <div
-        className="resize-handle-grip absolute right-0 bottom-0 hidden h-4 w-4 cursor-nwse-resize text-dim hover:text-accent sm:block"
-        style={{ touchAction: "none" }}
-        onPointerDown={onResizeStart}
-        data-no-drag
-        role="separator"
-        aria-label="Resize terminal"
-      />
+      {!small && (
+        <div
+          className="resize-handle-grip absolute right-0 bottom-0 h-4 w-4 cursor-nwse-resize text-dim hover:text-accent"
+          style={{ touchAction: "none" }}
+          onPointerDown={onResizeStart}
+          data-no-drag
+          role="separator"
+          aria-label="Resize terminal"
+        />
+      )}
     </div>
   );
 }
