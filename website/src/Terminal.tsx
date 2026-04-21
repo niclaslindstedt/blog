@@ -5,6 +5,7 @@ import {
   useState,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
 } from "react";
 import type { LineData } from "./terminalTypes.ts";
 import { TerminalLine } from "./TerminalLine.tsx";
@@ -75,12 +76,14 @@ export function Terminal({
   lines,
   idle,
   idlePrompt = "~/code/blog $",
+  tabs,
 }: {
   user?: string;
   title?: string;
   lines: LineData[];
   idle: boolean;
   idlePrompt?: string;
+  tabs?: ReactNode;
 }) {
   const computedTitle = title ?? `${user} — ${cwdFromLines(lines)}`;
   const small = useSmallViewport();
@@ -207,6 +210,8 @@ export function Terminal({
         <div className="flex-1 text-center text-xs tracking-wide text-dim">{computedTitle}</div>
         <div className="w-14" aria-hidden="true" />
       </div>
+
+      {tabs}
 
       <div ref={bodyRef} className="flex-1 overflow-auto px-3 pt-2 pb-4 text-fg sm:px-4 sm:pt-3">
         {lines.map((l, i) => (

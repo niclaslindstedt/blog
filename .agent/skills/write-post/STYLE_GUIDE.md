@@ -85,7 +85,7 @@ and flag it to the user — the index may be stale.
 
 ## Formatting conventions
 
-- Dates in frontmatter are ISO `YYYY-MM-DD`.
+- `date` and `edited_at` in frontmatter are ISO 8601 UTC datetimes (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required). Local-timezone or date-only values are rejected by the extractor.
 - One blank line between paragraphs and around fenced code blocks.
 - Lowercase filenames; slug is the filename stem.
 - Prefer `'` and `"` (straight quotes) — don't smart-quote.

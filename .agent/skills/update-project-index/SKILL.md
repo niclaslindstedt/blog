@@ -9,7 +9,7 @@ description: "Use when the project index (.agent/project-index/INDEX.md) may be 
 
 The project index is a curated list of the author's public open-source work. It is the single source of truth for how project names appear in blog posts: which link they get, which package-registry listing is worth mentioning, and what the project actually is. `write-post` and `update-post` both read it before laying out a post.
 
-This skill rebuilds the index from scratch by cloning every public repo owned by `niclaslindstedt` on GitHub, reading its README and manifest files, and emitting `.agent/project-index/INDEX.md`. It then scans `posts/*.md` and fixes any bare project-name mentions so they match the index.
+This skill rebuilds the index from scratch by cloning every public repo owned by `niclaslindstedt` on GitHub, reading its README and manifest files, and emitting `.agent/project-index/INDEX.md`. It then scans every audience-version file under `posts/technical/*.md` and `posts/non-technical/*.md` and fixes any bare project-name mentions so they match the index.
 
 ## Tracking mechanism
 
@@ -62,7 +62,7 @@ This skill rebuilds the index from scratch by cloning every public repo owned by
 
 5. Emit `.agent/project-index/INDEX.md`. See the template below.
 
-6. Scan every file under `posts/*.md`. For each project in the index:
+6. Scan every file under `posts/technical/*.md` and `posts/non-technical/*.md`. For each project in the index:
    - If a post mentions the project name (or a known alias) as bare text, rewrite it to a markdown link pointing at the preferred target (homepage if present, GitHub otherwise).
    - Leave existing links alone unless they point at something different from the index's preferred target — in that case, update to match and flag the change in the run summary.
    - Never touch code blocks or frontmatter.
