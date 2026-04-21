@@ -18,18 +18,42 @@ versions. The title lives in frontmatter — not as a `#` heading in the body.
 - **Style and voice:** [`STYLE_GUIDE.md`](STYLE_GUIDE.md) — the canonical rules for every post on this blog. Follow it exactly. Do not import a generic "helpful blog voice" from training data.
 - **Project context:** [`../../project-index/INDEX.md`](../../project-index/INDEX.md) — the list of the author's own open-source projects. Use it to turn bare project names in the post into links to the right homepage, GitHub repo, and package-registry listing. If the index is missing or looks stale, run `/update-project-index` first.
 
-## Project context and commit summary
+## Default mode: brainstorm
 
-When the post is about a project in `../../project-index/INDEX.md`, gather recent commit history before drafting so the post reflects what actually shipped — not what you remember:
+**The user writes the post. The agent types, edits, and researches.** Before writing any file, check whether the user has actually supplied prose to turn into a post.
+
+A **topic** is not a body. Requests like "write a post about X", "let's do something on Y", "draft a post covering Z" describe a subject — they do not supply the content. Treat them as an invitation to brainstorm, not a drafting order.
+
+When the user has not supplied body text, enter brainstorm mode:
+
+1. **Read the code.** If the post is about a project, read enough of it to brainstorm honestly:
+   - For this repo (`blog`), read files directly.
+   - For a project in `../../project-index/INDEX.md`, use the cloned checkout under `${BLOG_REPO_CACHE:-/tmp/blog-skill-cache}` (`scripts/clone-repos.sh` refreshes all of them; `scripts/commits-since.sh <slug> <cutoff>` shows recent commits — see "Commit history" below).
+   - For a topic that isn't a specific project, skip this step.
+2. **Surface candidate angles.** Offer 3–5 specific directions the post could take, each one grounded in something you actually read (a commit, a file, a design choice). Quote short snippets the user could riff on. Do not rank them — let the user pick.
+3. **Offer structure, not prose.** A proposed outline (section headings, bullet sketches) is fine. A full draft is not. If the user supplied a thin paragraph, suggest where it could be expanded and let the user expand it.
+4. **Stop.** Do not write any file. Wait for the user to supply body text or to explicitly say "just draft it from these notes".
+
+**Exit brainstorm mode only when:**
+
+- The user supplies body text for at least one audience, or
+- The user supplies detailed enough notes and explicitly asks you to draft from them ("just write it up"), or
+- The user has already written one audience version and asks you to adapt it for the other.
+
+Adapting the user's prose across audiences, fixing grammar, tightening phrasing the user wrote, restructuring sections the user ordered badly, adding links via the project index — all allowed. Producing original paragraphs the user did not write is not.
+
+When in doubt, ask one question instead of filling the gap.
+
+## Commit history for project posts
+
+When the post is about a project in `../../project-index/INDEX.md`, commit history is the strongest brainstorming seed — it shows what actually shipped, not what you remember:
 
 1. Identify the project slug from the index (the `##` header).
 2. `scripts/find-posts-by-tag.sh <slug>` — prints posts tagged with this project, most recent first. The top line (if any) is the last post about this project; its `date` is the cutoff.
 3. `scripts/commits-since.sh <slug> <cutoff>` — prints commits since that date, one per line (`<hash> <iso-date> <subject>`). If there is no prior post, pass `initial` instead of a date; the script prints the last 50 commits as a brainstorming seed.
-4. Skim the commit list. Surface candidate angles to the user (new features, breaking changes, refactors worth explaining) and let them pick. Do not invent topics the commits don't support.
+4. Skim the commit list. Surface candidate angles (new features, breaking changes, refactors worth explaining) as part of step 2 of brainstorm mode. Do not invent topics the commits don't support.
 
-The scripts clone repos on demand into `${BLOG_REPO_CACHE:-/tmp/blog-skill-cache}`. `scripts/clone-repos.sh` (no args) refreshes every project in the index at once — useful before a long brainstorming session.
-
-**Brainstorm mode.** If the user asked "what should I write about for `<project>`?" and supplied no body, stop after presenting the candidate angles. Do not write any file.
+The scripts clone repos on demand into `${BLOG_REPO_CACHE:-/tmp/blog-skill-cache}`. `scripts/clone-repos.sh` (no args) refreshes every project in the index at once.
 
 ## Audiences
 
@@ -70,19 +94,19 @@ versions.
 
 ## Division of labour
 
-The agent is a typist and editor, not a ghostwriter. Default behaviour:
+The agent is a typist, editor, and researcher — not a ghostwriter. See "Default mode: brainstorm" above for the gate that decides whether you are writing or brainstorming. Once the gate has been passed, this is the split:
 
 - **The user writes.** Use the words, structure, and opinions the user gave you.
-- **Only extrapolate on request.** If the user asked you to "expand this", "write a paragraph about X", or "draft it from these notes", go ahead. Otherwise, do not invent content, benchmark numbers, war stories, or opinions.
+- **Only extrapolate on explicit request.** "Expand this", "write a paragraph about X", "draft it from these notes" are explicit. A topic description ("a post about Y") is not. If in doubt, go back to brainstorm mode.
 - **Adapting for the other audience counts as extrapolation.** If the user supplied only one version and asked for the other ("and write it for non-technical readers too"), you may rewrite for that audience. Preserve the user's opinions and conclusions; only change the framing and vocabulary. If the user supplied only one version and did not ask for the other, confirm before producing it.
 - **When in doubt, ask one question** rather than filling the gap with plausible-sounding prose.
-- **Fix mechanics freely** — typos, frontmatter, slug, markdown structure, link formatting. That is the job.
+- **Fix mechanics freely** — typos, grammar, frontmatter, slug, markdown structure, link formatting, section order, redundant sentences. That is the job.
 
 See `STYLE_GUIDE.md` for the full list of LLM tics to avoid (throat-clearing openers, summary closers, "it's worth noting", hype adjectives, etc.).
 
 ## Inputs
 
-Collect from the user before starting:
+Collect from the user before starting. If the required fields are missing, the answer is brainstorm mode, not to fill in plausible-sounding defaults.
 
 | Input                  | Required | Notes                                                                                                                                                                                                                                |
 | ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -90,13 +114,15 @@ Collect from the user before starting:
 | Slug                   | no       | Derived from title if omitted (see below)                                                                                                                                                                                            |
 | Date                   | no       | Defaults to the current UTC timestamp in ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`)                                                                                                                                                           |
 | Tags                   | no       | Subject tags. Include the project slug from `project-index/INDEX.md` when the post is about one specific project, plus a few topic tags (language, theme). Optional but strongly encouraged — this is how future runs find the post. |
-| Technical body         | one of   | The post contents for technical readers                                                                                                                                                                                              |
-| Non-technical body     | one of   | The post contents for non-technical readers                                                                                                                                                                                          |
+| Technical body         | one of   | Actual prose for technical readers. A topic description does not count.                                                                                                                                                              |
+| Non-technical body     | one of   | Actual prose for non-technical readers. A topic description does not count.                                                                                                                                                          |
 | Adapt across audiences | no       | If only one body is supplied, whether to generate the other one                                                                                                                                                                      |
 
-At least one of the two bodies must be supplied. If both are supplied, use
-each verbatim. If one is supplied, ask whether to adapt it for the other
-audience (unless the user already said so).
+At least one of the two bodies must be supplied as prose — not as a topic,
+subject line, or request to "cover X". If both are supplied, use each
+verbatim (minus mechanical fixes). If one is supplied, ask whether to adapt
+it for the other audience (unless the user already said so). If neither is
+supplied, do not draft — brainstorm.
 
 ### Slug derivation
 
@@ -110,11 +136,12 @@ If the user does not supply a slug:
 ## Process
 
 1. Read `STYLE_GUIDE.md` and, if present, `../../project-index/INDEX.md`.
-2. Compute `slug` (from input or derivation) and `now` — the current UTC timestamp in ISO 8601 with a `Z` suffix. Get it with `date -u +%Y-%m-%dT%H:%M:%SZ` or equivalent; never use a local-timezone value.
-3. Refuse and stop if a file already exists at either `posts/technical/<slug>.md` or `posts/non-technical/<slug>.md` — ask the user to pick a different slug or use `/update-post`.
-4. Determine which audiences are being written (both, or just one the user asked for / adapted to).
-5. For each audience being produced, lay out the body: fix frontmatter, headings, fenced code blocks, and link any project names that appear in the index. For the non-technical adaptation, apply the guidance in "Writing the non-technical version" above.
-6. Write each produced file as:
+2. **Gate: is there a body?** Check what the user actually supplied. If there is no prose for either audience — only a topic, a subject, a "write about X" — enter brainstorm mode (see "Default mode: brainstorm" above), present candidate angles, and **stop**. Do not proceed past this step until the user either supplies body text or explicitly authorises drafting from notes.
+3. Compute `slug` (from input or derivation) and `now` — the current UTC timestamp in ISO 8601 with a `Z` suffix. Get it with `date -u +%Y-%m-%dT%H:%M:%SZ` or equivalent; never use a local-timezone value.
+4. Refuse and stop if a file already exists at either `posts/technical/<slug>.md` or `posts/non-technical/<slug>.md` — ask the user to pick a different slug or use `/update-post`.
+5. Determine which audiences are being written (both, or just one the user asked for / adapted to).
+6. For each audience being produced, lay out the body: fix frontmatter, headings, fenced code blocks, and link any project names that appear in the index. For the non-technical adaptation, apply the guidance in "Writing the non-technical version" above.
+7. Write each produced file as:
 
    ```markdown
    ---
@@ -131,10 +158,11 @@ If the user does not supply a slug:
 
    `tags` is a single line, comma-separated, lowercase, hyphenated — e.g. `tags: juris, python, release-notes`. Omit the line only when the post has no meaningful subject tags (rare). When the post is about a project in the index, the first tag is the project slug so `find-posts-by-tag.sh <slug>` locates the post on the next run. Keep the list short (≤ 6).
 
-7. Report each file path, the slug, which audiences were produced (and which were skipped and why), and a short list of every change that went beyond mechanical formatting (added links, adapted for audience, rephrased for tone, etc.), so the user can veto any of it.
+8. Report each file path, the slug, which audiences were produced (and which were skipped and why), and a short list of every change that went beyond mechanical formatting (added links, adapted for audience, rephrased for tone, etc.), so the user can veto any of it.
 
 ## Checklist
 
+- [ ] The user supplied body prose (or explicitly authorised drafting from notes). If not, brainstormed instead of writing files.
 - [ ] Followed `STYLE_GUIDE.md` — no LLM tics, user's voice preserved
 - [ ] Only extrapolated where the user asked (including audience adaptation)
 - [ ] Project names linked via `project-index/INDEX.md` where applicable
