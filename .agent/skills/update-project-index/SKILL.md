@@ -17,12 +17,12 @@ This skill rebuilds the index from scratch by cloning every public repo owned by
 
 ## Inputs
 
-| Input             | Required | Notes                                                                                                   |
-| ----------------- | -------- | ------------------------------------------------------------------------------------------------------- |
-| GitHub user       | no       | Defaults to `niclaslindstedt`. The repo is hard-pinned to this author; override only for a test run.    |
-| Archived repos    | no       | Skipped by default. Pass `--include-archived` if the user wants archived projects in the index.         |
-| Forks             | no       | Skipped by default. Forks are not the author's own work.                                                |
-| Scratch directory | no       | Defaults to `.cache/project-index/` (gitignored). Delete and re-clone each run to avoid stale mirrors.  |
+| Input             | Required | Notes                                                                                                  |
+| ----------------- | -------- | ------------------------------------------------------------------------------------------------------ |
+| GitHub user       | no       | Defaults to `niclaslindstedt`. The repo is hard-pinned to this author; override only for a test run.   |
+| Archived repos    | no       | Skipped by default. Pass `--include-archived` if the user wants archived projects in the index.        |
+| Forks             | no       | Skipped by default. Forks are not the author's own work.                                               |
+| Scratch directory | no       | Defaults to `.cache/project-index/` (gitignored). Delete and re-clone each run to avoid stale mirrors. |
 
 ## Discovery process
 
@@ -54,7 +54,6 @@ This skill rebuilds the index from scratch by cloning every public repo owned by
    ```
 
 4. For each cloned repo, extract:
-
    - **Summary** — the top of `README.md` (first paragraph after the title, stripped of badges). Keep it to one sentence, under ~200 characters. Rewrite in the blog's voice if the README's phrasing is too marketing-heavy; see `../write-post/STYLE_GUIDE.md` for tone rules.
    - **Homepage** — the repo's `homepage` field from the GitHub API; fall back to any `homepage` link in the README if the API field is empty.
    - **GitHub URL** — `https://github.com/niclaslindstedt/<name>`.
@@ -64,7 +63,6 @@ This skill rebuilds the index from scratch by cloning every public repo owned by
 5. Emit `.agent/project-index/INDEX.md`. See the template below.
 
 6. Scan every file under `posts/*.md`. For each project in the index:
-
    - If a post mentions the project name (or a known alias) as bare text, rewrite it to a markdown link pointing at the preferred target (homepage if present, GitHub otherwise).
    - Leave existing links alone unless they point at something different from the index's preferred target — in that case, update to match and flag the change in the run summary.
    - Never touch code blocks or frontmatter.
@@ -73,15 +71,15 @@ This skill rebuilds the index from scratch by cloning every public repo owned by
 
 ## Manifest-to-registry mapping
 
-| Manifest file                         | Language  | Registry link (if the manifest is publishable) |
-| ------------------------------------- | --------- | ---------------------------------------------- |
-| `Cargo.toml`                          | Rust      | `https://crates.io/crates/<name>`              |
-| `package.json` (public, not private)  | JS / TS   | `https://www.npmjs.com/package/<name>`         |
-| `pyproject.toml` / `setup.py`         | Python    | `https://pypi.org/project/<name>/`             |
-| `*.csproj` / `*.nuspec`               | .NET      | `https://www.nuget.org/packages/<name>`        |
-| `go.mod`                              | Go        | `https://pkg.go.dev/<module-path>`             |
-| `Gemfile` + `*.gemspec`               | Ruby      | `https://rubygems.org/gems/<name>`             |
-| `build.gradle` / `pom.xml` (library)  | JVM       | Maven Central: `https://central.sonatype.com/artifact/<group>/<name>` |
+| Manifest file                        | Language | Registry link (if the manifest is publishable)                        |
+| ------------------------------------ | -------- | --------------------------------------------------------------------- |
+| `Cargo.toml`                         | Rust     | `https://crates.io/crates/<name>`                                     |
+| `package.json` (public, not private) | JS / TS  | `https://www.npmjs.com/package/<name>`                                |
+| `pyproject.toml` / `setup.py`        | Python   | `https://pypi.org/project/<name>/`                                    |
+| `*.csproj` / `*.nuspec`              | .NET     | `https://www.nuget.org/packages/<name>`                               |
+| `go.mod`                             | Go       | `https://pkg.go.dev/<module-path>`                                    |
+| `Gemfile` + `*.gemspec`              | Ruby     | `https://rubygems.org/gems/<name>`                                    |
+| `build.gradle` / `pom.xml` (library) | JVM      | Maven Central: `https://central.sonatype.com/artifact/<group>/<name>` |
 
 Rules:
 
@@ -112,9 +110,9 @@ Regenerate with `/update-project-index`.
 > <one-sentence summary in the blog's voice>
 
 - GitHub: <https://github.com/niclaslindstedt/...>
-- Homepage: <https://...>  _(optional; omit the line if there isn't one)_
-- Package: <https://crates.io/crates/...>  _(optional; repeat per registry)_
-- Aliases: `alt-name`, `cli-name`  _(optional; omit if none)_
+- Homepage: <https://...> _(optional; omit the line if there isn't one)_
+- Package: <https://crates.io/crates/...> _(optional; repeat per registry)_
+- Aliases: `alt-name`, `cli-name` _(optional; omit if none)_
 - Language: Rust
 - Status: active | archived | wip
 
