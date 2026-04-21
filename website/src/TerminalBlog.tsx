@@ -194,7 +194,12 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
 
     const visible = postsForAudience(posts, audience);
     enqueue([
-      { kind: "type-command", text: `cd code/blog/${audience}`, prompt: HOME_PROMPT, wpm: BLOG_WPM },
+      {
+        kind: "type-command",
+        text: `cd code/blog/${audience}`,
+        prompt: HOME_PROMPT,
+        wpm: BLOG_WPM,
+      },
     ]);
     enqueueListing(audience, visible);
 

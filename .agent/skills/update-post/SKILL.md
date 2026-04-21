@@ -54,11 +54,11 @@ Same rule as `/write-post`: the user writes, the agent lays out.
 
 ## Inputs
 
-| Input             | Required | Notes                                                                                     |
-| ----------------- | -------- | ----------------------------------------------------------------------------------------- |
-| Slug or title     | yes      | Identifies the post to edit                                                               |
-| Audience          | no       | Which version(s) to edit; ask if not obvious from the request                             |
-| Requested changes | yes      | What to add, rewrite, or remove                                                           |
+| Input             | Required | Notes                                                         |
+| ----------------- | -------- | ------------------------------------------------------------- |
+| Slug or title     | yes      | Identifies the post to edit                                   |
+| Audience          | no       | Which version(s) to edit; ask if not obvious from the request |
+| Requested changes | yes      | What to add, rewrite, or remove                               |
 
 ## Process
 

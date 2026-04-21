@@ -24,10 +24,10 @@ Every post targets one or two audiences. A post is published as long as it
 has at least one version. The two versions share a slug and live under
 separate folders:
 
-| Audience         | Folder                 | Aimed at                                                          |
-| ---------------- | ---------------------- | ----------------------------------------------------------------- |
-| `technical`      | `posts/technical/`     | Developers — assume familiarity with the tools, jargon, tradeoffs |
-| `non-technical`  | `posts/non-technical/` | General readers — minimise jargon, explain the why over the how   |
+| Audience        | Folder                 | Aimed at                                                          |
+| --------------- | ---------------------- | ----------------------------------------------------------------- |
+| `technical`     | `posts/technical/`     | Developers — assume familiarity with the tools, jargon, tradeoffs |
+| `non-technical` | `posts/non-technical/` | General readers — minimise jargon, explain the why over the how   |
 
 Default: write **both** versions unless the user says otherwise. If the user
 explicitly asks for only one audience (or the topic is inherently one-sided,
@@ -71,14 +71,14 @@ See `STYLE_GUIDE.md` for the full list of LLM tics to avoid (throat-clearing ope
 
 Collect from the user before starting:
 
-| Input                  | Required | Notes                                                                              |
-| ---------------------- | -------- | ---------------------------------------------------------------------------------- |
-| Title                  | yes      | Becomes the `title` frontmatter field                                              |
-| Slug                   | no       | Derived from title if omitted (see below)                                          |
-| Date                   | no       | Defaults to the current UTC timestamp in ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`)         |
-| Technical body         | one of   | The post contents for technical readers                                            |
-| Non-technical body     | one of   | The post contents for non-technical readers                                        |
-| Adapt across audiences | no       | If only one body is supplied, whether to generate the other one                    |
+| Input                  | Required | Notes                                                                      |
+| ---------------------- | -------- | -------------------------------------------------------------------------- |
+| Title                  | yes      | Becomes the `title` frontmatter field                                      |
+| Slug                   | no       | Derived from title if omitted (see below)                                  |
+| Date                   | no       | Defaults to the current UTC timestamp in ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`) |
+| Technical body         | one of   | The post contents for technical readers                                    |
+| Non-technical body     | one of   | The post contents for non-technical readers                                |
+| Adapt across audiences | no       | If only one body is supplied, whether to generate the other one            |
 
 At least one of the two bodies must be supplied. If both are supplied, use
 each verbatim. If one is supplied, ask whether to adapt it for the other

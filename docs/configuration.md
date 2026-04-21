@@ -22,10 +22,10 @@ together in the UI via the audience tab bar. Files directly under `posts/`
 Each version file (in either audience folder) must have YAML frontmatter with
 exactly these fields:
 
-| Field       | Type            | Required | Description                                                              |
-| ----------- | --------------- | -------- | ------------------------------------------------------------------------ |
-| `title`     | string          | yes      | Display title shown in the list                                          |
-| `date`      | ISO 8601 UTC dt | yes      | Publication timestamp (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required)             |
+| Field       | Type            | Required | Description                                                                    |
+| ----------- | --------------- | -------- | ------------------------------------------------------------------------------ |
+| `title`     | string          | yes      | Display title shown in the list                                                |
+| `date`      | ISO 8601 UTC dt | yes      | Publication timestamp (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required)                   |
 | `edited_at` | ISO 8601 UTC dt | no       | Last-edit timestamp (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required); defaults to `date` |
 
 Timestamps must be ISO 8601 datetimes in UTC — i.e. end with `Z`. Local
