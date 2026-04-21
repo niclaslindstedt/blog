@@ -9,10 +9,10 @@ Remove `posts/<slug>.md` and resolve any cross-links pointing at the slug in oth
 
 ## Inputs
 
-| Input | Required | Notes |
-|-------|----------|-------|
-| Slug or title | yes | Identifies the post to delete |
-| Confirmation  | yes | Always confirm before deleting — this is irreversible without `git` |
+| Input         | Required | Notes                                                               |
+| ------------- | -------- | ------------------------------------------------------------------- |
+| Slug or title | yes      | Identifies the post to delete                                       |
+| Confirmation  | yes      | Always confirm before deleting — this is irreversible without `git` |
 
 ## Process
 

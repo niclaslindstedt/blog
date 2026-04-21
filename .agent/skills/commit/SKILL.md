@@ -44,14 +44,14 @@ type(scope): summary in imperative mood
 
 **Changelog-eligible types** (pick the right one — it determines what appears in the changelog):
 
-| Type | Changelog section | Version bump |
-|------|-------------------|--------------|
-| `feat` | Added | minor |
-| `fix` | Fixed | patch |
-| `perf` | Performance | patch |
-| `docs` | Documentation | none |
-| `test` | Tests | none |
-| `refactor`, `chore`, `ci`, `build`, `style` | *(not included)* | none |
+| Type                                        | Changelog section | Version bump |
+| ------------------------------------------- | ----------------- | ------------ |
+| `feat`                                      | Added             | minor        |
+| `fix`                                       | Fixed             | patch        |
+| `perf`                                      | Performance       | patch        |
+| `docs`                                      | Documentation     | none         |
+| `test`                                      | Tests             | none         |
+| `refactor`, `chore`, `ci`, `build`, `style` | _(not included)_  | none         |
 
 For breaking changes use `feat!:` or `fix!:`, or add a `BREAKING CHANGE:` footer → triggers a major version bump.
 

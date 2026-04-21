@@ -39,14 +39,14 @@ description: "Use when README.md may be stale. Discovers commits since the last 
 
 ## Mapping table
 
-| Changed files / scope | README section(s) to update |
-|---|---|
-| Public API surface | **Usage** / **Quick start** |
-| CLI flags or subcommands | **Usage** table |
-| Default configuration | **Quick start** |
-| Installation instructions / package name | **Install** |
-| New supported platform or language | **Supported platforms** list |
-| License change | **License** section, badges |
+| Changed files / scope                    | README section(s) to update  |
+| ---------------------------------------- | ---------------------------- |
+| Public API surface                       | **Usage** / **Quick start**  |
+| CLI flags or subcommands                 | **Usage** table              |
+| Default configuration                    | **Quick start**              |
+| Installation instructions / package name | **Install**                  |
+| New supported platform or language       | **Supported platforms** list |
+| License change                           | **License** section, badges  |
 
 Extend this table every time you find a new source-of-truth file that feeds the README.
 

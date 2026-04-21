@@ -4,18 +4,18 @@
 
 Every file under `posts/` must have YAML frontmatter with exactly these fields:
 
-| Field       | Type     | Required | Description |
-|-------------|----------|----------|-------------|
-| `title`     | string   | yes      | Display title shown in the list |
-| `date`      | ISO 8601 | yes      | Publication date (`YYYY-MM-DD`) |
+| Field       | Type     | Required | Description                                       |
+| ----------- | -------- | -------- | ------------------------------------------------- |
+| `title`     | string   | yes      | Display title shown in the list                   |
+| `date`      | ISO 8601 | yes      | Publication date (`YYYY-MM-DD`)                   |
 | `edited_at` | ISO 8601 | no       | Last-edit date (`YYYY-MM-DD`); defaults to `date` |
 
 The title lives in frontmatter — not as a `#` heading at the top of the body.
 
 ## Build environment variables
 
-| Variable   | Default | Description |
-|------------|---------|-------------|
+| Variable   | Default | Description                                                              |
+| ---------- | ------- | ------------------------------------------------------------------------ |
 | `BASE_URL` | `/`     | URL prefix for all generated links. Set to `/blog/` for subpath deploys. |
 
 ## Website build

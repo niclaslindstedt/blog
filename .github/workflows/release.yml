@@ -13,7 +13,7 @@ name: release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 # Default to no permissions; every job declares its own
 # least-privilege `permissions:` block (see OSS_SPEC §10.3).
@@ -37,7 +37,7 @@ jobs:
           fetch-depth: 0
       - name: Resolve tag
         id: tag
-        run: echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+        run: echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
       - name: Generate changelog
         run: ./scripts/generate-changelog.sh ${{ steps.tag.outputs.tag }}
       - name: Update versions

@@ -11,12 +11,12 @@ Create a new blog post at `posts/<slug>.md`. The filename stem is the URL slug. 
 
 Collect from the user before starting:
 
-| Input | Required | Notes |
-|-------|----------|-------|
-| Title | yes | Becomes the `title` frontmatter field |
-| Slug  | no  | Derived from title if omitted (see below) |
-| Date  | no  | Defaults to today in `YYYY-MM-DD` |
-| Body  | yes | The post contents (plain markdown) |
+| Input | Required | Notes                                     |
+| ----- | -------- | ----------------------------------------- |
+| Title | yes      | Becomes the `title` frontmatter field     |
+| Slug  | no       | Derived from title if omitted (see below) |
+| Date  | no       | Defaults to today in `YYYY-MM-DD`         |
+| Body  | yes      | The post contents (plain markdown)        |
 
 ### Slug derivation
 
@@ -44,6 +44,7 @@ If the user does not supply a slug:
    ```
 
    On creation, `edited_at` equals `date`.
+
 4. Report the file path and slug back to the user.
 
 ## Checklist

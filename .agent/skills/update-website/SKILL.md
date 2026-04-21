@@ -32,11 +32,11 @@ The `website/` directory contains the marketing site for `blog`. Per §11.2 of `
 
 ## Mapping table
 
-| Changed file | Effect on website |
-|---|---|
-| `README.md` hero / quick start | Home page feature summary |
-| `README.md` Usage / install | Install & usage pages |
-| `docs/getting-started.md` | "Getting started" page |
+| Changed file                          | Effect on website              |
+| ------------------------------------- | ------------------------------ |
+| `README.md` hero / quick start        | Home page feature summary      |
+| `README.md` Usage / install           | Install & usage pages          |
+| `docs/getting-started.md`             | "Getting started" page         |
 | `OSS_SPEC.md` front-matter `version:` | Version badge on the home page |
 
 ## Update checklist

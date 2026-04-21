@@ -32,14 +32,18 @@ export function TerminalLine({ line }: { line: LineData }) {
     case "output":
       if (line.markdown) {
         return (
-          <div className={`font-[inherit] text-[inherit] leading-[inherit] ${outputColor(line.color)}`}>
+          <div
+            className={`font-[inherit] text-[inherit] leading-[inherit] ${outputColor(line.color)}`}
+          >
             <MarkdownBody text={line.text} />
             {line.active && <span className="animate-blink-cursor" aria-hidden="true" />}
           </div>
         );
       }
       return (
-        <pre className={`m-0 whitespace-pre-wrap break-words font-[inherit] text-[inherit] leading-[inherit] ${outputColor(line.color)}`}>
+        <pre
+          className={`m-0 whitespace-pre-wrap break-words font-[inherit] text-[inherit] leading-[inherit] ${outputColor(line.color)}`}
+        >
           {line.text}
           {line.active && <span className="animate-blink-cursor" aria-hidden="true" />}
         </pre>

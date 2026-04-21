@@ -30,16 +30,20 @@ body,
 }
 
 body {
-  font-family: "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-family:
+    "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
   font-size: 13.5px;
   line-height: 1.55;
 }
 
 @keyframes blink-cursor {
-  0%, 50% {
+  0%,
+  50% {
     opacity: 1;
   }
-  51%, 100% {
+  51%,
+  100% {
     opacity: 0;
   }
 }
@@ -55,17 +59,16 @@ body {
 }
 
 .resize-handle-grip {
-  background-image:
-    linear-gradient(
-      135deg,
-      transparent 0,
-      transparent 45%,
-      currentColor 45%,
-      currentColor 55%,
-      transparent 55%,
-      transparent 70%,
-      currentColor 70%,
-      currentColor 80%,
-      transparent 80%
-    );
+  background-image: linear-gradient(
+    135deg,
+    transparent 0,
+    transparent 45%,
+    currentColor 45%,
+    currentColor 55%,
+    transparent 55%,
+    transparent 70%,
+    currentColor 70%,
+    currentColor 80%,
+    transparent 80%
+  );
 }

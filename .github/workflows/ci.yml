@@ -21,10 +21,10 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: npm ci
+      - run: npm run fmt:check
+      - run: npm run lint
       - run: npm run build
       - run: npm test
-      - run: npm run lint
-
 
   # Lint workflow YAML with actionlint and shell scripts with
   # shellcheck (OSS_SPEC §16.1). shellcheck is preinstalled on

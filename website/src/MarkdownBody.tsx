@@ -35,13 +35,9 @@ function AnchorOverride({ href, children }: { href?: string; children?: React.Re
 
 const components: Components = {
   h1: ({ children }) => (
-    <div className="mt-3 mb-1 font-bold uppercase tracking-[0.1em] text-fg-bright">
-      {children}
-    </div>
+    <div className="mt-3 mb-1 font-bold uppercase tracking-[0.1em] text-fg-bright">{children}</div>
   ),
-  h2: ({ children }) => (
-    <div className="mt-3 mb-1 font-bold text-fg-bright">{children}</div>
-  ),
+  h2: ({ children }) => <div className="mt-3 mb-1 font-bold text-fg-bright">{children}</div>,
   h3: ({ children }) => <div className="mt-2 mb-1 font-bold text-fg">{children}</div>,
   h4: ({ children }) => <div className="mt-1 mb-1 font-bold text-fg">{children}</div>,
   h5: ({ children }) => <div className="font-bold text-fg">{children}</div>,
@@ -55,9 +51,7 @@ const components: Components = {
     <code className={`text-meta ${className ?? ""}`}>{children}</code>
   ),
   pre: ({ children }) => (
-    <pre className="my-2 overflow-x-auto whitespace-pre-wrap bg-term-titlebar p-2">
-      {children}
-    </pre>
+    <pre className="my-2 overflow-x-auto whitespace-pre-wrap bg-term-titlebar p-2">{children}</pre>
   ),
   blockquote: ({ children }) => (
     <blockquote className="my-1 border-l-2 border-dim pl-3 text-dim">{children}</blockquote>

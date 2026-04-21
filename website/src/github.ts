@@ -7,7 +7,8 @@ export interface GithubFile {
   rawUrl: string;
 }
 
-const GITHUB_FILE_RE = /^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+?)(?:[?#].*)?$/;
+const GITHUB_FILE_RE =
+  /^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+?)(?:[?#].*)?$/;
 
 export function parseGithubFileUrl(href: string | undefined): GithubFile | null {
   if (!href) return null;

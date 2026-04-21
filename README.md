@@ -50,7 +50,6 @@ title: Hello World
 date: 2026-04-21
 edited_at: 2026-04-21
 ---
-
 Your content here.
 ```
 
@@ -60,11 +59,11 @@ Your content here.
 
 Use Claude skills to author and maintain posts without leaving your editor:
 
-| Skill | What it does |
-|---|---|
-| `write-post` | Draft a new post at `posts/<slug>.md` |
+| Skill         | What it does                                         |
+| ------------- | ---------------------------------------------------- |
+| `write-post`  | Draft a new post at `posts/<slug>.md`                |
 | `update-post` | Revise an existing post in-place (bumps `edited_at`) |
-| `delete-post` | Remove a post and clean up cross-links |
+| `delete-post` | Remove a post and clean up cross-links               |
 
 ### Deploying
 

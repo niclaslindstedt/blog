@@ -116,7 +116,12 @@ export function useTerminalAnimation(): UseTerminalAnimation {
           schedule(BETWEEN_STEP_MS);
           return;
         case "clickable":
-          commit({ kind: "clickable", label: next.label, onClick: next.onClick, color: next.color });
+          commit({
+            kind: "clickable",
+            label: next.label,
+            onClick: next.onClick,
+            color: next.color,
+          });
           schedule(BETWEEN_STEP_MS);
           return;
         case "action":

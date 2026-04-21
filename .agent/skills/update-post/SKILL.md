@@ -9,10 +9,10 @@ Revise a post in-place. Keep the slug (filename), `title`, and original `date` u
 
 ## Inputs
 
-| Input | Required | Notes |
-|-------|----------|-------|
-| Slug or title | yes | Identifies the post to edit |
-| Requested changes | yes | What to add, rewrite, or remove |
+| Input             | Required | Notes                           |
+| ----------------- | -------- | ------------------------------- |
+| Slug or title     | yes      | Identifies the post to edit     |
+| Requested changes | yes      | What to add, rewrite, or remove |
 
 ## Process
 

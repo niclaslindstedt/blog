@@ -17,7 +17,10 @@ function headBlock(raw: string, n: number): string {
 }
 
 function tailBlock(raw: string, startLine: number): string {
-  return raw.split("\n").slice(startLine - 1).join("\n");
+  return raw
+    .split("\n")
+    .slice(startLine - 1)
+    .join("\n");
 }
 
 export function TerminalBlog({ posts }: { posts: Post[] }) {

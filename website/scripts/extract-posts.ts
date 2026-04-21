@@ -12,7 +12,10 @@ function die(msg: string): never {
   process.exit(1);
 }
 
-function parseFrontmatter(raw: string, file: string): { fields: Record<string, string>; body: string } {
+function parseFrontmatter(
+  raw: string,
+  file: string,
+): { fields: Record<string, string>; body: string } {
   if (!raw.startsWith("---\n")) die(`${file}: missing YAML frontmatter opening '---'`);
   const end = raw.indexOf("\n---\n", 4);
   if (end === -1) die(`${file}: missing YAML frontmatter closing '---'`);
@@ -24,7 +27,10 @@ function parseFrontmatter(raw: string, file: string): { fields: Record<string, s
     const colon = line.indexOf(":");
     if (colon === -1) die(`${file}: malformed frontmatter line: ${line}`);
     const key = line.slice(0, colon).trim();
-    const value = line.slice(colon + 1).trim().replace(/^["']|["']$/g, "");
+    const value = line
+      .slice(colon + 1)
+      .trim()
+      .replace(/^["']|["']$/g, "");
     fields[key] = value;
   }
   return { fields, body };
@@ -54,14 +60,17 @@ function main(): void {
       .map((f) => path.join(POSTS_DIR, f));
     for (const file of files) {
       const post = loadPost(file);
-      if (seen.has(post.slug)) die(`duplicate slug '${post.slug}' (two files would produce the same URL)`);
+      if (seen.has(post.slug))
+        die(`duplicate slug '${post.slug}' (two files would produce the same URL)`);
       seen.add(post.slug);
       posts.push(post);
     }
   }
   posts.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   fs.writeFileSync(OUT_FILE, JSON.stringify(posts, null, 2) + "\n");
-  process.stderr.write(`extract-posts: wrote ${OUT_FILE} (${posts.length} post${posts.length === 1 ? "" : "s"})\n`);
+  process.stderr.write(
+    `extract-posts: wrote ${OUT_FILE} (${posts.length} post${posts.length === 1 ? "" : "s"})\n`,
+  );
 }
 
 main();

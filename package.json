@@ -6,16 +6,22 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "build": "echo build",
+    "build": "cd website && npm ci --prefer-offline --no-audit --no-fund && npm run build",
     "test": "node --test",
-    "lint": "echo lint",
-    "fmt": "echo fmt",
-    "fmt:check": "echo fmt-check",
+    "lint": "eslint . --max-warnings 0",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check .",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@types/node": "^22",
+    "eslint": "^9.13.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "globals": "^15.11.0",
+    "prettier": "^3.3.3",
     "typescript": "^5.5.4",
-    "@types/node": "^22"
+    "typescript-eslint": "^8.12.0"
   },
   "author": "Niclas Lindstedt <nicl@slindstedt.se>"
 }

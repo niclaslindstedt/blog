@@ -96,7 +96,7 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
                 style={{ ...style, background: "transparent" }}
               >
                 {tokens.map((line, i) => {
-                  const { key: lk, ...rest } = getLineProps({ line });
+                  const { key: _lk, ...rest } = getLineProps({ line });
                   return (
                     <div key={i} {...rest} className="flex">
                       <span className="mr-4 w-10 shrink-0 select-none text-right text-dim">
@@ -104,7 +104,7 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
                       </span>
                       <span className="flex-1 whitespace-pre">
                         {line.map((token, ti) => {
-                          const { key: tk, ...trest } = getTokenProps({ token });
+                          const { key: _tk, ...trest } = getTokenProps({ token });
                           return <span key={ti} {...trest} />;
                         })}
                       </span>

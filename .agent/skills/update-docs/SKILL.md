@@ -7,7 +7,7 @@ description: "Use when files under docs/ may be stale. Discovers commits since t
 
 **Governing spec sections:** §11.1 (`docs/` directory — the required conceptual docs tree), §21.5 (this skill is mandated because `docs/` is a drift-prone artifact in every project).
 
-The `docs/` directory contains conceptual documentation for blog. Unlike the README (overview) or man pages (command reference), `docs/` explains *why* and *how* in depth. It goes stale whenever a user-visible behavior, configuration key, or supported surface changes without a matching edit.
+The `docs/` directory contains conceptual documentation for blog. Unlike the README (overview) or man pages (command reference), `docs/` explains _why_ and _how_ in depth. It goes stale whenever a user-visible behavior, configuration key, or supported surface changes without a matching edit.
 
 ## Tracking mechanism
 
@@ -37,12 +37,12 @@ The `docs/` directory contains conceptual documentation for blog. Unlike the REA
 
 ## Mapping table
 
-| Changed files / scope | Doc(s) to update |
-|---|---|
-| Public API surface | `docs/getting-started.md`, architecture-level docs |
-| Configuration keys / env vars | `docs/configuration.md` |
-| Error messages and exit codes | `docs/troubleshooting.md` |
-| Deployment / install mechanics | `docs/getting-started.md` |
+| Changed files / scope          | Doc(s) to update                                   |
+| ------------------------------ | -------------------------------------------------- |
+| Public API surface             | `docs/getting-started.md`, architecture-level docs |
+| Configuration keys / env vars  | `docs/configuration.md`                            |
+| Error messages and exit codes  | `docs/troubleshooting.md`                          |
+| Deployment / install mechanics | `docs/getting-started.md`                          |
 
 Extend this table every time you find a new source file that feeds the docs.
 
