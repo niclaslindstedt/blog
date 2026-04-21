@@ -3,7 +3,7 @@
 A retro pixel-art React blog where posts are git-tracked markdown files authored and managed via Claude skills.
 
 [![CI](https://github.com/niclaslindstedt/blog/actions/workflows/ci.yml/badge.svg)](https://github.com/niclaslindstedt/blog/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: All Rights Reserved](https://img.shields.io/badge/license-All%20Rights%20Reserved-red.svg)](LICENSE)
 
 ## Why?
 
@@ -93,4 +93,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-Licensed under [MIT](LICENSE).
+All rights reserved. See [LICENSE](LICENSE). Copying, modification, or
+redistribution of source code or post content requires prior written
+permission.
