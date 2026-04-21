@@ -1,10 +1,11 @@
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { parseGithubFileUrl } from "./github.ts";
-import { useFileViewer } from "./FileViewerContext.tsx";
+import { useViOpener } from "./ViOpenerContext.tsx";
 
 function AnchorOverride({ href, children }: { href?: string; children?: React.ReactNode }) {
-  const open = useFileViewer();
+  const open = useViOpener();
   const parsed = parseGithubFileUrl(href);
   if (parsed) {
     return (
@@ -59,6 +60,9 @@ const components: Components = {
   hr: () => <hr className="my-2 border-t border-dim" />,
   em: ({ children }) => <em className="italic">{children}</em>,
   strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+  sup: ({ children }) => (
+    <sup className="relative -top-[0.4em] text-[0.7em] text-dim">{children}</sup>
+  ),
   table: ({ children }) => <table className="my-2 border-collapse">{children}</table>,
   th: ({ children }) => (
     <th className="border border-dim px-2 py-1 text-left font-bold">{children}</th>
@@ -68,7 +72,7 @@ const components: Components = {
 
 export function MarkdownBody({ text }: { text: string }) {
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
       {text}
     </ReactMarkdown>
   );

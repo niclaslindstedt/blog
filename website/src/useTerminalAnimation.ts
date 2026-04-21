@@ -232,6 +232,10 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
           commit({ kind: "action", label: next.label, onClick: next.onClick });
           schedule(BETWEEN_STEP_MS);
           return;
+        case "effect":
+          next.run();
+          schedule(BETWEEN_STEP_MS);
+          return;
       }
     };
 

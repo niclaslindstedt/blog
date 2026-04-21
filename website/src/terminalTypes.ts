@@ -33,4 +33,5 @@ export type Step =
       color?: LineColor;
       prefix?: string;
     }
-  | { kind: "action"; label: string; onClick: () => void };
+  | { kind: "action"; label: string; onClick: () => void }
+  | { kind: "effect"; run: () => void };
