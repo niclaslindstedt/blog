@@ -3,17 +3,23 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "extract": "node scripts/extract-source-data.mjs",
+    "extract": "tsx scripts/extract-posts.ts",
     "dev": "npm run extract && vite",
-    "build": "npm run extract && vite build",
-    "preview": "vite preview"
+    "build": "npm run extract && tsc -p tsconfig.json --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4",
     "vite": "^5"
   }
 }

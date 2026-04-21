@@ -8,15 +8,14 @@ A retro pixel-art React blog where posts are git-tracked markdown files authored
 ## Why?
 
 - Posts are plain markdown files in-repo — no CMS, no database, full git history and diff-friendly content.
-- Claude skills for write/update/delete drive an iterative draft workflow with consistent tone baked into every prompt.
+- Claude skills for write/update/delete drive an iterative draft workflow with consistent conventions baked into every prompt.
 - Retro pixel aesthetic sets a distinctive visual identity that pairs with the linked CV site.
 - Slug-as-filename convention makes URLs predictable and refactoring trivial.
-- Static-exportable React architecture keeps hosting free and deployment a single git push.
-
+- Static-exportable React + TypeScript architecture keeps hosting free and deployment a single git push.
 
 ## Prerequisites
 
-- Node.js ≥ 20
+- Node.js ≥ 24
 - npm ≥ 10
 
 ## Install
@@ -31,8 +30,10 @@ cd website && npm install && cd ..
 ## Quick start
 
 ```sh
-make build              # process posts and build the static React site
-npx serve website/dist  # preview locally at http://localhost:3000
+cd website
+npm run dev              # preview locally at http://localhost:5173
+npm run build            # produce website/dist/
+npx serve website/dist   # serve the built output
 ```
 
 ## Usage
@@ -41,26 +42,29 @@ npx serve website/dist  # preview locally at http://localhost:3000
 
 Posts live as markdown files under `posts/`. The filename is the slug — `posts/hello-world.md` becomes `/hello-world` in the browser.
 
-Frontmatter controls metadata:
+Frontmatter carries only three fields:
 
 ```yaml
 ---
 title: Hello World
-date: 2024-01-15
-tags: [meta, welcome]
-draft: false
+date: 2026-04-21
+edited_at: 2026-04-21
 ---
 
 Your content here.
 ```
 
+- `title` and `date` are required; `edited_at` defaults to `date` on creation.
+- On every edit, `edited_at` is bumped to today — the `update-post` skill handles this automatically.
+- The title comes from frontmatter. Do not repeat it as a `#` heading at the top of the body.
+
 Use Claude skills to author and maintain posts without leaving your editor:
 
 | Skill | What it does |
 |---|---|
-| `write-post` | Draft a new post from a topic description |
-| `update-post` | Revise an existing post in-place |
-| `delete-post` | Remove a post and clean up references |
+| `write-post` | Draft a new post at `posts/<slug>.md` |
+| `update-post` | Revise an existing post in-place (bumps `edited_at`) |
+| `delete-post` | Remove a post and clean up cross-links |
 
 ### Deploying
 
@@ -70,15 +74,11 @@ git push   # CI builds and publishes to GitHub Pages automatically
 
 ## Configuration
 
-See [docs/configuration.md](docs/configuration.md) for build options and environment variables.
+See [docs/configuration.md](docs/configuration.md) for frontmatter schema and build options.
 
 ## Examples
 
-See [`examples/`](examples/) for sample post files.
-
-## Troubleshooting
-
-_Common failure modes and fixes._
+See [`examples/`](examples/) for sample files.
 
 ## Documentation
 

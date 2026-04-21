@@ -2,34 +2,22 @@
 
 ## Post frontmatter
 
-Every file under `posts/` must have YAML frontmatter. Required fields:
+Every file under `posts/` must have YAML frontmatter with exactly these fields:
 
-| Field   | Type     | Description |
-|---------|----------|-------------|
-| `title` | string   | Display title shown in the post header and list |
-| `date`  | ISO 8601 | Publication date (`YYYY-MM-DD`) |
+| Field       | Type     | Required | Description |
+|-------------|----------|----------|-------------|
+| `title`     | string   | yes      | Display title shown in the list |
+| `date`      | ISO 8601 | yes      | Publication date (`YYYY-MM-DD`) |
+| `edited_at` | ISO 8601 | no       | Last-edit date (`YYYY-MM-DD`); defaults to `date` |
 
-Optional fields:
-
-| Field    | Type     | Default  | Description |
-|----------|----------|----------|-------------|
-| `tags`   | string[] | `[]`     | Topic labels shown below the title |
-| `draft`  | boolean  | `false`  | When `true`, excluded from the build output |
-| `description` | string | — | Short summary used in `<meta>` tags |
+The title lives in frontmatter — not as a `#` heading at the top of the body.
 
 ## Build environment variables
 
-Set these in your shell or in a `.env` file at the project root.
-
-| Variable           | Default | Description |
-|--------------------|---------|-------------|
-| `POSTS_DIR`        | `posts` | Directory scanned for markdown files |
-| `OUT_DIR`          | `website/src/generated` | Where pipeline output is written |
-| `BASE_URL`         | `/`     | URL prefix for all generated links |
-| `INCLUDE_DRAFTS`   | `false` | Set to `true` to include draft posts in the build |
+| Variable   | Default | Description |
+|------------|---------|-------------|
+| `BASE_URL` | `/`     | URL prefix for all generated links. Set to `/blog/` for subpath deploys. |
 
 ## Website build
 
-The React site is configured via `website/package.json` scripts. No additional configuration file is required for a basic GitHub Pages deploy.
-
-To serve the site under a subpath (e.g. `https://user.github.io/blog`), set `BASE_URL=/blog/` before running `make build`.
+The React site is configured via `website/package.json` scripts. The `extract` script runs first (`tsx scripts/extract-posts.ts`) and produces `website/src/generated/posts.json`. Both `dev` and `build` chain through `extract`, so the generated file is never stale.

@@ -36,11 +36,11 @@ make fmt-check     # verify formatting (CI)
 
 ## Architecture summary
 
-The repository has two distinct layers. `src/` is a Node.js content pipeline: it reads markdown files from `posts/`, parses frontmatter and body, and emits structured JSON consumed by the frontend. `website/` is the React application — a static-exportable site with a retro pixel-art theme that reads the generated JSON and renders the post list and individual post pages.
+The repository is a small TypeScript + React blog. `posts/<slug>.md` holds each post as markdown with YAML frontmatter. `website/` is a Vite + React app: its `scripts/extract-posts.ts` walks `posts/`, validates frontmatter, and emits `website/src/generated/posts.json`, which `website/src/App.tsx` imports to render the list view.
 
-Posts live under `posts/<slug>.md` at the project root. The slug is the canonical identifier: it becomes the URL path, the filename, and the key in the generated data. `prompts/` holds the versioned Claude prompt templates that power the `write-post`, `update-post`, and `delete-post` skills, keeping authoring tone consistent across all posts.
+The filename stem is the canonical slug — it is the URL path, the filename, and the key in the generated data. There is no `slug` frontmatter field. Frontmatter carries exactly `title`, `date`, and `edited_at`.
 
-Dependency direction: `posts/` → `src/` (pipeline) → `website/src/generated/` → `website/src/` (React components). Nothing in `website/` imports from `src/` directly; data crosses the boundary only through the generated JSON artifacts under `website/src/generated/`.
+Dependency direction: `posts/*.md` → `website/scripts/extract-posts.ts` → `website/src/generated/posts.json` → `website/src/*.tsx`. The top-level `src/` module is unused placeholder code kept to satisfy spec scaffolding.
 
 ## Where new code goes
 
@@ -72,13 +72,25 @@ When you change… | Update…
 post frontmatter schema | `docs/configuration.md`, README Usage section
 build config keys | `docs/configuration.md`
 pipeline output shape | `docs/architecture.md`, `website/src/` consumers
-Claude prompt templates | `prompts/README.md`, the relevant skill `SKILL.md`
 
 ## Parity / cross-cutting rules
 
-- **Slug consistency**: a post's filename stem, its `slug` frontmatter field (if present), and its URL path must all be identical. If you rename a post file, also update any internal cross-links.
-- **Generated data**: `website/src/generated/` is never edited by hand — it is always the output of `make build`. Do not commit partial or out-of-date generated files.
-- **Prompt versions**: when editing a prompt template, bump the patch version in the filename and update the `update-prompts` skill mapping table so the skill tracks the new file.
+- **Slug consistency**: a post's filename stem is its URL path. There is no `slug` frontmatter field — the filename is the only source. If you rename a post file, also update any internal cross-links.
+- **Frontmatter schema**: posts carry exactly `title`, `date`, and `edited_at` (all ISO `YYYY-MM-DD` for the two dates). The title is in frontmatter, not as a `#` heading in the body.
+- **Generated data**: `website/src/generated/` is never edited by hand — it is always the output of `npm run extract` inside `website/`. Do not commit partial or out-of-date generated files.
+
+## OSS_SPEC deviations
+
+This project is a small personal blog, not a shipped library. The following `OSS_SPEC.md` obligations are intentionally skipped or stubbed. When `sync-oss-spec` or an equivalent check flags one of these, **leave it alone** — the deviation is a design choice, not drift.
+
+- **§8.4 `CHANGELOG.md`** — kept as a one-line stub. The blog is continuously deployed on every push; there is no release cadence to record.
+- **§10.3 release pipeline / §10.5 local-CI parity** — `release.yml` and `version-bump.yml` are inert scaffolding. The only active deployment path is `pages.yml` (§10.4) on push-to-`main`.
+- **§11.2 required website content** — hero / feature showcase / providers / hosted-docs / footer checklist replaced by the post list view. Hosted-docs rendering will land when there is content worth rendering.
+- **§11.2 recommended stack** — TypeScript is adopted. Tailwind, `react-markdown`, and `remark-gfm` are deferred until markdown rendering and a full theme are implemented.
+- **§12 CLI obligations** — N/A. This project ships no CLI binary.
+- **§13.5 prompt versioning** — the `write-post` / `update-post` / `delete-post` skills inline their rules in `SKILL.md`. Versioned templates under `prompts/<skill>/<version>.md` will be introduced if and when any skill's rule set grows past roughly one screen.
+- **§20 test organization** — `tests/` is empty. The extractor is small enough that `cd website && npm run build` is the entire regression signal.
+- **§21 maintenance skill registry** — `write-post`, `update-post`, and `delete-post` are authoring tools, not drift-sync `update-*` skills. They are intentionally excluded from the `maintenance` umbrella's registry.
 
 ## Maintenance skills
 

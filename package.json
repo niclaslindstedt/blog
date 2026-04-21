@@ -4,13 +4,18 @@
   "description": "A retro pixel-art React blog where posts are git-tracked markdown files authored and managed via Claude skills.",
   "license": "MIT",
   "type": "module",
-  "main": "src/index.js",
+  "main": "src/index.ts",
   "scripts": {
     "build": "echo build",
     "test": "node --test",
     "lint": "echo lint",
     "fmt": "echo fmt",
-    "fmt:check": "echo fmt-check"
+    "fmt:check": "echo fmt-check",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^22"
   },
   "author": "Niclas Lindstedt <nicl@slindstedt.se>"
 }

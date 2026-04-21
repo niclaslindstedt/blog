@@ -4,22 +4,22 @@
 // formatting and routing can change in one place. Raw `console.log`/`process.stderr.write`
 // must not appear outside this module.
 
-export function status(msg) {
-  process.stderr.write(`\u2713  ${msg}\n`);
+export function status(msg: string): void {
+  process.stderr.write(`✓  ${msg}\n`);
 }
 
-export function warn(msg) {
+export function warn(msg: string): void {
   process.stderr.write(`!  ${msg}\n`);
 }
 
-export function info(msg) {
+export function info(msg: string): void {
   process.stderr.write(`${msg}\n`);
 }
 
-export function header(msg) {
+export function header(msg: string): void {
   process.stderr.write(`== ${msg} ==\n`);
 }
 
-export function error(msg) {
-  process.stderr.write(`\u2717  ${msg}\n`);
+export function error(msg: string): void {
+  process.stderr.write(`✗  ${msg}\n`);
 }

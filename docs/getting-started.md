@@ -4,7 +4,7 @@
 
 ## Install
 
-Requires Node.js ≥ 20 and npm ≥ 10.
+Requires Node.js ≥ 24 and npm ≥ 10.
 
 ```sh
 git clone https://github.com/niclaslindstedt/blog.git
@@ -17,28 +17,28 @@ cd website && npm install && cd ..
 
 **1. Write your first post.**
 
-Create `posts/hello-world.md`:
+The easiest path is the `/write-post` Claude skill — it asks for a title and a body, derives a slug from the title, and writes the file for you. The skill produces `posts/hello-world.md`:
 
 ```markdown
 ---
 title: Hello World
 date: 2026-04-21
-tags: [meta]
-draft: false
+edited_at: 2026-04-21
 ---
 
 This is my first post. Welcome to the blog.
 ```
 
-The filename stem (`hello-world`) becomes the URL path — keep it lowercase and hyphen-separated.
+The filename stem (`hello-world`) becomes the URL path — keep it lowercase and hyphen-separated. The title stays in frontmatter; do not repeat it as a `#` heading.
 
 **2. Build the site.**
 
 ```sh
-make build
+cd website
+npm run build
 ```
 
-This runs the content pipeline (`src/`) which processes every file under `posts/`, then builds the React frontend under `website/dist/`.
+This runs the extractor (which validates every file under `posts/`) and then builds the React frontend under `website/dist/`.
 
 **3. Preview locally.**
 
@@ -46,7 +46,7 @@ This runs the content pipeline (`src/`) which processes every file under `posts/
 npx serve website/dist
 ```
 
-Open `http://localhost:3000` and you should see your post listed on the home page. Click through to read it.
+Open `http://localhost:3000` and you should see your post listed on the home page.
 
 **4. Commit and deploy.**
 
@@ -58,8 +58,13 @@ git push
 
 The `pages.yml` workflow builds and publishes the site to GitHub Pages automatically.
 
+## Editing and removing posts
+
+- `/update-post` revises an existing post in-place and bumps `edited_at` to today.
+- `/delete-post` removes a post after confirmation and cleans up any cross-links in `posts/` and `docs/`.
+
 ## Next steps
 
-- [Configuration reference](configuration.md) — build options, frontmatter schema
-- [Architecture overview](architecture.md) — how the pipeline and frontend fit together
+- [Configuration reference](configuration.md) — frontmatter schema, build options
+- [Architecture overview](architecture.md) — how the extractor and frontend fit together
 - [Troubleshooting](troubleshooting.md) — common failure modes
