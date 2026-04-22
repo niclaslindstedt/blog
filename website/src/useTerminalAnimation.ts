@@ -33,6 +33,17 @@ interface SessionState {
   committed: LineData[];
   queue: Step[];
   active: Active | null;
+  anchor: AnchorSignal | null;
+}
+
+// The terminal's scroll container listens on `anchor.epoch`: a fresh epoch
+// means "a new command has just started rendering; scroll so the line at
+// `index` is at the top". `index` points into `lines` (committed ++ active),
+// and is captured the moment the anchoring command begins — i.e. the index
+// that line will keep once its typing finishes and it commits.
+export interface AnchorSignal {
+  index: number;
+  epoch: number;
 }
 
 export interface UseTerminalAnimation {
@@ -40,10 +51,11 @@ export interface UseTerminalAnimation {
   enqueue: (steps: Step[]) => void;
   idle: boolean;
   hasSession: (id: string) => boolean;
+  anchor: AnchorSignal | null;
 }
 
 function newSession(): SessionState {
-  return { committed: [], queue: [], active: null };
+  return { committed: [], queue: [], active: null, anchor: null };
 }
 
 // Multi-session terminal animator. Each `sessionId` keeps its own scrollback,
@@ -54,9 +66,12 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
   const [committed, setCommitted] = useState<LineData[]>([]);
   const [active, setActive] = useState<Active | null>(null);
   const [idle, setIdle] = useState(true);
+  const [anchor, setAnchor] = useState<AnchorSignal | null>(null);
   const queueRef = useRef<Step[]>([]);
   const activeRef = useRef<Active | null>(null);
   const committedRef = useRef<LineData[]>([]);
+  const anchorRef = useRef<AnchorSignal | null>(null);
+  const anchorEpochRef = useRef<number>(0);
   const currentIdRef = useRef<string>(sessionId);
   const sessionsRef = useRef<Map<string, SessionState>>(new Map());
 
@@ -70,13 +85,16 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
       committed: committedRef.current,
       queue: queueRef.current,
       active: activeRef.current,
+      anchor: anchorRef.current,
     });
     const target = sessionsRef.current.get(sessionId) ?? newSession();
     queueRef.current = target.queue;
     activeRef.current = target.active;
     committedRef.current = target.committed;
+    anchorRef.current = target.anchor;
     setCommitted(target.committed);
     setActive(target.active);
+    setAnchor(target.anchor);
     setIdle(target.queue.length === 0 && target.active === null);
     currentIdRef.current = sessionId;
   }, [sessionId]);
@@ -166,6 +184,19 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
 
       switch (next.kind) {
         case "type-command":
+          if (next.anchor === true) {
+            // Capture the future committed index of this command. The active
+            // typing line lives at `lines[committed.length]`, and when typing
+            // finishes it commits at that same index — the anchor stays valid
+            // before and after the transition.
+            anchorEpochRef.current += 1;
+            const signal: AnchorSignal = {
+              index: committedRef.current.length,
+              epoch: anchorEpochRef.current,
+            };
+            anchorRef.current = signal;
+            setAnchor(signal);
+          }
           startActive({
             kind: "command",
             full: next.text,
@@ -274,5 +305,5 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
       ]
     : committed;
 
-  return { lines, enqueue, idle, hasSession };
+  return { lines, enqueue, idle, hasSession, anchor };
 }

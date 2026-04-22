@@ -47,7 +47,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   const { slug: slugParam } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { audience, setAudience } = useAudience();
-  const { lines, enqueue, idle } = useTerminalAnimation(audience);
+  const { lines, enqueue, idle, anchor } = useTerminalAnimation(audience);
   const openFile = useFileViewer();
   const startedRef = useRef(false);
   // Keyed by `${audience}:${slug}` — a post is "opened" independently in each audience.
@@ -80,6 +80,11 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     const prompt = codePrompt(a);
     const post = posts.find((p) => p.slug === slug);
     const version = post?.versions[a];
+    // Every user-initiated `cat` anchors its command to the top of the
+    // viewport so the reader starts at the beginning of the post. Auto-opens
+    // during the intro are anchored too — they're the reader's first look at
+    // a post and they should also start from the top.
+    const catAnchor = true;
     if (!version) {
       notFoundRef.current.add(key);
       enqueue([
@@ -88,6 +93,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
           text: `cat ${slug}.md | head -n ${HEAD_LINES}`,
           prompt,
           wpm: BLOG_WPM,
+          anchor: catAnchor,
         },
         {
           kind: "print",
@@ -119,6 +125,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         text: `cat ${slug}.md | head -n ${HEAD_LINES}`,
         prompt,
         wpm: BLOG_WPM,
+        anchor: catAnchor,
       },
       { kind: "print", text: head, markdown: true },
       { kind: "blank" },
@@ -137,8 +144,17 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     enqueue(steps);
   };
 
+  // An explicit click on a post filename (ls entry or grep result) should
+  // always re-run `cat`, even if this audience already rendered that post
+  // earlier — a reader clicking a filename expects to see the command type out
+  // again, not a silent no-op. We clear the "already opened" guard for this
+  // slug so enqueueOpen will proceed; the useEffect that fires on slugParam
+  // change sees the key re-added and remains a no-op, avoiding a double cat.
   const openPostFromClick = (slug: string) => {
     if (slugParam !== slug) navigate(`/posts/${slug}`);
+    const key = openKey(audienceRef.current, slug);
+    openedRef.current.delete(key);
+    expandedRef.current.delete(key);
     enqueueOpen(slug, audienceRef.current);
   };
 
@@ -157,6 +173,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         text: `cat ${slug}.md | tail -n +${HEAD_LINES + 1}`,
         prompt: codePrompt(a),
         wpm: BLOG_WPM,
+        anchor: true,
       },
       { kind: "type", text: tail, markdown: true, wpm: BLOG_WPM },
       { kind: "blank" },
@@ -188,6 +205,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         text: `grep -lE "^tags:.*\\b${tag}\\b" *.md`,
         prompt,
         wpm: BLOG_WPM,
+        anchor: true,
       },
     ];
     if (matches.length === 0) {
@@ -261,6 +279,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
             text: `cat ${latest.slug}.md`,
             prompt: codePrompt(a),
             fast: true,
+            anchor: true,
           },
           { kind: "type", text: displayText(version), markdown: true, fast: true },
           { kind: "blank" },
@@ -320,6 +339,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       <Terminal
         lines={lines}
         idle={idle}
+        anchor={anchor}
         idlePrompt={codePrompt(audience)}
         tabs={<AudienceTabs audience={audience} onSwitch={setAudience} />}
       />

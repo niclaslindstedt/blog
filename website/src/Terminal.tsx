@@ -1,12 +1,15 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
+  useRef,
   useState,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 import type { LineData } from "./terminalTypes.ts";
+import type { AnchorSignal } from "./useTerminalAnimation.ts";
 import { TerminalLine } from "./TerminalLine.tsx";
 
 const MIN_WIDTH = 320;
@@ -15,6 +18,15 @@ const DEFAULT_WIDTH = 820;
 const DEFAULT_HEIGHT = 560;
 const VIEWPORT_MARGIN = 12;
 const MOBILE_BREAKPOINT = 900;
+// Tolerance (px) for detecting "at the bottom" during stick-to-bottom. A few
+// pixels of slack covers sub-pixel rounding in scrollHeight/clientHeight on
+// mobile browsers that would otherwise flip the flag false on every tick.
+const BOTTOM_SLACK_PX = 8;
+// Tolerance (px) for detecting that the user has scrolled away from an active
+// anchor. We only release the anchor when the anchored line has drifted more
+// than this from the top of the viewport — small drift from programmatic
+// re-pinning or browser layout jitter doesn't count.
+const ANCHOR_DRIFT_PX = 48;
 
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
@@ -76,6 +88,7 @@ export function Terminal({
   idle,
   idlePrompt = "~/code/blog $",
   tabs,
+  anchor,
 }: {
   user?: string;
   title?: string;
@@ -83,12 +96,103 @@ export function Terminal({
   idle: boolean;
   idlePrompt?: string;
   tabs?: ReactNode;
+  anchor?: AnchorSignal | null;
 }) {
   const computedTitle = title ?? `${user} — ${cwdFromLines(lines)}`;
   const small = useSmallViewport();
   const [size, setSize] = useState(() => initialSize());
   const [pos, setPos] = useState(() => initialPos(initialSize()));
   const [dragging, setDragging] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  // Active anchor = the anchor signal the terminal is currently honoring. We
+  // also remember the highest epoch we've seen (honored or dismissed) so the
+  // user can scroll past an anchor and we don't reactivate it on the next
+  // render just because the prop hasn't changed.
+  const activeAnchorRef = useRef<AnchorSignal | null>(null);
+  const lastSeenEpochRef = useRef<number>(0);
+  // Whether the user is sitting at (or near) the bottom of the scrollback. We
+  // use this to decide whether new output should keep the user pinned to the
+  // bottom ("stick-to-bottom"), or leave their scroll position alone because
+  // they scrolled up to read history.
+  const userAtBottomRef = useRef<boolean>(true);
+  // True while we're programmatically adjusting scrollTop. The scroll event
+  // that fires as a result must not be interpreted as a user gesture, or we'd
+  // fight our own anchor/stick logic.
+  const programmaticScrollRef = useRef<boolean>(false);
+
+  const scrollLineToTop = useCallback((index: number): boolean => {
+    const el = bodyRef.current;
+    if (!el) return false;
+    const node = el.querySelector<HTMLElement>(`[data-line-index="${index}"]`);
+    if (!node) return false;
+    const containerRect = el.getBoundingClientRect();
+    const nodeRect = node.getBoundingClientRect();
+    const delta = nodeRect.top - containerRect.top;
+    if (Math.abs(delta) < 1) return true;
+    programmaticScrollRef.current = true;
+    el.scrollTop += delta;
+    requestAnimationFrame(() => {
+      programmaticScrollRef.current = false;
+    });
+    return true;
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    programmaticScrollRef.current = true;
+    el.scrollTop = el.scrollHeight;
+    requestAnimationFrame(() => {
+      programmaticScrollRef.current = false;
+    });
+  }, []);
+
+  // After every lines change (new typing tick, new committed line), decide
+  // where the viewport should be: active anchor wins, otherwise stick-to-
+  // bottom if the user was already at the bottom. A fresh anchor epoch seen
+  // here activates anchor mode; same-epoch renders either re-pin (if still
+  // active) or stay dismissed (if the user has scrolled past it). Using
+  // useLayoutEffect avoids a single-frame flash between React painting new
+  // content and us correcting scrollTop.
+  useLayoutEffect(() => {
+    if (anchor) {
+      if (anchor.epoch !== lastSeenEpochRef.current) {
+        activeAnchorRef.current = anchor;
+        lastSeenEpochRef.current = anchor.epoch;
+      }
+    } else {
+      // Session without an anchor (e.g. freshly-visited audience tab) — drop
+      // any activation carried over from the previous session.
+      activeAnchorRef.current = null;
+    }
+    const active = activeAnchorRef.current;
+    if (active) {
+      if (scrollLineToTop(active.index)) return;
+    }
+    if (userAtBottomRef.current) scrollToBottom();
+  }, [lines, anchor, scrollLineToTop, scrollToBottom]);
+
+  const onBodyScroll = useCallback(() => {
+    if (programmaticScrollRef.current) return;
+    const el = bodyRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - (el.scrollTop + el.clientHeight);
+    userAtBottomRef.current = distanceFromBottom <= BOTTOM_SLACK_PX;
+    const active = activeAnchorRef.current;
+    if (active) {
+      const node = el.querySelector<HTMLElement>(`[data-line-index="${active.index}"]`);
+      if (!node) return;
+      const containerRect = el.getBoundingClientRect();
+      const nodeRect = node.getBoundingClientRect();
+      // The anchored line naturally sits at delta=0 (top of viewport) while
+      // we're honoring the anchor. A user scroll moves the line off the top.
+      // Drift in either direction past ANCHOR_DRIFT_PX means the user has
+      // taken over and we should stop re-pinning.
+      if (Math.abs(nodeRect.top - containerRect.top) > ANCHOR_DRIFT_PX) {
+        activeAnchorRef.current = null;
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (small) return; // mobile fills the viewport via CSS; size/pos state is ignored.
@@ -208,9 +312,15 @@ export function Terminal({
 
       {tabs}
 
-      <div className="flex-1 overflow-auto px-3 pt-2 pb-4 text-fg sm:px-4 sm:pt-3">
+      <div
+        ref={bodyRef}
+        onScroll={onBodyScroll}
+        className="flex-1 overflow-auto px-3 pt-2 pb-4 text-fg sm:px-4 sm:pt-3"
+      >
         {lines.map((l, i) => (
-          <TerminalLine key={i} line={l} />
+          <div key={i} data-line-index={i}>
+            <TerminalLine line={l} />
+          </div>
         ))}
         {idle && (
           <div className="flex gap-2">

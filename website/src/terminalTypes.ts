@@ -15,7 +15,19 @@ export type LineData =
   | { kind: "tag-row"; tags: string[]; onClick: (tag: string) => void };
 
 export type Step =
-  | { kind: "type-command"; text: string; prompt?: string; fast?: boolean; wpm?: number }
+  | {
+      kind: "type-command";
+      text: string;
+      prompt?: string;
+      fast?: boolean;
+      wpm?: number;
+      // When true, once this command begins rendering, the terminal scrolls so
+      // the command sits at the top of the viewport and stays pinned there
+      // while its output types below. Used for tag-click grep, cat-a-post, and
+      // other user-initiated commands whose response the reader wants to watch
+      // unfold from the command downward rather than be dragged to the bottom.
+      anchor?: boolean;
+    }
   | { kind: "print"; text: string; color?: LineColor; markdown?: boolean }
   | {
       kind: "type";
