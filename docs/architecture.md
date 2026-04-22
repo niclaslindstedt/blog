@@ -69,10 +69,14 @@ there is a two-tab strip (`technical` / `non-technical`); the active tab
 determines both the cwd shown in the prompt (`~/code/blog/<audience> $`) and
 which post versions are listed.
 
-On mount the terminal auto-runs `cd code/blog/<audience>`, then `ls -1`
+On mount at `/` the terminal auto-runs `cd code/blog/<audience>`, then `ls -1`
 (one-per-line, no mode/size/date column — the date is already in the
 filename), then `grep -oP '(?<=^summary: ).*' *.md` — the summary line doubles as the
-clickable preview for each post. Clicking a filename (from the `ls -1`
+clickable preview for each post. When the URL targets a specific post
+(`/posts/<slug>`) the preamble is skipped: the session opens with the prompt
+already at `~/code/blog/<audience> $` and renders the `sed` body straight
+away, since the reader asked for that file and doesn't need the listing
+first. Clicking a filename (from the `ls -1`
 listing, the grep output, or a tag grep) runs `sed '1,/^---$/d' <slug>.md`,
 which strips the YAML frontmatter so only the body renders; the output is
 committed to the transcript in one shot, no character-by-character typing.
@@ -85,8 +89,10 @@ body; the title is reintroduced as an `h1` by the renderer, and the tag row
 appears below as clickable `#tag` buttons.
 
 Each audience tab keeps its own scrollback; the first time a tab is focused
-the terminal runs `cd`, `ls -1`, and `grep -oP '(?<=^summary: ).*' *.md` in that session,
-and subsequent visits resume the session where it was left. If a post is open
+the terminal runs the intro in that session — `cd`, `ls -1`, and
+`grep -oP '(?<=^summary: ).*' *.md` at `/`, or just the `sed` body when the
+URL already targets a post — and subsequent visits resume the session where
+it was left. If a post is open
 and the new audience has a version of that slug, the terminal re-runs `sed`
 on it; if the slug exists only in the other audience, the terminal prints
 `sed: <slug>.md: No such file or directory` and offers a
@@ -109,10 +115,11 @@ Markdown links whose `href` matches `https://github.com/<owner>/<repo>/blob/<ref
 two routes:
 
 - `/` — landing terminal (no post opened).
-- `/posts/<slug>` — terminal that runs `ls -1` and `grep -oP '(?<=^summary: ).*' *.md`
-  first, then auto-opens that post's version for the reader's current
-  audience via `sed`. If the slug has no version in the current audience the
-  terminal prints `sed: <slug>.md: No such file or directory` in red.
+- `/posts/<slug>` — terminal that opens that post's version for the reader's
+  current audience directly via `sed`, with no listing preamble (the prompt
+  is already at `~/code/blog/<audience> $`). If the slug has no version in
+  the current audience the terminal prints
+  `sed: <slug>.md: No such file or directory` in red.
 
 Clicking a filename updates the URL via `navigate`, keeping deep-links and
 the address bar in sync. The transcript is append-only — back/forward
