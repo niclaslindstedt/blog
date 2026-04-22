@@ -66,7 +66,7 @@ const terminalComponents: Components = {
   em: ({ children }) => <em className="italic">{children}</em>,
   strong: ({ children }) => <strong className="font-bold">{children}</strong>,
   sup: ({ children }) => (
-    <sup className="relative -top-[0.4em] text-[0.7em] text-dim">{children}</sup>
+    <sup className="relative -top-[0.3em] text-[0.85em] text-dim">{children}</sup>
   ),
   table: ({ children }) => <table className="my-2 border-collapse">{children}</table>,
   th: ({ children }) => (
@@ -114,7 +114,7 @@ const proseComponents: Components = {
   em: ({ children }) => <em className="italic">{children}</em>,
   strong: ({ children }) => <strong className="font-bold">{children}</strong>,
   sup: ({ children }) => (
-    <sup className="relative -top-[0.4em] text-[0.7em] text-dim">{children}</sup>
+    <sup className="relative -top-[0.3em] text-[0.85em] text-dim">{children}</sup>
   ),
   table: ({ children }) => (
     <div className="my-5 overflow-x-auto">
