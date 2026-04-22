@@ -202,6 +202,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       if (version) {
         openedRef.current.add(openKey(a, latest.slug));
         enqueue([
+          { kind: "delay", ms: 750 },
           {
             kind: "type-command",
             text: `cat ${latest.slug}.md`,
