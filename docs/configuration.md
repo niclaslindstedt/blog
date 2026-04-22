@@ -4,13 +4,17 @@
 
 Every post has up to **two versions** — one for each reader audience. The
 filename stem is the slug (shared between versions); the folder is the
-audience:
+audience. Filenames are date-prefixed (`YYYY-MM-DD-<slug>.md`) so the date
+shows up directly in the terminal listing:
 
 ```
 posts/
-  technical/<slug>.md      # version aimed at technical readers
-  non-technical/<slug>.md  # version aimed at non-technical readers
+  technical/YYYY-MM-DD-<slug>.md      # version aimed at technical readers
+  non-technical/YYYY-MM-DD-<slug>.md  # version aimed at non-technical readers
 ```
+
+The date prefix matches the frontmatter `date` (the `YYYY-MM-DD` part) and is
+part of the URL path. Both audience versions of a post use the same filename.
 
 Either file may exist on its own; a post is published as long as it has at
 least one version. When both exist they share the same slug and are linked
@@ -43,7 +47,7 @@ exist.
 
 The frontend remembers the reader's choice in `localStorage` under the key
 `blog:audience` (values: `technical` or `non-technical`). The initial default
-is `technical`. Switching tabs animates `cd ../<audience>` and re-runs `ls -l`
+is `technical`. Switching tabs animates `cd ../<audience>` and re-runs `ls -1`
 in the new folder so the terminal illusion stays consistent.
 
 ## Build environment variables

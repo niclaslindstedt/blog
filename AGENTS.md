@@ -54,15 +54,15 @@ Dependency direction: `posts/{technical,non-technical}/*.md` → `website/script
 
 ## Where new code goes
 
-| Change type            | Goes in                                                               |
-| ---------------------- | --------------------------------------------------------------------- |
-| New feature (pipeline) | `src/...`                                                             |
-| New feature (frontend) | `website/src/...`                                                     |
-| New blog post          | `posts/technical/<slug>.md` and/or `posts/non-technical/<slug>.md`    |
-| Tests                  | `tests/...`                                                           |
-| Docs update            | `docs/...`                                                            |
-| Sample posts           | `examples/...`                                                        |
-| LLM prompt             | `prompts/<name>/<major>_<minor>_<patch>.md` (see `prompts/README.md`) |
+| Change type            | Goes in                                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------------------- |
+| New feature (pipeline) | `src/...`                                                                                |
+| New feature (frontend) | `website/src/...`                                                                        |
+| New blog post          | `posts/technical/YYYY-MM-DD-<slug>.md` and/or `posts/non-technical/YYYY-MM-DD-<slug>.md` |
+| Tests                  | `tests/...`                                                                              |
+| Docs update            | `docs/...`                                                                               |
+| Sample posts           | `examples/...`                                                                           |
+| LLM prompt             | `prompts/<name>/<major>_<minor>_<patch>.md` (see `prompts/README.md`)                    |
 
 ## Test conventions
 
@@ -85,7 +85,7 @@ Dependency direction: `posts/{technical,non-technical}/*.md` → `website/script
 
 ## Parity / cross-cutting rules
 
-- **Slug consistency**: a post's filename stem is its URL path. There is no `slug` frontmatter field — the filename is the only source. Keep both audience versions of a post under the same filename so they stay linked. If you rename a post file, rename it in both audience folders and update any internal cross-links.
+- **Slug consistency**: a post's filename stem is its URL path. There is no `slug` frontmatter field — the filename is the only source. Post filenames are `YYYY-MM-DD-<slug>.md` where the date prefix matches the frontmatter `date` and makes the `ls` listing readable on its own (the terminal UI uses plain `ls -1`, no size/date column). Keep both audience versions of a post under the same filename so they stay linked. If you rename a post file, rename it in both audience folders and update any internal cross-links.
 - **Audience folders**: posts must live under `posts/technical/` or `posts/non-technical/` — never directly under `posts/`. The extractor rejects stray top-level files.
 - **Frontmatter schema**: posts carry exactly `title`, `date`, and `edited_at` — independently per audience version. `date` and `edited_at` are ISO 8601 UTC datetimes (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required). The title is in frontmatter, not as a `#` heading in the body.
 - **Generated data**: `website/src/generated/` is never edited by hand — it is always the output of `npm run extract` inside `website/`. Do not commit partial or out-of-date generated files.

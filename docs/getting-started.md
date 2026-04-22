@@ -17,7 +17,7 @@ cd website && npm install && cd ..
 
 **1. Write your first post.**
 
-The easiest path is the `/write-post` Claude skill — it asks for a title and a body, derives a slug from the title, and writes one file per audience. Each post has up to two versions: one for technical readers and one for non-technical readers. The skill produces `posts/technical/hello-world.md` and `posts/non-technical/hello-world.md`:
+The easiest path is the `/write-post` Claude skill — it asks for a title and a body, derives a slug from the title, and writes one file per audience. Each post has up to two versions: one for technical readers and one for non-technical readers. The skill produces `posts/technical/2026-04-21-hello-world.md` and `posts/non-technical/2026-04-21-hello-world.md`:
 
 ```markdown
 ---
@@ -31,7 +31,7 @@ This is my first post. Welcome to the blog.
 
 Timestamps are ISO 8601 in UTC — they must end with `Z`.
 
-The filename stem (`hello-world`) becomes the URL path — keep it lowercase and hyphen-separated, and identical across both audience folders so the versions stay linked. The title stays in frontmatter; do not repeat it as a `#` heading.
+The filename stem (`2026-04-21-hello-world`) becomes the URL path — it starts with a `YYYY-MM-DD-` date prefix (matching the frontmatter `date`) followed by a lowercase, hyphen-separated slug. Keep the filename identical across both audience folders so the versions stay linked. The title stays in frontmatter; do not repeat it as a `#` heading.
 
 Only one version is strictly required — a post is published as long as it has at least one of the two files. Readers pick an audience via a tab in the terminal UI.
 
@@ -55,7 +55,7 @@ Open `http://localhost:3000` and you should see your post listed on the home pag
 **4. Commit and deploy.**
 
 ```sh
-git add posts/technical/hello-world.md posts/non-technical/hello-world.md
+git add posts/technical/2026-04-21-hello-world.md posts/non-technical/2026-04-21-hello-world.md
 git commit -m "docs: add hello-world post"
 git push
 ```

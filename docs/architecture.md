@@ -4,8 +4,8 @@
 
 ```
 posts/                          markdown source files, split by audience
-  technical/<slug>.md           version for technical readers
-  non-technical/<slug>.md       version for non-technical readers
+  technical/YYYY-MM-DD-<slug>.md        version for technical readers
+  non-technical/YYYY-MM-DD-<slug>.md    version for non-technical readers
 src/                            placeholder top-level TypeScript module (unused)
 website/                        Vite + React + TypeScript + Tailwind v4 frontend
   scripts/
@@ -69,17 +69,19 @@ there is a two-tab strip (`technical` / `non-technical`); the active tab
 determines both the cwd shown in the prompt (`~/code/blog/<audience> $`) and
 which post versions are listed.
 
-On mount the terminal auto-runs `cd code/blog/<audience>` then `ls -l`; each
-filename is clickable, clicking runs `cat … | head -n 10` (instant raw
-output), and a `[ show more ]` action runs `cat … | tail -n +11` with a
-character-by-character typing animation. The tail output is rendered through
+On mount the terminal auto-runs `cd code/blog/<audience>` then `ls -1`
+(one-per-line, no mode/size/date column — the date is already in the
+filename); each filename is clickable, clicking runs `cat … | head -n 10`
+(instant rendered head), and a `[ show more ]` action runs `cat … | tail -n +11`
+with a character-by-character typing animation. Both halves go through
 `react-markdown` + `remark-gfm` with terminal-styled overrides: every element
 keeps the body's monospace font and base size; `h1` is bold + uppercase +
 wide-tracked, `h2`-`h6` are bold, inline code is accent-coloured, code blocks
 use the titlebar background, and blockquotes/tables/hr use the dim border
-colour.
+colour. What `cat` prints is the title (as an `h1`) followed by the body —
+the raw YAML frontmatter is metadata and is never rendered.
 
-Switching the audience tab appends `cd ../<new-audience>` and `ls -l` to the
+Switching the audience tab appends `cd ../<new-audience>` and `ls -1` to the
 transcript (never clears it — terminal scrollback semantics). If a post is
 open and the new audience has a version of that slug, the terminal re-cats
 it; if the slug exists only in the other audience, the terminal prints
@@ -103,7 +105,7 @@ Markdown links whose `href` matches `https://github.com/<owner>/<repo>/blob/<ref
 two routes:
 
 - `/` — landing terminal (no post opened).
-- `/posts/<slug>` — terminal that runs `ls` first, then auto-opens that
+- `/posts/<slug>` — terminal that runs `ls -1` first, then auto-opens that
   post's version for the reader's current audience. If the slug has no
   version in the current audience the terminal prints
   `cat: posts/<slug>.md: No such file or directory` in red.

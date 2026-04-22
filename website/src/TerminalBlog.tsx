@@ -13,15 +13,17 @@ import { BLOG_WPM } from "./typing.ts";
 
 const HEAD_LINES = 10;
 const HOME_PROMPT = "~ $";
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function codePrompt(audience: Audience): string {
   return `~/code/blog/${audience} $`;
 }
 
-function rawFile(v: PostVersion): string {
-  const fm = `---\ntitle: ${v.title}\ndate: ${v.date}\nedited_at: ${v.edited_at}\n---`;
-  return `${fm}\n\n${v.body.replace(/\s+$/, "")}`;
+// What `cat` prints: the title as an H1 followed by the body. The raw YAML
+// frontmatter is metadata, not content — the reader sees a clean document
+// with the title heading it and nothing else from the `---` block.
+function displayText(v: PostVersion): string {
+  const body = v.body.replace(/\s+$/, "");
+  return `# ${v.title}\n\n${body}`;
 }
 
 function headBlock(raw: string, n: number): string {
@@ -33,30 +35,6 @@ function tailBlock(raw: string, startLine: number): string {
     .split("\n")
     .slice(startLine - 1)
     .join("\n");
-}
-
-// Real `ls -l` renders the mtime as `MMM DD HH:MM` when the file was modified
-// in the last ~6 months and `MMM DD  YYYY` otherwise. We mirror that exactly
-// so the transcript looks like a real terminal — the frontmatter `date` plays
-// the role of mtime.
-const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 30 * 6;
-
-function fmtLsDate(iso: string, now: number = Date.now()): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "--- --";
-  const month = MONTHS[d.getUTCMonth()] ?? "---";
-  const day = String(d.getUTCDate()).padStart(2, " ");
-  if (now - d.getTime() > SIX_MONTHS_MS) {
-    return `${month} ${day}  ${d.getUTCFullYear()}`;
-  }
-  const hh = String(d.getUTCHours()).padStart(2, "0");
-  const mm = String(d.getUTCMinutes()).padStart(2, "0");
-  return `${month} ${day} ${hh}:${mm}`;
-}
-
-function lsPrefix(v: PostVersion, bytes: number): string {
-  const size = String(bytes).padStart(6, " ");
-  return `-rw-r--r-- 1 niclas staff ${size} ${fmtLsDate(v.date)} `;
 }
 
 function postsForAudience(posts: Post[], audience: Audience): Post[] {
@@ -130,9 +108,9 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       return;
     }
     openedRef.current.add(key);
-    const raw = rawFile(version);
-    const totalLines = raw.split("\n").length;
-    const head = headBlock(raw, HEAD_LINES);
+    const content = displayText(version);
+    const totalLines = content.split("\n").length;
+    const head = headBlock(content, HEAD_LINES);
     const steps: Step[] = [
       {
         kind: "type-command",
@@ -140,7 +118,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         prompt,
         wpm: BLOG_WPM,
       },
-      { kind: "print", text: head },
+      { kind: "print", text: head, markdown: true },
       { kind: "blank" },
     ];
     if (totalLines > HEAD_LINES) {
@@ -162,8 +140,8 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     const post = posts.find((p) => p.slug === slug);
     const version = post?.versions[a];
     if (!version) return;
-    const raw = rawFile(version);
-    const tail = tailBlock(raw, HEAD_LINES + 1);
+    const content = displayText(version);
+    const tail = tailBlock(content, HEAD_LINES + 1);
     enqueue([
       {
         kind: "type-command",
@@ -178,9 +156,12 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
 
   const enqueueListing = (a: Audience, visible: Post[]): void => {
     const prompt = codePrompt(a);
-    const steps: Step[] = [{ kind: "type-command", text: "ls -l", prompt, wpm: BLOG_WPM }];
+    // `ls -1` (one-per-line) keeps the listing a clean vertical column and
+    // avoids the multi-column output real `ls` produces on a tty. The date
+    // lives in the filename itself (`YYYY-MM-DD-<slug>.md`) so the listing
+    // stays readable on narrow viewports without horizontal scroll.
+    const steps: Step[] = [{ kind: "type-command", text: "ls -1", prompt, wpm: BLOG_WPM }];
     if (visible.length === 0) {
-      steps.push({ kind: "print", text: "total 0", color: "dim" });
       steps.push({
         kind: "print",
         text: `(no ${a} posts yet — write one with the /write-post skill)`,
@@ -190,14 +171,10 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       enqueue(steps);
       return;
     }
-    steps.push({ kind: "print", text: `total ${visible.length}`, color: "dim" });
     for (const p of visible) {
-      const version = p.versions[a];
-      if (!version) continue;
-      const bytes = rawFile(version).length;
+      if (!p.versions[a]) continue;
       steps.push({
         kind: "clickable",
-        prefix: lsPrefix(version, bytes),
         label: `${p.slug}.md`,
         color: "accent",
         onClick: () => openPostFromClick(p.slug),
@@ -231,7 +208,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
             prompt: codePrompt(a),
             fast: true,
           },
-          { kind: "type", text: rawFile(version), markdown: true, fast: true },
+          { kind: "type", text: displayText(version), markdown: true, fast: true },
           { kind: "blank" },
         ]);
       }
