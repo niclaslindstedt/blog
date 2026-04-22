@@ -20,6 +20,10 @@ const DEFAULT_WIDTH = 820;
 const DEFAULT_HEIGHT = 560;
 const VIEWPORT_MARGIN = 12;
 const MOBILE_BREAKPOINT = 900;
+// Persisted window geometry so a drag or resize survives client-side
+// navigation (clicking a post, then going back) and full reloads.
+const POS_KEY = "blog:terminal-pos";
+const SIZE_KEY = "blog:terminal-size";
 // Tolerance (px) for detecting "at the bottom" during stick-to-bottom. A few
 // pixels of slack covers sub-pixel rounding in scrollHeight/clientHeight on
 // mobile browsers that would otherwise flip the flag false on every tick.
@@ -54,16 +58,60 @@ function useSmallViewport(): boolean {
   return small;
 }
 
+function readStoredNumbers<K extends string>(
+  key: string,
+  fields: readonly [K, K],
+): Record<K, number> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === "object") {
+      const a = (parsed as Record<string, unknown>)[fields[0]];
+      const b = (parsed as Record<string, unknown>)[fields[1]];
+      if (Number.isFinite(a) && Number.isFinite(b)) {
+        return { [fields[0]]: a as number, [fields[1]]: b as number } as Record<K, number>;
+      }
+    }
+  } catch {
+    // corrupt entry — fall through to default.
+  }
+  return null;
+}
+
+function writeStored(key: string, value: object): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // localStorage unavailable — ignore.
+  }
+}
+
 function initialSize(): { width: number; height: number } {
   if (typeof window === "undefined") return { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT };
+  const maxW = window.innerWidth - VIEWPORT_MARGIN * 2;
+  const maxH = window.innerHeight - VIEWPORT_MARGIN * 2;
+  const stored = readStoredNumbers(SIZE_KEY, ["width", "height"] as const);
+  if (stored) {
+    return {
+      width: clamp(stored.width, MIN_WIDTH, Math.max(MIN_WIDTH, maxW)),
+      height: clamp(stored.height, MIN_HEIGHT, Math.max(MIN_HEIGHT, maxH)),
+    };
+  }
   return {
-    width: Math.min(DEFAULT_WIDTH, window.innerWidth - VIEWPORT_MARGIN * 2),
-    height: Math.min(DEFAULT_HEIGHT, window.innerHeight - VIEWPORT_MARGIN * 2),
+    width: Math.min(DEFAULT_WIDTH, maxW),
+    height: Math.min(DEFAULT_HEIGHT, maxH),
   };
 }
 
 function initialPos(size: { width: number; height: number }): { x: number; y: number } {
   if (typeof window === "undefined") return { x: VIEWPORT_MARGIN, y: VIEWPORT_MARGIN };
+  const maxX = Math.max(0, window.innerWidth - size.width);
+  const maxY = Math.max(0, window.innerHeight - size.height);
+  const stored = readStoredNumbers(POS_KEY, ["x", "y"] as const);
+  if (stored) return { x: clamp(stored.x, 0, maxX), y: clamp(stored.y, 0, maxY) };
   const x = Math.max(VIEWPORT_MARGIN, (window.innerWidth - size.width) / 2);
   const y = Math.max(VIEWPORT_MARGIN, Math.min(64, (window.innerHeight - size.height) / 2));
   return { x, y };
@@ -221,6 +269,18 @@ export function Terminal({
       }
     }
   }, []);
+
+  // Persist pos/size across client-side navigations (e.g. clicking a post,
+  // then going back) and reloads. Skipped on mobile — the widget is CSS-
+  // fullscreen there and pos/size are fixed at their defaults.
+  useEffect(() => {
+    if (small) return;
+    writeStored(POS_KEY, pos);
+  }, [pos, small]);
+  useEffect(() => {
+    if (small) return;
+    writeStored(SIZE_KEY, size);
+  }, [size, small]);
 
   useEffect(() => {
     if (small) return; // mobile fills the viewport via CSS; size/pos state is ignored.
