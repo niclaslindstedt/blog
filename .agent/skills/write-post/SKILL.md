@@ -1,6 +1,6 @@
 ---
 name: write-post
-description: "Draft a new blog post as up to two audience-specific files: posts/technical/<slug>.md and posts/non-technical/<slug>.md."
+description: "Use this skill whenever the user wants to write, draft, or start a new blog post. Produces up to two audience-specific files under posts/technical/ and posts/non-technical/ with date-prefixed filenames (YYYY-MM-DD-<slug>.md). The slug is always derived from the title — do not ask the user for one."
 ---
 
 # Writing a New Post
@@ -123,12 +123,14 @@ Collect from the user before starting. If the required fields are missing, the a
 | Input                  | Required | Notes                                                                                                                                                                                                                                |
 | ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Title                  | yes      | Becomes the `title` frontmatter field                                                                                                                                                                                                |
-| Slug                   | no       | Derived from title if omitted (see below)                                                                                                                                                                                            |
 | Date                   | no       | Defaults to the current UTC timestamp in ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`)                                                                                                                                                           |
 | Tags                   | no       | Subject tags. Include the project slug from `project-index/INDEX.md` when the post is about one specific project, plus a few topic tags (language, theme). Optional but strongly encouraged — this is how future runs find the post. |
 | Technical body         | one of   | Actual prose for technical readers. A topic description does not count.                                                                                                                                                              |
 | Non-technical body     | one of   | Actual prose for non-technical readers. A topic description does not count.                                                                                                                                                          |
 | Adapt across audiences | no       | If only one body is supplied, whether to generate the other one                                                                                                                                                                      |
+
+**Never ask the user for a slug.** The slug is always derived from the
+title and today's UTC date — asking about it is wasted friction.
 
 At least one of the two bodies must be supplied as prose — not as a topic,
 subject line, or request to "cover X". If both are supplied, use each
@@ -140,10 +142,10 @@ supplied, do not draft — brainstorm.
 
 A post filename is `YYYY-MM-DD-<stem>.md`. The date prefix matches the
 frontmatter `date` (UTC, `YYYY-MM-DD` portion) so the terminal listing
-(`ls -1`) shows the date directly in the filename. The `<stem>` portion is
-derived from the title.
+(`ls -1`) shows the date directly in the filename. The slug is **always**
+derived — never asked for.
 
-If the user does not supply a stem:
+Derive the `<stem>` from the title:
 
 1. Lowercase the title.
 2. Replace runs of whitespace with a single hyphen.
@@ -151,14 +153,15 @@ If the user does not supply a stem:
 4. Collapse repeated hyphens; trim leading/trailing hyphens.
 
 The final `slug` (used as the filename and URL path) is
-`<YYYY-MM-DD>-<stem>`.
+`<YYYY-MM-DD>-<stem>`. If that slug already exists on disk, append `-2`,
+`-3`, … to the stem until it is unique — do not ask the user to name it.
 
 ## Process
 
 1. Read `STYLE_GUIDE.md` and, if present, `../../project-index/INDEX.md`.
 2. **Gate: is there a body?** Check what the user actually supplied. If there is no prose for either audience — only a topic, a subject, a "write about X" — enter brainstorm mode (see "Default mode: brainstorm" above), present candidate angles, and **stop**. Do not proceed past this step until the user either supplies body text or explicitly authorises drafting from notes.
-3. Compute `slug` (from input or derivation) and `now` — the current UTC timestamp in ISO 8601 with a `Z` suffix. Get it with `date -u +%Y-%m-%dT%H:%M:%SZ` or equivalent; never use a local-timezone value.
-4. Refuse and stop if a file already exists at either `posts/technical/<slug>.md` or `posts/non-technical/<slug>.md` — ask the user to pick a different slug or use `/update-post`.
+3. Compute `now` — the current UTC timestamp in ISO 8601 with a `Z` suffix. Get it with `date -u +%Y-%m-%dT%H:%M:%SZ` or equivalent; never use a local-timezone value. Derive `slug` as `<YYYY-MM-DD>-<stem>` per "Slug derivation" above; never ask the user for it.
+4. If a file already exists at either `posts/technical/<slug>.md` or `posts/non-technical/<slug>.md`, append `-2`, `-3`, … to the stem until the slug is unique. If the post is actually an edit of an existing one, use `/update-post` instead.
 5. Determine which audiences are being written (both, or just one the user asked for / adapted to).
 6. For each audience being produced, lay out the body: fix frontmatter, headings, fenced code blocks, and link any project names that appear in the index. For the non-technical adaptation, apply the guidance in "Writing the non-technical version" above.
 7. Write each produced file as:
