@@ -298,15 +298,17 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
 
   // After `ls -1`, use a PCRE lookbehind so grep prints only the lede text
   // (not the `summary: ` prefix), letting the reader pick a post by its
-  // one-line hook rather than by a bare filename. The whole
-  // `<slug>.md:<text>` line is clickable — the summary is the hook, so
-  // clicking anywhere on it should open the post.
+  // one-line hook rather than by a bare filename. Piping through
+  // `xargs -I{} printf '%s\n\n' {}` inserts a blank line after each match
+  // so the summaries don't run together. The whole `<slug>.md:<text>` line
+  // is clickable — the summary is the hook, so clicking anywhere on it
+  // should open the post.
   const enqueueSummaries = (a: Audience, visible: Post[]): void => {
     const prompt = postsPrompt(a);
     const steps: Step[] = [
       {
         kind: "type-command",
-        text: `grep -oP '(?<=^summary: ).*' *.md`,
+        text: `grep -oP '(?<=^summary: ).*' *.md | xargs -I{} printf '%s\\n\\n' {}`,
         prompt,
         wpm: BLOG_WPM,
       },
@@ -321,10 +323,10 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         color: "accent",
         onClick: () => openPostFromClick(p.slug),
       });
+      steps.push({ kind: "blank" });
       printed += 1;
     }
     if (printed === 0) return;
-    steps.push({ kind: "blank" });
     enqueue(steps);
   };
 
