@@ -108,6 +108,16 @@ the in-app vi simulator with the file prism-highlighted, jumping to the
 line range if one was specified. Plain GitHub blob links in body prose
 behave the same way.
 
+## Summary
+
+Every post carries a `summary:` line in frontmatter — a single-sentence lede the list view shows as the clickable preview. Keep it on one physical line (no newlines, no block scalars). Write it in the same voice as the body for that audience: the technical and non-technical versions of the same post may have different summaries, each pitched to its reader.
+
+```yaml
+summary: A git-tracked blog where I write the prose and an AI skill does the scaffolding.
+```
+
+Avoid the LLM tics listed below in the summary too — no throat-clearing, no hype adjectives, no "a deep dive into".
+
 ## Tags
 
 Every post should carry subject tags in frontmatter so future runs (and plain

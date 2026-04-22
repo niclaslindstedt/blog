@@ -124,6 +124,7 @@ Collect from the user before starting. If the required fields are missing, the a
 | ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Title                  | yes      | Becomes the `title` frontmatter field                                                                                                                                                                                                |
 | Date                   | no       | Defaults to the current UTC timestamp in ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`)                                                                                                                                                           |
+| Summary                | yes      | One-sentence lede, one line (no newlines), independent per audience version. Becomes the `summary` frontmatter field and doubles as the clickable preview in the terminal list view. Write it in the same voice as the body.         |
 | Tags                   | no       | Subject tags. Include the project slug from `project-index/INDEX.md` when the post is about one specific project, plus a few topic tags (language, theme). Optional but strongly encouraged — this is how future runs find the post. |
 | Technical body         | one of   | Actual prose for technical readers. A topic description does not count.                                                                                                                                                              |
 | Non-technical body     | one of   | Actual prose for non-technical readers. A topic description does not count.                                                                                                                                                          |
@@ -171,13 +172,16 @@ The final `slug` (used as the filename and URL path) is
    title: <title>
    date: <iso-utc-datetime>
    edited_at: <iso-utc-datetime>
+   summary: <one-line lede>
    tags: <slug>, <topic>, <topic>
    ---
 
    <body>
    ```
 
-   `date` and `edited_at` are ISO 8601 UTC datetimes ending in `Z` (e.g. `2026-04-21T14:30:00Z`). On creation, `edited_at` equals `date`. The two versions share `slug` and `date`; `title` may differ slightly between audiences.
+   `date` and `edited_at` are ISO 8601 UTC datetimes ending in `Z` (e.g. `2026-04-21T14:30:00Z`). On creation, `edited_at` equals `date`. The two versions share `slug` and `date`; `title`, `summary`, and body may differ per audience.
+
+   `summary` is a single physical line — no line breaks, no block scalars. The list view renders it verbatim as the clickable preview; keep it to one sentence and match the voice of the body for that audience.
 
    `tags` is a single line, comma-separated, lowercase, hyphenated — e.g. `tags: juris, python, release-notes`. Omit the line only when the post has no meaningful subject tags (rare). When the post is about a project in the index, the first tag is the project slug so `find-posts-by-tag.sh <slug>` locates the post on the next run. Keep the list short (≤ 6).
 
@@ -191,7 +195,7 @@ The final `slug` (used as the filename and URL path) is
 - [ ] Project names linked via `project-index/INDEX.md` where applicable
 - [ ] Ran `find-posts-by-tag.sh` and `commits-since.sh` when the post is about a project in the index; surfaced candidate topics before drafting
 - [ ] Slug is unique under both `posts/technical/` and `posts/non-technical/`
-- [ ] Each produced file has frontmatter with `title`, `date`, `edited_at` — all present; the two timestamps are ISO 8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required)
+- [ ] Each produced file has frontmatter with `title`, `date`, `edited_at`, `summary` — all present; the two timestamps are ISO 8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required); `summary` is a single line
 - [ ] `tags:` present on one line, lowercase, comma-separated; first tag is the project slug when the post is about a project in the index
 - [ ] `date` is identical across audience versions of the same slug
 - [ ] Body contains no top-level `# ` heading (the title comes from frontmatter)

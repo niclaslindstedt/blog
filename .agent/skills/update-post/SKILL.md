@@ -71,7 +71,7 @@ Same rule as `/write-post`: the user writes, the agent lays out.
 4. Apply the requested changes to the body of each targeted version. Keep the rest of the prose untouched.
 5. Relink any project references that are now out of sync with `project-index/INDEX.md`.
 6. Update frontmatter **in every file you edit**:
-   - Preserve `title` and `date` unless the user explicitly requested a change.
+   - Preserve `title`, `date`, and `summary` unless the user explicitly requested a change. If the edit materially changes what the post is about, update `summary` to match — keep it on a single line.
    - Set `edited_at` to the current UTC timestamp in ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required). Get it with `date -u +%Y-%m-%dT%H:%M:%SZ` or equivalent; never use a local-timezone value.
    - Do not touch `edited_at` in files you didn't edit.
 7. Write each updated file back to the same path (no rename, no audience swap).
@@ -84,7 +84,7 @@ Same rule as `/write-post`: the user writes, the agent lays out.
 - [ ] Project references reconciled against `project-index/INDEX.md`
 - [ ] Correct file(s) identified for the requested audience
 - [ ] Slug (filename) unchanged; no audience-folder swaps
-- [ ] `title` and `date` preserved unless explicitly changed
+- [ ] `title`, `date`, and `summary` preserved unless explicitly changed (and if the edit changes what the post is about, `summary` updated to match, still on a single line)
 - [ ] `edited_at` set to the current UTC timestamp (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required) in every file actually edited; untouched in files you did not edit
 - [ ] `tags:` preserved verbatim unless the user asked to change them; if the post is about a known project but has no tags, add the project slug as the first tag
 - [ ] Cross-audience drift flagged when an edit to one version creates inconsistency with the other

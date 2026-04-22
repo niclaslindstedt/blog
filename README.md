@@ -44,6 +44,7 @@ Or create the files by hand under `posts/technical/YYYY-MM-DD-<slug>.md` and/or 
 title: Hello World
 date: 2026-04-21T14:30:00Z
 edited_at: 2026-04-21T14:30:00Z
+summary: A one-line lede shown as the clickable preview in the terminal list view.
 ---
 
 This is my first post.
@@ -82,7 +83,7 @@ Authoring skills (invoked inside a Claude Code session):
 
 ## Configuration
 
-- **Post frontmatter.** Exactly `title`, `date`, `edited_at`. `date` and `edited_at` are ISO 8601 UTC datetimes (`YYYY-MM-DDTHH:MM:SSZ`). See [`docs/configuration.md`](docs/configuration.md).
+- **Post frontmatter.** `title`, `date`, `summary`, and `edited_at`. `date` and `edited_at` are ISO 8601 UTC datetimes (`YYYY-MM-DDTHH:MM:SSZ`); `summary` is a single-line lede used as the clickable preview in the list view. See [`docs/configuration.md`](docs/configuration.md).
 - **Build env vars.** `BASE_URL` (default `/`) sets the URL prefix for generated assets. GitHub Pages deploys set it to `/blog/`.
 
 ## Examples

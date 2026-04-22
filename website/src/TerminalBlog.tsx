@@ -13,32 +13,20 @@ import { useTerminalAnimation } from "./useTerminalAnimation.ts";
 import { postsForAudience, withViewParam } from "./postFilters.ts";
 import { BLOG_WPM } from "./typing.ts";
 
-const HEAD_LINES = 10;
 const HOME_PROMPT = "~ $";
 
 function codePrompt(audience: Audience): string {
   return `~/code/blog/${audience} $`;
 }
 
-// What `cat` prints: the title as an H1 followed by the body. The raw YAML
-// frontmatter is metadata, not content — the reader sees a clean document
-// with the title heading it and nothing else from the `---` block. Tags are
-// rendered separately as an inline clickable row; they aren't part of the
-// markdown text because each one needs its own click handler.
+// What `sed '1,/^---$/d'` prints: the body with the YAML frontmatter stripped.
+// The title is reintroduced as an H1 by the renderer so the reader still sees a
+// clean document headed by the post's title. Tags are rendered separately as
+// an inline clickable row; they aren't part of the markdown text because each
+// one needs its own click handler.
 function displayText(v: PostVersion): string {
   const body = v.body.replace(/\s+$/, "");
   return `# ${v.title}\n\n${body}`;
-}
-
-function headBlock(raw: string, n: number): string {
-  return raw.split("\n").slice(0, n).join("\n");
-}
-
-function tailBlock(raw: string, startLine: number): string {
-  return raw
-    .split("\n")
-    .slice(startLine - 1)
-    .join("\n");
 }
 
 export function TerminalBlog({ posts }: { posts: Post[] }) {
@@ -67,7 +55,6 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   const startedRef = useRef(false);
   // Keyed by `${audience}:${slug}` — a post is "opened" independently in each audience.
   const openedRef = useRef(new Set<string>());
-  const expandedRef = useRef(new Set<string>());
   const notFoundRef = useRef(new Set<string>());
   const visitedRef = useRef(new Set<Audience>());
   const audienceRef = useRef<Audience>(audience);
@@ -95,24 +82,21 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     const prompt = codePrompt(a);
     const post = posts.find((p) => p.slug === slug);
     const version = post?.versions[a];
-    // Every user-initiated `cat` anchors its command to the top of the
-    // viewport so the reader starts at the beginning of the post. Auto-opens
-    // during the intro are anchored too — they're the reader's first look at
-    // a post and they should also start from the top.
-    const catAnchor = true;
+    // Every user-initiated body-render anchors its command to the top of the
+    // viewport so the reader starts at the beginning of the post.
     if (!version) {
       notFoundRef.current.add(key);
       enqueue([
         {
           kind: "type-command",
-          text: `cat ${slug}.md | head -n ${HEAD_LINES}`,
+          text: `sed '1,/^---$/d' ${slug}.md`,
           prompt,
           wpm: BLOG_WPM,
-          anchor: catAnchor,
+          anchor: true,
         },
         {
           kind: "print",
-          text: `cat: ${slug}.md: No such file or directory`,
+          text: `sed: ${slug}.md: No such file or directory`,
           color: "error",
         },
         { kind: "blank" },
@@ -131,66 +115,15 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       return;
     }
     openedRef.current.add(key);
-    const content = displayText(version);
-    const totalLines = content.split("\n").length;
-    const head = headBlock(content, HEAD_LINES);
     const steps: Step[] = [
       {
         kind: "type-command",
-        text: `cat ${slug}.md | head -n ${HEAD_LINES}`,
+        text: `sed '1,/^---$/d' ${slug}.md`,
         prompt,
-        wpm: BLOG_WPM,
-        anchor: catAnchor,
-      },
-      { kind: "print", text: head, markdown: true },
-      { kind: "blank" },
-    ];
-    if (totalLines > HEAD_LINES) {
-      steps.push({ kind: "action", label: "[ show more ]", onClick: () => showMore(slug, a) });
-      steps.push({ kind: "blank" });
-    } else if (version.tags.length > 0) {
-      steps.push({
-        kind: "tag-row",
-        tags: version.tags,
-        onClick: (tag) => enqueueTagSearch(tag, a),
-      });
-      steps.push({ kind: "blank" });
-    }
-    enqueue(steps);
-  };
-
-  // An explicit click on a post filename (ls entry or grep result) should
-  // always re-run `cat`, even if this audience already rendered that post
-  // earlier — a reader clicking a filename expects to see the command type out
-  // again, not a silent no-op. We clear the "already opened" guard for this
-  // slug so enqueueOpen will proceed; the useEffect that fires on slugParam
-  // change sees the key re-added and remains a no-op, avoiding a double cat.
-  const openPostFromClick = (slug: string) => {
-    if (slugParam !== slug) navigate(`/posts/${slug}`);
-    const key = openKey(audienceRef.current, slug);
-    openedRef.current.delete(key);
-    expandedRef.current.delete(key);
-    enqueueOpen(slug, audienceRef.current);
-  };
-
-  const showMore = (slug: string, a: Audience) => {
-    const key = openKey(a, slug);
-    if (expandedRef.current.has(key)) return;
-    expandedRef.current.add(key);
-    const post = posts.find((p) => p.slug === slug);
-    const version = post?.versions[a];
-    if (!version) return;
-    const content = displayText(version);
-    const tail = tailBlock(content, HEAD_LINES + 1);
-    const steps: Step[] = [
-      {
-        kind: "type-command",
-        text: `cat ${slug}.md | tail -n +${HEAD_LINES + 1}`,
-        prompt: codePrompt(a),
         wpm: BLOG_WPM,
         anchor: true,
       },
-      { kind: "type", text: tail, markdown: true, wpm: BLOG_WPM },
+      { kind: "print", text: displayText(version), markdown: true },
       { kind: "blank" },
     ];
     if (version.tags.length > 0) {
@@ -204,9 +137,21 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     enqueue(steps);
   };
 
+  // An explicit click on a post filename (ls entry, summary line, or grep
+  // result) should always re-run the body render, even if this audience
+  // already rendered that post earlier — a reader clicking a filename expects
+  // to see the command type out again, not a silent no-op. We clear the
+  // "already opened" guard for this slug so enqueueOpen will proceed.
+  const openPostFromClick = (slug: string) => {
+    if (slugParam !== slug) navigate(`/posts/${slug}`);
+    const key = openKey(audienceRef.current, slug);
+    openedRef.current.delete(key);
+    enqueueOpen(slug, audienceRef.current);
+  };
+
   // Clicking a #tag under a post runs a `grep` that filters *.md files by a
   // `tags:` frontmatter line containing the tag as a whole word, and then
-  // surfaces each matching filename as a clickable `cat` target — same shape
+  // surfaces each matching filename as a clickable `sed` target — same shape
   // as the `ls -1` listing, just filtered.
   const enqueueTagSearch = (tag: string, a: Audience) => {
     const prompt = codePrompt(a);
@@ -270,6 +215,32 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     enqueue(steps);
   };
 
+  // After `ls -1`, run `grep "^summary:" *.md` so the reader can pick a post
+  // from its one-line summary rather than from a bare filename. The whole
+  // `<slug>.md:summary: <text>` line is clickable — the summary is the hook,
+  // so clicking anywhere on it should open the post.
+  const enqueueSummaries = (a: Audience, visible: Post[]): void => {
+    const prompt = codePrompt(a);
+    const steps: Step[] = [
+      { kind: "type-command", text: `grep "^summary:" *.md`, prompt, wpm: BLOG_WPM },
+    ];
+    let printed = 0;
+    for (const p of visible) {
+      const v = p.versions[a];
+      if (!v) continue;
+      steps.push({
+        kind: "clickable",
+        label: `${p.slug}.md:summary: ${v.summary}`,
+        color: "accent",
+        onClick: () => openPostFromClick(p.slug),
+      });
+      printed += 1;
+    }
+    if (printed === 0) return;
+    steps.push({ kind: "blank" });
+    enqueue(steps);
+  };
+
   const runIntro = (a: Audience) => {
     const visible = postsForAudience(posts, a);
     enqueue([
@@ -281,35 +252,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       },
     ]);
     enqueueListing(a, visible);
-
-    if (!slugParam && visible.length > 0) {
-      const latest = visible[0];
-      const version = latest.versions[a];
-      if (version) {
-        openedRef.current.add(openKey(a, latest.slug));
-        const steps: Step[] = [
-          { kind: "delay", ms: 750 },
-          {
-            kind: "type-command",
-            text: `cat ${latest.slug}.md`,
-            prompt: codePrompt(a),
-            fast: true,
-            anchor: true,
-          },
-          { kind: "type", text: displayText(version), markdown: true, fast: true },
-          { kind: "blank" },
-        ];
-        if (version.tags.length > 0) {
-          steps.push({
-            kind: "tag-row",
-            tags: version.tags,
-            onClick: (tag) => enqueueTagSearch(tag, a),
-          });
-          steps.push({ kind: "blank" });
-        }
-        enqueue(steps);
-      }
-    }
+    enqueueSummaries(a, visible);
 
     if (slugParam) enqueueOpen(slugParam, a);
   };
@@ -326,7 +269,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   // Audience tab switch (after initial mount): each audience owns its own
   // terminal session, so swapping just swaps the scrollback — no `clear`, no
   // re-animated `cd`. The first time a tab is focused we run the intro from
-  // scratch (cd, ls, cat latest) in that session; subsequent visits resume
+  // scratch (cd, ls, grep summaries) in that session; subsequent visits resume
   // the session exactly where it was left.
   useEffect(() => {
     if (!startedRef.current) return;
