@@ -147,7 +147,7 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
                         {lineNumber}
                       </span>
                       <span
-                        className={`flex-1 ${wrap ? "whitespace-pre-wrap break-all" : "whitespace-pre"}`}
+                        className={`flex-1 ${wrap ? "whitespace-pre-wrap break-words" : "whitespace-pre"}`}
                       >
                         {line.map((token, ti) => {
                           const { key: _tk, ...trest } = getTokenProps({ token });
