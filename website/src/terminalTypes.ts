@@ -1,5 +1,10 @@
 export type LineColor = "default" | "dim" | "accent" | "meta" | "error";
 
+export interface TabStop {
+  at: number;
+  to: number;
+}
+
 export type LineData =
   | { kind: "command"; text: string; prompt?: string; active?: boolean }
   | { kind: "output"; text: string; color?: LineColor; active?: boolean; markdown?: boolean }
@@ -27,10 +32,12 @@ export type Step =
       // other user-initiated commands whose response the reader wants to watch
       // unfold from the command downward rather than be dragged to the bottom.
       anchor?: boolean;
-      // Character index at which the typer "tabs": once `shown.length` reaches
-      // `tabAt` the rest of `text` is filled in instantaneously, mimicking a
-      // shell tab-completion on a uniquely-identifying filename prefix.
-      tabAt?: number;
+      // Ordered list of tab-completion points. When `shown.length` reaches
+      // `at`, the typer snaps `shown` forward to `to` instantaneously,
+      // mimicking a shell tab-complete on a uniquely-identifying prefix. A
+      // single command can carry multiple stops (e.g. one per folder segment
+      // in a cd path) — each stop is consumed in order.
+      tabStops?: TabStop[];
     }
   | { kind: "print"; text: string; color?: LineColor; markdown?: boolean }
   | {
