@@ -87,3 +87,24 @@ body {
     transparent 80%
   );
 }
+
+/* Scoped light palette for the fallback (prose) view. The Tailwind utility
+   classes resolve `var(--color-…)` at runtime, so rebinding the variables on
+   this class cascades through every descendant without touching any JSX. */
+.theme-light {
+  --color-page-bg: #f7f7f4;
+  --color-term-bg: #ffffff;
+  --color-term-titlebar: #ececec;
+  --color-term-border: #d9d9d6;
+  --color-fg: #1b1b1b;
+  --color-fg-bright: #000000;
+  --color-dim: #6b6b6b;
+  --color-accent: #1b1b1b;
+  --color-meta: #6b6b6b;
+  --color-link: #0b63c6;
+  --color-pipe: #1b1b1b;
+  --color-flag: #1b1b1b;
+  --color-path: #1b1b1b;
+  background: var(--color-page-bg);
+  color: var(--color-fg);
+}
