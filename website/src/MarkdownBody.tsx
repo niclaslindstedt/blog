@@ -43,32 +43,34 @@ const terminalComponents: Components = {
       {children}
     </div>
   ),
-  h2: ({ children }) => <div className="mt-3 mb-1 font-bold text-fg-bright">{children}</div>,
-  h3: ({ children }) => <div className="mt-2 mb-1 font-bold text-fg">{children}</div>,
-  h4: ({ children }) => <div className="mt-1 mb-1 font-bold text-fg">{children}</div>,
+  h2: ({ children }) => <div className="mt-[1lh] font-bold text-fg-bright">{children}</div>,
+  h3: ({ children }) => <div className="mt-[1lh] font-bold text-fg">{children}</div>,
+  h4: ({ children }) => <div className="mt-[1lh] font-bold text-fg">{children}</div>,
   h5: ({ children }) => <div className="font-bold text-fg">{children}</div>,
   h6: ({ children }) => <div className="font-bold text-fg">{children}</div>,
   p: ({ children }) => <div className="mb-[1lh] whitespace-pre-wrap">{children}</div>,
-  ul: ({ children }) => <ul className="my-1 ml-5 list-disc">{children}</ul>,
-  ol: ({ children }) => <ol className="my-1 ml-5 list-decimal">{children}</ol>,
-  li: ({ children }) => <li className="mb-0.5">{children}</li>,
+  ul: ({ children }) => <ul className="mb-[1lh] ml-5 list-disc">{children}</ul>,
+  ol: ({ children }) => <ol className="mb-[1lh] ml-5 list-decimal">{children}</ol>,
+  li: ({ children }) => <li>{children}</li>,
   a: AnchorOverride,
   code: ({ children, className }) => (
     <code className={`text-meta ${className ?? ""}`}>{children}</code>
   ),
   pre: ({ children }) => (
-    <pre className="my-2 overflow-x-auto whitespace-pre-wrap bg-term-titlebar p-2">{children}</pre>
+    <pre className="mb-[1lh] overflow-x-auto whitespace-pre-wrap bg-term-titlebar p-2">
+      {children}
+    </pre>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="my-1 border-l-2 border-dim pl-3 text-dim">{children}</blockquote>
+    <blockquote className="mb-[1lh] border-l-2 border-dim pl-3 text-dim">{children}</blockquote>
   ),
-  hr: () => <hr className="my-2 border-t border-dim" />,
+  hr: () => <hr className="my-[1lh] border-t border-dim" />,
   em: ({ children }) => <em className="italic">{children}</em>,
   strong: ({ children }) => <strong className="font-bold">{children}</strong>,
   sup: ({ children }) => (
     <sup className="relative -top-[0.3em] text-[0.85em] text-dim">{children}</sup>
   ),
-  table: ({ children }) => <table className="my-2 border-collapse">{children}</table>,
+  table: ({ children }) => <table className="mb-[1lh] border-collapse">{children}</table>,
   th: ({ children }) => (
     <th className="border border-dim px-2 py-1 text-left font-bold">{children}</th>
   ),
