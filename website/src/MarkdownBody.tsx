@@ -43,7 +43,7 @@ const components: Components = {
   h4: ({ children }) => <div className="mt-1 mb-1 font-bold text-fg">{children}</div>,
   h5: ({ children }) => <div className="font-bold text-fg">{children}</div>,
   h6: ({ children }) => <div className="font-bold text-fg">{children}</div>,
-  p: ({ children }) => <div className="mb-2 whitespace-pre-wrap">{children}</div>,
+  p: ({ children }) => <div className="mb-[1lh] whitespace-pre-wrap">{children}</div>,
   ul: ({ children }) => <ul className="my-1 ml-5 list-disc">{children}</ul>,
   ol: ({ children }) => <ol className="my-1 ml-5 list-decimal">{children}</ol>,
   li: ({ children }) => <li className="mb-0.5">{children}</li>,
