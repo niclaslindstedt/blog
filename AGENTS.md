@@ -46,7 +46,7 @@ npm run fmt:check && npm run lint && npm run build && npm test
 
 The repository is a small TypeScript + React blog. Each post has up to two versions — one aimed at technical readers (`posts/technical/<slug>.md`) and one at non-technical readers (`posts/non-technical/<slug>.md`). Either file may exist on its own; a post is published as long as it has at least one version. `website/` is a Vite + React app: its `scripts/extract-posts.ts` walks both subfolders, validates frontmatter, merges versions by slug, and emits `website/src/generated/posts.json`, which `website/src/App.tsx` imports to render the list view.
 
-The filename stem is the canonical slug — it is the URL path, the filename, and the key in the generated data. Both audience versions of the same post share the same slug (filename). There is no `slug` frontmatter field. Frontmatter carries exactly `title`, `date`, and `edited_at`.
+The filename stem is the canonical slug — it is the URL path, the filename, and the key in the generated data. Both audience versions of the same post share the same slug (filename). There is no `slug` frontmatter field. Frontmatter carries `title`, `date`, `edited_at`, and an optional comma-separated `tags` line.
 
 The frontend exposes a two-tab audience switcher in the terminal chrome; the reader's choice is persisted in `localStorage` under `blog:audience` and is not reflected in the URL.
 
@@ -87,7 +87,7 @@ Dependency direction: `posts/{technical,non-technical}/*.md` → `website/script
 
 - **Slug consistency**: a post's filename stem is its URL path. There is no `slug` frontmatter field — the filename is the only source. Post filenames are `YYYY-MM-DD-<slug>.md` where the date prefix matches the frontmatter `date` and makes the `ls` listing readable on its own (the terminal UI uses plain `ls -1`, no size/date column). Keep both audience versions of a post under the same filename so they stay linked. If you rename a post file, rename it in both audience folders and update any internal cross-links.
 - **Audience folders**: posts must live under `posts/technical/` or `posts/non-technical/` — never directly under `posts/`. The extractor rejects stray top-level files.
-- **Frontmatter schema**: posts carry exactly `title`, `date`, and `edited_at` — independently per audience version. `date` and `edited_at` are ISO 8601 UTC datetimes (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required). The title is in frontmatter, not as a `#` heading in the body.
+- **Frontmatter schema**: posts carry `title`, `date`, `edited_at`, and an optional comma-separated `tags` — independently per audience version. `date` and `edited_at` are ISO 8601 UTC datetimes (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required). The title is in frontmatter, not as a `#` heading in the body.
 - **Generated data**: `website/src/generated/` is never edited by hand — it is always the output of `npm run extract` inside `website/`. Do not commit partial or out-of-date generated files.
 
 ## OSS_SPEC deviations

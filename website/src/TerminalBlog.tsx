@@ -20,7 +20,9 @@ function codePrompt(audience: Audience): string {
 
 // What `cat` prints: the title as an H1 followed by the body. The raw YAML
 // frontmatter is metadata, not content — the reader sees a clean document
-// with the title heading it and nothing else from the `---` block.
+// with the title heading it and nothing else from the `---` block. Tags are
+// rendered separately as an inline clickable row; they aren't part of the
+// markdown text because each one needs its own click handler.
 function displayText(v: PostVersion): string {
   const body = v.body.replace(/\s+$/, "");
   return `# ${v.title}\n\n${body}`;
@@ -124,6 +126,13 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     if (totalLines > HEAD_LINES) {
       steps.push({ kind: "action", label: "[ show more ]", onClick: () => showMore(slug, a) });
       steps.push({ kind: "blank" });
+    } else if (version.tags.length > 0) {
+      steps.push({
+        kind: "tag-row",
+        tags: version.tags,
+        onClick: (tag) => enqueueTagSearch(tag, a),
+      });
+      steps.push({ kind: "blank" });
     }
     enqueue(steps);
   };
@@ -142,7 +151,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     if (!version) return;
     const content = displayText(version);
     const tail = tailBlock(content, HEAD_LINES + 1);
-    enqueue([
+    const steps: Step[] = [
       {
         kind: "type-command",
         text: `cat ${slug}.md | tail -n +${HEAD_LINES + 1}`,
@@ -151,7 +160,51 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       },
       { kind: "type", text: tail, markdown: true, wpm: BLOG_WPM },
       { kind: "blank" },
-    ]);
+    ];
+    if (version.tags.length > 0) {
+      steps.push({
+        kind: "tag-row",
+        tags: version.tags,
+        onClick: (tag) => enqueueTagSearch(tag, a),
+      });
+      steps.push({ kind: "blank" });
+    }
+    enqueue(steps);
+  };
+
+  // Clicking a #tag under a post runs a `grep` that filters *.md files by a
+  // `tags:` frontmatter line containing the tag as a whole word, and then
+  // surfaces each matching filename as a clickable `cat` target — same shape
+  // as the `ls -1` listing, just filtered.
+  const enqueueTagSearch = (tag: string, a: Audience) => {
+    const prompt = codePrompt(a);
+    const matches = posts.filter((p) => {
+      const v = p.versions[a];
+      return v !== undefined && v.tags.includes(tag);
+    });
+    const steps: Step[] = [
+      {
+        kind: "type-command",
+        text: `grep -lE "^tags:.*\\b${tag}\\b" *.md`,
+        prompt,
+        wpm: BLOG_WPM,
+      },
+    ];
+    if (matches.length === 0) {
+      steps.push({ kind: "blank" });
+      enqueue(steps);
+      return;
+    }
+    for (const p of matches) {
+      steps.push({
+        kind: "clickable",
+        label: `${p.slug}.md`,
+        color: "accent",
+        onClick: () => openPostFromClick(p.slug),
+      });
+    }
+    steps.push({ kind: "blank" });
+    enqueue(steps);
   };
 
   const enqueueListing = (a: Audience, visible: Post[]): void => {
@@ -201,7 +254,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       const version = latest.versions[a];
       if (version) {
         openedRef.current.add(openKey(a, latest.slug));
-        enqueue([
+        const steps: Step[] = [
           { kind: "delay", ms: 750 },
           {
             kind: "type-command",
@@ -211,7 +264,16 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
           },
           { kind: "type", text: displayText(version), markdown: true, fast: true },
           { kind: "blank" },
-        ]);
+        ];
+        if (version.tags.length > 0) {
+          steps.push({
+            kind: "tag-row",
+            tags: version.tags,
+            onClick: (tag) => enqueueTagSearch(tag, a),
+          });
+          steps.push({ kind: "blank" });
+        }
+        enqueue(steps);
       }
     }
 

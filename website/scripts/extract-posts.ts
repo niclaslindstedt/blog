@@ -38,11 +38,20 @@ function parseFrontmatter(
   return { fields, body };
 }
 
+function parseTags(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+}
+
 function loadVersion(file: string): PostVersion {
   const raw = fs.readFileSync(file, "utf8");
   const { fields, body } = parseFrontmatter(raw, file);
   const { title, date } = fields;
   const edited_at = fields.edited_at ?? date;
+  const tags = parseTags(fields.tags);
   if (!title) die(`${file}: frontmatter missing required 'title'`);
   if (!date) die(`${file}: frontmatter missing required 'date'`);
   if (!ISO_DATETIME_UTC.test(date))
@@ -51,7 +60,7 @@ function loadVersion(file: string): PostVersion {
     die(
       `${file}: 'edited_at' must be ISO 8601 UTC datetime (YYYY-MM-DDTHH:MM:SSZ), got '${edited_at}'`,
     );
-  return { title, date, edited_at, body };
+  return { title, date, edited_at, tags, body };
 }
 
 function main(): void {
