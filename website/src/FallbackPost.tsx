@@ -4,6 +4,8 @@ import { useAudience } from "./AudienceContext.tsx";
 import { FallbackShell } from "./FallbackShell.tsx";
 import { MarkdownBody } from "./MarkdownBody.tsx";
 import { fallbackHref } from "./postFilters.ts";
+import { usePageTitle } from "./seo/usePageTitle.ts";
+import { SITE_NAME } from "./seo/siteConfig.ts";
 
 function formatDate(iso: string): string {
   try {
@@ -19,6 +21,9 @@ export function FallbackPost({ posts }: { posts: Post[] }) {
   const { audience, setAudience } = useAudience();
   const post = posts.find((p) => p.slug === slug);
   const version = post && slug ? post.versions[audience] : undefined;
+  const titleForTab =
+    version?.title ?? post?.title ?? (slug ? `Post not found — ${SITE_NAME}` : SITE_NAME);
+  usePageTitle(version ? `${titleForTab} — ${SITE_NAME}` : titleForTab);
 
   if (!post || !slug) {
     return (
@@ -71,21 +76,37 @@ export function FallbackPost({ posts }: { posts: Post[] }) {
 
   return (
     <FallbackShell>
-      <article>
+      <article itemScope itemType="https://schema.org/BlogPosting">
         <header className="mb-8">
-          <h1 className="mb-3 text-3xl leading-tight font-bold text-fg-bright">{version.title}</h1>
+          <h1
+            className="mb-3 text-3xl leading-tight font-bold text-fg-bright"
+            itemProp="headline name"
+          >
+            {version.title}
+          </h1>
           <div className="text-sm text-dim">
-            <time dateTime={version.date}>{formatDate(version.date)}</time>
+            <time dateTime={version.date} itemProp="datePublished">
+              {formatDate(version.date)}
+            </time>
             {edited && (
               <>
                 {" · edited "}
-                <time dateTime={version.edited_at}>{formatDate(version.edited_at)}</time>
+                <time dateTime={version.edited_at} itemProp="dateModified">
+                  {formatDate(version.edited_at)}
+                </time>
               </>
             )}
           </div>
+          <meta itemProp="description" content={version.summary} />
+          <meta itemProp="wordCount" content={String(version.wordCount)} />
+          <meta itemProp="inLanguage" content="en" />
+          <span itemProp="author" itemScope itemType="https://schema.org/Person">
+            <meta itemProp="name" content="Niclas Lindstedt" />
+            <meta itemProp="url" content="https://niclaslindstedt.se" />
+          </span>
         </header>
 
-        <div className="text-fg">
+        <div className="text-fg" itemProp="articleBody">
           <MarkdownBody text={version.body} variant="prose" />
         </div>
 
@@ -94,8 +115,9 @@ export function FallbackPost({ posts }: { posts: Post[] }) {
             {version.tags.map((t) => (
               <Link
                 key={t}
-                to={fallbackHref("/", { tag: t })}
+                to={`/tags/${encodeURIComponent(t)}/`}
                 className="text-dim underline decoration-dotted hover:text-fg"
+                itemProp="keywords"
               >
                 #{t}
               </Link>

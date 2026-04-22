@@ -5,7 +5,7 @@
   "scripts": {
     "extract": "tsx scripts/extract-posts.ts",
     "dev": "npm run extract && vite",
-    "build": "npm run extract && tsc -p tsconfig.json --noEmit && vite build && cp dist/index.html dist/404.html",
+    "build": "npm run extract && tsc -p tsconfig.json --noEmit && vite build && tsx scripts/generate-seo.ts",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

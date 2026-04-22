@@ -13,10 +13,10 @@ function formatDate(iso: string): string {
   }
 }
 
-export function FallbackBlog({ posts }: { posts: Post[] }) {
+export function FallbackBlog({ posts, tag: tagProp }: { posts: Post[]; tag?: string }) {
   const { audience } = useAudience();
   const [params] = useSearchParams();
-  const tag = params.get("tag");
+  const tag = tagProp ?? params.get("tag");
 
   const visible = postsForAudience(posts, audience).filter((p) => {
     if (!tag) return true;
@@ -65,7 +65,7 @@ export function FallbackBlog({ posts }: { posts: Post[] }) {
                     {v.tags.map((t) => (
                       <Link
                         key={t}
-                        to={fallbackHref("/", { tag: t })}
+                        to={`/tags/${encodeURIComponent(t)}/`}
                         className="text-dim underline decoration-dotted hover:text-fg"
                       >
                         #{t}

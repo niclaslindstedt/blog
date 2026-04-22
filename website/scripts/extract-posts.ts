@@ -46,6 +46,22 @@ function parseTags(raw: string | undefined): string[] {
     .filter((t) => t.length > 0);
 }
 
+// Count visible words in the markdown body for JSON-LD `wordCount` and a
+// cheap reading-time estimate. We strip code fences, HTML/markdown syntax,
+// and inline code before counting so the number reflects prose length, not
+// footnote markup or code samples.
+function countWords(body: string): number {
+  const stripped = body
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/[#>*_~-]+/g, " ");
+  const words = stripped.trim().split(/\s+/).filter(Boolean);
+  return words.length;
+}
+
 function loadVersion(file: string): PostVersion {
   const raw = fs.readFileSync(file, "utf8");
   const { fields, body } = parseFrontmatter(raw, file);
@@ -61,7 +77,9 @@ function loadVersion(file: string): PostVersion {
     die(
       `${file}: 'edited_at' must be ISO 8601 UTC datetime (YYYY-MM-DDTHH:MM:SSZ), got '${edited_at}'`,
     );
-  return { title, date, edited_at, summary, tags, body };
+  const wordCount = countWords(body);
+  const readingTimeMinutes = Math.max(1, Math.round(wordCount / 225));
+  return { title, date, edited_at, summary, tags, body, wordCount, readingTimeMinutes };
 }
 
 function main(): void {

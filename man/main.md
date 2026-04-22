@@ -1,6 +1,6 @@
 # blog
 
-> A technical blog with a focus on AI — posts are git-tracked markdown files authored and managed via Claude skills.
+> Writing about AI, agents, and open source — hands-on notes from building tools like zag, zad, ztf, zig, and oss-spec.
 
 ## Synopsis
 

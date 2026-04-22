@@ -77,18 +77,20 @@ const terminalComponents: Components = {
 
 // Prose variant for the fallback blog: still monospaced (the site's only font
 // stack), but with comfortable measure, real paragraph spacing, and
-// conventional heading sizes so the text reads like a regular blog rather than
-// a terminal dump.
+// conventional heading sizes so the text reads like a regular blog rather
+// than a terminal dump.
+//
+// Heading levels are shifted down one (h1→h2, h2→h3, …) so the page stays a
+// single <h1> — the post title rendered by FallbackPost. Search engines and
+// screen readers both prefer one <h1> per document.
 const proseComponents: Components = {
   h1: ({ children }) => (
-    <h1 className="mb-6 text-2xl leading-tight font-bold text-fg-bright">{children}</h1>
-  ),
-  h2: ({ children }) => (
     <h2 className="mt-10 mb-3 text-xl leading-snug font-bold text-fg-bright">{children}</h2>
   ),
-  h3: ({ children }) => <h3 className="mt-8 mb-2 text-lg font-bold text-fg-bright">{children}</h3>,
-  h4: ({ children }) => <h4 className="mt-6 mb-2 font-bold text-fg">{children}</h4>,
-  h5: ({ children }) => <h5 className="mt-4 mb-1 font-bold text-fg">{children}</h5>,
+  h2: ({ children }) => <h3 className="mt-8 mb-2 text-lg font-bold text-fg-bright">{children}</h3>,
+  h3: ({ children }) => <h4 className="mt-6 mb-2 font-bold text-fg">{children}</h4>,
+  h4: ({ children }) => <h5 className="mt-4 mb-1 font-bold text-fg">{children}</h5>,
+  h5: ({ children }) => <h6 className="mt-4 mb-1 font-bold text-fg">{children}</h6>,
   h6: ({ children }) => <h6 className="mt-4 mb-1 font-bold text-fg">{children}</h6>,
   p: ({ children }) => <p className="mb-5 leading-relaxed">{children}</p>,
   ul: ({ children }) => <ul className="my-4 ml-6 list-disc">{children}</ul>,

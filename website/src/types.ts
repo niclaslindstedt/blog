@@ -15,6 +15,8 @@ export interface PostVersion {
   summary: string;
   tags: string[];
   body: string;
+  wordCount: number;
+  readingTimeMinutes: number;
 }
 
 export interface Post {
