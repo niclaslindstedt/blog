@@ -18,7 +18,7 @@ import {
   lookup,
   wordDurationMs,
   wpmMultiplier,
-} from "../website/src/typing.ts";
+} from "../website/src/terminal/typing.ts";
 
 describe("key map integrity", () => {
   it("maps every a-z lowercase letter", () => {

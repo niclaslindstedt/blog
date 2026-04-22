@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Audience, Post, PostVersion } from "./types.ts";
-import type { Step, TabStop } from "./terminalTypes.ts";
-import type { GithubFile } from "./github.ts";
-import { Terminal } from "./Terminal.tsx";
+import type { Step, TabStop } from "./terminal/types.ts";
+import type { GithubFile } from "./terminal/github.ts";
+import { Terminal } from "./terminal/Terminal.tsx";
 import { AudienceTabs } from "./AudienceTabs.tsx";
 import { useAudience } from "./AudienceContext.tsx";
-import { useFileViewer } from "./FileViewerContext.tsx";
+import { useFileViewer } from "./terminal/FileViewerContext.tsx";
 import { usePreferences } from "./PreferencesContext.tsx";
-import { ViOpenerContext } from "./ViOpenerContext.tsx";
-import { useTerminalAnimation } from "./useTerminalAnimation.ts";
+import { ViOpenerContext } from "./terminal/ViOpenerContext.tsx";
+import { useTerminalAnimation } from "./terminal/useTerminalAnimation.ts";
 import { postsForAudience, withViewParam } from "./postFilters.ts";
-import { BLOG_WPM } from "./typing.ts";
+import { BLOG_WPM } from "./terminal/typing.ts";
 
 const HOME_PROMPT = "~ $";
 

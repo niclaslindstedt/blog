@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { LineColor, LineData, Step, TabStop } from "./terminalTypes.ts";
+import type { LineColor, LineData, Step, TabStop } from "./types.ts";
 import { charDelayMs } from "./typing.ts";
 
 const COMMAND_MS_PER_CHAR_NORMAL = 36;

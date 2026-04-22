@@ -8,7 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import type { LineData } from "./terminalTypes.ts";
+import type { LineData } from "./types.ts";
 import type { AnchorSignal } from "./useTerminalAnimation.ts";
 import { TerminalLine } from "./TerminalLine.tsx";
 
