@@ -127,12 +127,21 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
 
   const openInVi = useCallback(
     (file: GithubFile) => {
+      // The URL is treated as a paste — typing a long raw.githubusercontent.com
+      // URL character-by-character would feel laggy and unrealistic. A single
+      // tab-stop snap over the URL substring mirrors the instant insert a
+      // pasted clipboard would produce, while the surrounding `curl ... | vi -`
+      // types at normal speed.
+      const prefix = "curl -fsSL ";
+      const suffix = " | vi -";
+      const text = `${prefix}${file.rawUrl}${suffix}`;
       enqueue([
         {
           kind: "type-command",
-          text: `vi ${file.path}`,
+          text,
           prompt: codePrompt(audienceRef.current),
           wpm: BLOG_WPM,
+          tabStops: [{ at: prefix.length, to: prefix.length + file.rawUrl.length }],
         },
         { kind: "effect", run: () => openFile(file) },
       ]);
