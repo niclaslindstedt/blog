@@ -2,34 +2,39 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { LineColor, LineData, Step, TabStop } from "./types.ts";
 import { charDelayMs } from "./typing.ts";
 
-const COMMAND_MS_PER_CHAR_NORMAL = 36;
-const COMMAND_MS_PER_CHAR_FAST = 10;
-const OUTPUT_MS_PER_TICK_NORMAL = 14;
-const OUTPUT_MS_PER_TICK_FAST = 6;
-const OUTPUT_CHARS_PER_TICK_NORMAL = 3;
-const OUTPUT_CHARS_PER_TICK_FAST = 20;
-const IDLE_POLL_MS = 80;
-const BETWEEN_STEP_MS = 60;
-const ENTER_PAUSE_MIN_MS = 200;
-const ENTER_PAUSE_MAX_MS = 400;
-// Short beat between the last typed character of a unique filename prefix and
-// the snapped-in completion, long enough for the eye to register the "tab"
-// without feeling laggy.
-const TAB_COMPLETE_PAUSE_MS = 90;
-// Per-keystroke jitter range applied to `charDelayMs`. ±15% is wide enough to
-// shake off the metronome feel without breaking the rhythm of same-finger /
-// modifier penalties.
-const TYPING_JITTER_MIN = 0.85;
-const TYPING_JITTER_MAX = 1.15;
+// Tuning knobs. Grouping them here makes it obvious at a glance which values
+// drive typing/output cadence, and keeps the reducer/tick logic below focused
+// on control flow rather than constants.
+const TIMING = {
+  commandMsPerCharNormal: 36,
+  commandMsPerCharFast: 10,
+  outputMsPerTickNormal: 14,
+  outputMsPerTickFast: 6,
+  outputCharsPerTickNormal: 3,
+  outputCharsPerTickFast: 20,
+  idlePollMs: 80,
+  betweenStepMs: 60,
+  enterPauseMinMs: 200,
+  enterPauseMaxMs: 400,
+  // Short beat between the last typed character of a unique filename prefix and
+  // the snapped-in completion, long enough for the eye to register the "tab"
+  // without feeling laggy.
+  tabCompletePauseMs: 90,
+  // Per-keystroke jitter range applied to `charDelayMs`. ±15% is wide enough to
+  // shake off the metronome feel without breaking the rhythm of same-finger /
+  // modifier penalties.
+  typingJitterMin: 0.85,
+  typingJitterMax: 1.15,
+} as const;
 
 function enterPauseMs(): number {
-  const span = ENTER_PAUSE_MAX_MS - ENTER_PAUSE_MIN_MS;
-  return ENTER_PAUSE_MIN_MS + Math.floor(Math.random() * (span + 1));
+  const span = TIMING.enterPauseMaxMs - TIMING.enterPauseMinMs;
+  return TIMING.enterPauseMinMs + Math.floor(Math.random() * (span + 1));
 }
 
 function jitter(ms: number): number {
-  const span = TYPING_JITTER_MAX - TYPING_JITTER_MIN;
-  const factor = TYPING_JITTER_MIN + Math.random() * span;
+  const span = TIMING.typingJitterMax - TIMING.typingJitterMin;
+  const factor = TIMING.typingJitterMin + Math.random() * span;
   return Math.max(1, Math.round(ms * factor));
 }
 
@@ -45,12 +50,19 @@ interface Active {
   tabStops?: TabStop[];
 }
 
-interface SessionState {
+// State the widget re-renders on. `queue` is intentionally NOT here — it
+// mutates on every enqueue/shift, and we don't want a re-render for each
+// queue churn. See `queueRef`.
+interface RenderState {
   committed: LineData[];
-  queue: Step[];
   active: Active | null;
   anchor: AnchorSignal | null;
   cwd: string;
+}
+
+// Full snapshot of a session — what we save/restore on tab swap.
+interface SessionSnapshot extends RenderState {
+  queue: Step[];
 }
 
 // The terminal's scroll container listens on `anchor.epoch`: a fresh epoch
@@ -85,8 +97,8 @@ export interface UseTerminalAnimationOpts {
 const DEFAULT_INITIAL_CWD = "~";
 const DEFAULT_PROMPT_FOR = (cwd: string) => `${cwd} $`;
 
-function newSession(initialCwd: string): SessionState {
-  return { committed: [], queue: [], active: null, anchor: null, cwd: initialCwd };
+function newRenderState(initialCwd: string): RenderState {
+  return { committed: [], active: null, anchor: null, cwd: initialCwd };
 }
 
 // Multi-session terminal animator. Each `sessionId` keeps its own scrollback,
@@ -100,50 +112,46 @@ export function useTerminalAnimation(
 ): UseTerminalAnimation {
   const initialCwd = opts.initialCwd ?? DEFAULT_INITIAL_CWD;
   const promptFor = opts.promptFor ?? DEFAULT_PROMPT_FOR;
-  const [committed, setCommitted] = useState<LineData[]>([]);
-  const [active, setActive] = useState<Active | null>(null);
+
+  // Single source of truth for committed/active/anchor/cwd. `stateRef` is
+  // updated synchronously alongside `setState` so the tick loop (which lives
+  // in a one-shot useEffect and therefore can't re-subscribe to fresh state)
+  // always sees the latest values without needing parallel per-field refs.
+  const [state, setState] = useState<RenderState>(() => newRenderState(initialCwd));
+  const stateRef = useRef<RenderState>(state);
+  const update = useCallback((mut: (s: RenderState) => RenderState) => {
+    const next = mut(stateRef.current);
+    stateRef.current = next;
+    setState(next);
+  }, []);
+
   const [idle, setIdle] = useState(true);
-  const [anchor, setAnchor] = useState<AnchorSignal | null>(null);
-  const [cwd, setCwd] = useState<string>(initialCwd);
   const queueRef = useRef<Step[]>([]);
-  const activeRef = useRef<Active | null>(null);
-  const committedRef = useRef<LineData[]>([]);
-  const anchorRef = useRef<AnchorSignal | null>(null);
-  const cwdRef = useRef<string>(initialCwd);
   const anchorEpochRef = useRef<number>(0);
   const currentIdRef = useRef<string>(sessionId);
-  const sessionsRef = useRef<Map<string, SessionState>>(new Map());
+  const sessionsRef = useRef<Map<string, SessionSnapshot>>(new Map());
   const promptForRef = useRef(promptFor);
   promptForRef.current = promptFor;
 
   useEffect(() => {
-    committedRef.current = committed;
-  }, [committed]);
-
-  useEffect(() => {
-    cwdRef.current = cwd;
-  }, [cwd]);
-
-  useEffect(() => {
     if (currentIdRef.current === sessionId) return;
     sessionsRef.current.set(currentIdRef.current, {
-      committed: committedRef.current,
+      ...stateRef.current,
       queue: queueRef.current,
-      active: activeRef.current,
-      anchor: anchorRef.current,
-      cwd: cwdRef.current,
     });
-    const target = sessionsRef.current.get(sessionId) ?? newSession(initialCwd);
-    queueRef.current = target.queue;
-    activeRef.current = target.active;
-    committedRef.current = target.committed;
-    anchorRef.current = target.anchor;
-    cwdRef.current = target.cwd;
-    setCommitted(target.committed);
-    setActive(target.active);
-    setAnchor(target.anchor);
-    setCwd(target.cwd);
-    setIdle(target.queue.length === 0 && target.active === null);
+    const target = sessionsRef.current.get(sessionId);
+    const next: RenderState = target
+      ? {
+          committed: target.committed,
+          active: target.active,
+          anchor: target.anchor,
+          cwd: target.cwd,
+        }
+      : newRenderState(initialCwd);
+    queueRef.current = target?.queue ?? [];
+    stateRef.current = next;
+    setState(next);
+    setIdle(queueRef.current.length === 0 && next.active === null);
     currentIdRef.current = sessionId;
   }, [sessionId, initialCwd]);
 
@@ -165,38 +173,34 @@ export function useTerminalAnimation(
       timer = setTimeout(tick, delay);
     };
 
-    const commit = (line: LineData) => setCommitted((prev) => [...prev, line]);
+    const commit = (line: LineData) => update((s) => ({ ...s, committed: [...s.committed, line] }));
 
-    const startActive = (a: Active) => {
-      activeRef.current = a;
-      setActive(a);
-    };
-
-    const clearActive = () => {
-      activeRef.current = null;
-      setActive(null);
-    };
+    const setActive = (active: Active | null) => update((s) => ({ ...s, active }));
 
     const tick = () => {
       if (canceled) return;
 
-      const current = activeRef.current;
+      const current = stateRef.current.active;
       if (current) {
         if (current.shown.length >= current.full.length) {
           const wasCommand = current.kind === "command";
           const wasFast = current.fast === true;
-          if (wasCommand) {
-            commit({ kind: "command", text: current.full, prompt: current.prompt });
-          } else {
-            commit({
-              kind: "output",
-              text: current.full,
-              color: current.color,
-              markdown: current.markdown,
-            });
-          }
-          clearActive();
-          schedule(wasCommand && !wasFast ? enterPauseMs() : BETWEEN_STEP_MS);
+          update((s) => ({
+            ...s,
+            committed: [
+              ...s.committed,
+              wasCommand
+                ? { kind: "command", text: current.full, prompt: current.prompt }
+                : {
+                    kind: "output",
+                    text: current.full,
+                    color: current.color,
+                    markdown: current.markdown,
+                  },
+            ],
+            active: null,
+          }));
+          schedule(wasCommand && !wasFast ? enterPauseMs() : TIMING.betweenStepMs);
           return;
         }
         if (
@@ -208,14 +212,8 @@ export function useTerminalAnimation(
         ) {
           const [stop, ...rest] = current.tabStops;
           const snapTo = Math.min(stop.to, current.full.length);
-          const snapped: Active = {
-            ...current,
-            shown: current.full.slice(0, snapTo),
-            tabStops: rest,
-          };
-          activeRef.current = snapped;
-          setActive(snapped);
-          schedule(TAB_COMPLETE_PAUSE_MS);
+          setActive({ ...current, shown: current.full.slice(0, snapTo), tabStops: rest });
+          schedule(TIMING.tabCompletePauseMs);
           return;
         }
         let chunk: number;
@@ -235,15 +233,13 @@ export function useTerminalAnimation(
             successor !== null ? jitter(charDelayMs(justRevealed, successor, current.wpm)) : 0;
         } else if (current.kind === "command") {
           chunk = 1;
-          delay = current.fast ? COMMAND_MS_PER_CHAR_FAST : COMMAND_MS_PER_CHAR_NORMAL;
+          delay = current.fast ? TIMING.commandMsPerCharFast : TIMING.commandMsPerCharNormal;
         } else {
-          chunk = current.fast ? OUTPUT_CHARS_PER_TICK_FAST : OUTPUT_CHARS_PER_TICK_NORMAL;
-          delay = current.fast ? OUTPUT_MS_PER_TICK_FAST : OUTPUT_MS_PER_TICK_NORMAL;
+          chunk = current.fast ? TIMING.outputCharsPerTickFast : TIMING.outputCharsPerTickNormal;
+          delay = current.fast ? TIMING.outputMsPerTickFast : TIMING.outputMsPerTickNormal;
         }
         const nextLen = Math.min(current.full.length, current.shown.length + chunk);
-        const updated: Active = { ...current, shown: current.full.slice(0, nextLen) };
-        activeRef.current = updated;
-        setActive(updated);
+        setActive({ ...current, shown: current.full.slice(0, nextLen) });
         schedule(delay);
         return;
       }
@@ -251,32 +247,30 @@ export function useTerminalAnimation(
       const next = queueRef.current.shift();
       if (!next) {
         setIdle(true);
-        schedule(IDLE_POLL_MS);
+        schedule(TIMING.idlePollMs);
         return;
       }
 
       setIdle(false);
 
       switch (next.kind) {
-        case "type-command":
+        case "type-command": {
           if (next.anchor === true) {
             // Capture the future committed index of this command. The active
             // typing line lives at `lines[committed.length]`, and when typing
             // finishes it commits at that same index — the anchor stays valid
             // before and after the transition.
             anchorEpochRef.current += 1;
-            const signal: AnchorSignal = {
-              index: committedRef.current.length,
-              epoch: anchorEpochRef.current,
-            };
-            anchorRef.current = signal;
-            setAnchor(signal);
+            update((s) => ({
+              ...s,
+              anchor: { index: s.committed.length, epoch: anchorEpochRef.current },
+            }));
           }
-          startActive({
+          setActive({
             kind: "command",
             full: next.text,
             shown: "",
-            prompt: promptForRef.current(cwdRef.current),
+            prompt: promptForRef.current(stateRef.current.cwd),
             fast: next.fast,
             wpm: next.wpm,
             tabStops: next.tabStops,
@@ -285,12 +279,13 @@ export function useTerminalAnimation(
             next.wpm !== undefined
               ? jitter(charDelayMs(null, next.text[0] ?? "", next.wpm))
               : next.fast
-                ? COMMAND_MS_PER_CHAR_FAST
-                : COMMAND_MS_PER_CHAR_NORMAL,
+                ? TIMING.commandMsPerCharFast
+                : TIMING.commandMsPerCharNormal,
           );
           return;
+        }
         case "type":
-          startActive({
+          setActive({
             kind: "output",
             full: next.text,
             shown: "",
@@ -303,8 +298,8 @@ export function useTerminalAnimation(
             next.wpm !== undefined
               ? jitter(charDelayMs(null, next.text[0] ?? "", next.wpm))
               : next.fast
-                ? OUTPUT_MS_PER_TICK_FAST
-                : OUTPUT_MS_PER_TICK_NORMAL,
+                ? TIMING.outputMsPerTickFast
+                : TIMING.outputMsPerTickNormal,
           );
           return;
         case "print":
@@ -314,21 +309,19 @@ export function useTerminalAnimation(
             color: next.color,
             markdown: next.markdown,
           });
-          schedule(BETWEEN_STEP_MS);
+          schedule(TIMING.betweenStepMs);
           return;
         case "blank":
           commit({ kind: "blank" });
-          schedule(BETWEEN_STEP_MS);
+          schedule(TIMING.betweenStepMs);
           return;
         case "clear":
-          committedRef.current = [];
-          setCommitted([]);
-          schedule(BETWEEN_STEP_MS);
+          update((s) => ({ ...s, committed: [] }));
+          schedule(TIMING.betweenStepMs);
           return;
         case "cd":
-          cwdRef.current = next.to;
-          setCwd(next.to);
-          schedule(BETWEEN_STEP_MS);
+          update((s) => ({ ...s, cwd: next.to }));
+          schedule(TIMING.betweenStepMs);
           return;
         case "clickable":
           commit({
@@ -338,19 +331,19 @@ export function useTerminalAnimation(
             color: next.color,
             prefix: next.prefix,
           });
-          schedule(BETWEEN_STEP_MS);
+          schedule(TIMING.betweenStepMs);
           return;
         case "action":
           commit({ kind: "action", label: next.label, onClick: next.onClick });
-          schedule(BETWEEN_STEP_MS);
+          schedule(TIMING.betweenStepMs);
           return;
         case "tag-row":
           commit({ kind: "tag-row", tags: next.tags, onClick: next.onClick });
-          schedule(BETWEEN_STEP_MS);
+          schedule(TIMING.betweenStepMs);
           return;
         case "effect":
           next.run();
-          schedule(BETWEEN_STEP_MS);
+          schedule(TIMING.betweenStepMs);
           return;
         case "delay":
           schedule(next.ms);
@@ -364,8 +357,10 @@ export function useTerminalAnimation(
       canceled = true;
       if (timer !== null) clearTimeout(timer);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const { committed, active, anchor, cwd } = state;
   const lines: LineData[] = active
     ? [
         ...committed,
