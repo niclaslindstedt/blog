@@ -41,6 +41,6 @@ Common failure modes and how to fix them.
 ## Blank page on GitHub Pages, assets return 404
 
 - **Symptom** — The deployed site loads `index.html` but JS/CSS assets 404.
-- **Cause** — `BASE_URL` was not set at build time, so asset URLs resolve to `/` instead of `/blog/`.
-- **Fix** — Build with `BASE_URL=/blog/ npm run build` (the `pages.yml` workflow already does this). For other subpath deploys, set `BASE_URL` to the matching prefix.
-- **Prevention** — Leave the `pages.yml` workflow in charge of GitHub Pages deploys.
+- **Cause** — `BASE_URL` does not match where the site is actually served from. The production deploy uses the custom domain `blog.niclaslindstedt.se` (see `website/public/CNAME`) and serves from `/`, so `BASE_URL` is left at its default. Any deploy under a subpath needs `BASE_URL` set to that prefix.
+- **Fix** — For a subpath deploy, build with `BASE_URL=/<prefix>/ npm run build`. For the canonical custom-domain deploy, leave `BASE_URL` unset and let the `pages.yml` workflow handle it.
+- **Prevention** — Leave the `pages.yml` workflow in charge of deploys; only override `BASE_URL` when you deliberately serve from a subpath.

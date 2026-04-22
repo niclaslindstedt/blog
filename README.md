@@ -84,7 +84,7 @@ Authoring skills (invoked inside a Claude Code session):
 ## Configuration
 
 - **Post frontmatter.** `title`, `date`, `summary`, and `edited_at`. `date` and `edited_at` are ISO 8601 UTC datetimes (`YYYY-MM-DDTHH:MM:SSZ`); `summary` is a single-line lede used as the clickable preview in the list view. See [`docs/configuration.md`](docs/configuration.md).
-- **Build env vars.** `BASE_URL` (default `/`) sets the URL prefix for generated assets. GitHub Pages deploys set it to `/blog/`.
+- **Build env vars.** `BASE_URL` (default `/`) sets the URL prefix for generated assets. The production deploy uses the custom domain `blog.niclaslindstedt.se` (see `website/public/CNAME`) and keeps `BASE_URL` at `/`; override it only when serving from a subpath.
 
 ## Examples
 
