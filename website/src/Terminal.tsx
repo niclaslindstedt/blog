@@ -180,30 +180,30 @@ export function Terminal({
     });
   }, []);
 
-  // After every lines change (new typing tick, new committed line), decide
-  // where the viewport should be: active anchor wins, otherwise stick-to-
-  // bottom if the user was already at the bottom. A fresh anchor epoch seen
-  // here activates anchor mode; same-epoch renders either re-pin (if still
-  // active) or stay dismissed (if the user has scrolled past it). Using
-  // useLayoutEffect avoids a single-frame flash between React painting new
-  // content and us correcting scrollTop.
+  // A fresh anchor epoch pins the anchored line to the top exactly once. We
+  // deliberately don't re-pin on subsequent line changes: nothing ever renders
+  // above the anchor (it's always captured right after a `clear` or at the top
+  // of an empty session), so the initial pin holds through the rest of the
+  // animation. Re-pinning every tick would fight touch scrolling on mobile,
+  // where setting `scrollTop` during an active gesture cancels the gesture.
   useLayoutEffect(() => {
-    if (anchor) {
-      if (anchor.epoch !== lastSeenEpochRef.current) {
-        activeAnchorRef.current = anchor;
-        lastSeenEpochRef.current = anchor.epoch;
-      }
-    } else {
-      // Session without an anchor (e.g. freshly-visited audience tab) — drop
-      // any activation carried over from the previous session.
+    if (!anchor) {
       activeAnchorRef.current = null;
+      return;
     }
-    const active = activeAnchorRef.current;
-    if (active) {
-      if (scrollLineToTop(active.index)) return;
-    }
+    if (anchor.epoch === lastSeenEpochRef.current) return;
+    activeAnchorRef.current = anchor;
+    lastSeenEpochRef.current = anchor.epoch;
+    scrollLineToTop(anchor.index);
+  }, [anchor, scrollLineToTop]);
+
+  // Stick-to-bottom: when new content streams in and the user hadn't scrolled
+  // away, keep them at the tail. Skipped while an anchor is active so the
+  // pinned command stays at the top until the user releases it by scrolling.
+  useLayoutEffect(() => {
+    if (activeAnchorRef.current) return;
     if (userAtBottomRef.current) scrollToBottom();
-  }, [lines, anchor, scrollLineToTop, scrollToBottom]);
+  }, [lines, scrollToBottom]);
 
   const onBodyScroll = useCallback(() => {
     if (programmaticScrollRef.current) return;
@@ -217,10 +217,9 @@ export function Terminal({
       if (!node) return;
       const containerRect = el.getBoundingClientRect();
       const nodeRect = node.getBoundingClientRect();
-      // The anchored line naturally sits at delta=0 (top of viewport) while
-      // we're honoring the anchor. A user scroll moves the line off the top.
-      // Drift in either direction past ANCHOR_DRIFT_PX means the user has
-      // taken over and we should stop re-pinning.
+      // Anchored line starts at delta=0 (top of viewport). Once the user
+      // scrolls far enough to drift the line past ANCHOR_DRIFT_PX, release the
+      // anchor so stick-to-bottom can take over if they scroll to the tail.
       if (Math.abs(nodeRect.top - containerRect.top) > ANCHOR_DRIFT_PX) {
         activeAnchorRef.current = null;
       }
