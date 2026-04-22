@@ -12,6 +12,7 @@ export interface PostVersion {
   title: string;
   date: string;
   edited_at: string;
+  summary: string;
   tags: string[];
   body: string;
 }

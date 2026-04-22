@@ -49,18 +49,19 @@ function parseTags(raw: string | undefined): string[] {
 function loadVersion(file: string): PostVersion {
   const raw = fs.readFileSync(file, "utf8");
   const { fields, body } = parseFrontmatter(raw, file);
-  const { title, date } = fields;
+  const { title, date, summary } = fields;
   const edited_at = fields.edited_at ?? date;
   const tags = parseTags(fields.tags);
   if (!title) die(`${file}: frontmatter missing required 'title'`);
   if (!date) die(`${file}: frontmatter missing required 'date'`);
+  if (!summary) die(`${file}: frontmatter missing required 'summary'`);
   if (!ISO_DATETIME_UTC.test(date))
     die(`${file}: 'date' must be ISO 8601 UTC datetime (YYYY-MM-DDTHH:MM:SSZ), got '${date}'`);
   if (!ISO_DATETIME_UTC.test(edited_at))
     die(
       `${file}: 'edited_at' must be ISO 8601 UTC datetime (YYYY-MM-DDTHH:MM:SSZ), got '${edited_at}'`,
     );
-  return { title, date, edited_at, tags, body };
+  return { title, date, edited_at, summary, tags, body };
 }
 
 function main(): void {

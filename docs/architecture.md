@@ -16,7 +16,7 @@ website/                        Vite + React + TypeScript + Tailwind v4 frontend
     App.tsx                     page layout (centres the terminal, wraps AudienceProvider + FileViewerProvider)
     AudienceContext.tsx         React context + localStorage-backed audience preference
     AudienceTabs.tsx            two-tab strip rendered in the terminal chrome
-    TerminalBlog.tsx            audience-aware transcript controller (ls / cat / head / tail)
+    TerminalBlog.tsx            audience-aware transcript controller (ls / grep summaries / sed)
     Terminal.tsx                window chrome + drag-to-resize + tabs slot + live-cwd titlebar
     TerminalLine.tsx            renders one transcript line by kind
     CommandHighlighter.tsx      shell-syntax colouring for commands
@@ -52,11 +52,11 @@ posts/technical/*.md       posts/non-technical/*.md
 ```
 
 The extractor owns the boundary between raw markdown and the frontend. It
-reads each audience folder, validates frontmatter (`title`, `date` required;
-`edited_at` defaults to `date`), derives the slug from the filename, and
-merges the versions under one `Post` object keyed by slug. Stray markdown
-files directly under `posts/` are a fatal error. Nothing in `website/src/`
-reads markdown directly.
+reads each audience folder, validates frontmatter (`title`, `date`, and
+`summary` required; `edited_at` defaults to `date`), derives the slug from
+the filename, and merges the versions under one `Post` object keyed by slug.
+Stray markdown files directly under `posts/` are a fatal error. Nothing in
+`website/src/` reads markdown directly.
 
 A `Post` exposes `versions.technical?` and `versions.non-technical?`; the
 frontend picks the version that matches the reader's current audience.
@@ -69,23 +69,27 @@ there is a two-tab strip (`technical` / `non-technical`); the active tab
 determines both the cwd shown in the prompt (`~/code/blog/<audience> $`) and
 which post versions are listed.
 
-On mount the terminal auto-runs `cd code/blog/<audience>` then `ls -1`
+On mount the terminal auto-runs `cd code/blog/<audience>`, then `ls -1`
 (one-per-line, no mode/size/date column — the date is already in the
-filename); each filename is clickable, clicking runs `cat … | head -n 10`
-(instant rendered head), and a `[ show more ]` action runs `cat … | tail -n +11`
-with a character-by-character typing animation. Both halves go through
-`react-markdown` + `remark-gfm` with terminal-styled overrides: every element
-keeps the body's monospace font and base size; `h1` is bold + uppercase +
-wide-tracked, `h2`-`h6` are bold, inline code is accent-coloured, code blocks
-use the titlebar background, and blockquotes/tables/hr use the dim border
-colour. What `cat` prints is the title (as an `h1`) followed by the body —
-the raw YAML frontmatter is metadata and is never rendered.
+filename), then `grep "^summary:" *.md` — the summary line doubles as the
+clickable preview for each post. Clicking a filename (from the `ls -1`
+listing, the grep output, or a tag grep) runs `sed '1,/^---$/d' <slug>.md`,
+which strips the YAML frontmatter so only the body renders; the output is
+committed to the transcript in one shot, no character-by-character typing.
+The rendered markdown goes through `react-markdown` + `remark-gfm` with
+terminal-styled overrides: every element keeps the body's monospace font and
+base size; `h1` is bold + uppercase + wide-tracked, `h2`-`h6` are bold, inline
+code is accent-coloured, code blocks use the titlebar background, and
+blockquotes/tables/hr use the dim border colour. What `sed` prints is the
+body; the title is reintroduced as an `h1` by the renderer, and the tag row
+appears below as clickable `#tag` buttons.
 
-Switching the audience tab appends `cd ../<new-audience>` and `ls -1` to the
-transcript (never clears it — terminal scrollback semantics). If a post is
-open and the new audience has a version of that slug, the terminal re-cats
-it; if the slug exists only in the other audience, the terminal prints
-`cat: <slug>.md: No such file or directory` and offers a
+Each audience tab keeps its own scrollback; the first time a tab is focused
+the terminal runs `cd`, `ls -1`, and `grep "^summary:" *.md` in that session,
+and subsequent visits resume the session where it was left. If a post is open
+and the new audience has a version of that slug, the terminal re-runs `sed`
+on it; if the slug exists only in the other audience, the terminal prints
+`sed: <slug>.md: No such file or directory` and offers a
 `[ switch to <other> version ]` action.
 
 The reader's audience choice persists in `localStorage` under the key
@@ -105,10 +109,10 @@ Markdown links whose `href` matches `https://github.com/<owner>/<repo>/blob/<ref
 two routes:
 
 - `/` — landing terminal (no post opened).
-- `/posts/<slug>` — terminal that runs `ls -1` first, then auto-opens that
-  post's version for the reader's current audience. If the slug has no
-  version in the current audience the terminal prints
-  `cat: posts/<slug>.md: No such file or directory` in red.
+- `/posts/<slug>` — terminal that runs `ls -1` and `grep "^summary:" *.md`
+  first, then auto-opens that post's version for the reader's current
+  audience via `sed`. If the slug has no version in the current audience the
+  terminal prints `sed: <slug>.md: No such file or directory` in red.
 
 Clicking a filename updates the URL via `navigate`, keeping deep-links and
 the address bar in sync. The transcript is append-only — back/forward

@@ -59,6 +59,7 @@ export function FallbackBlog({ posts }: { posts: Post[] }) {
                 <div className="text-xs text-dim">
                   <time dateTime={v.date}>{formatDate(v.date)}</time>
                 </div>
+                <p className="text-sm text-fg">{v.summary}</p>
                 {v.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 text-xs">
                     {v.tags.map((t) => (
