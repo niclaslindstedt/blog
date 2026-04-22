@@ -9,7 +9,7 @@ Source for Niclas Lindstedt's personal blog — markdown posts rendered through 
 ## Why?
 
 - **Git-tracked content.** Posts live as markdown files in the repo, so every revision has a commit and a diff.
-- **Dual audience per post.** Every post can ship a `technical/<slug>.md` and a `non-technical/<slug>.md` version; readers pick their audience in the UI.
+- **Dual audience per post.** Every post can ship a `technical/YYYY-MM-DD-<slug>.md` and a `non-technical/YYYY-MM-DD-<slug>.md` version; readers pick their audience in the UI.
 - **Agent-authored.** Content is written, revised, and deleted via Claude skills (`/write-post`, `/update-post`, `/delete-post`) that enforce the frontmatter schema.
 - **No CMS.** The whole site is a Vite + React build that emits static files — there is no runtime server, admin dashboard, or database.
 - **Conforms to [`OSS_SPEC.md`](OSS_SPEC.md).** Repository layout, automation, and governance follow the same spec across every project in the author's portfolio.
@@ -37,7 +37,7 @@ Author a new post:
 /write-post
 ```
 
-Or create the files by hand under `posts/technical/<slug>.md` and/or `posts/non-technical/<slug>.md`:
+Or create the files by hand under `posts/technical/YYYY-MM-DD-<slug>.md` and/or `posts/non-technical/YYYY-MM-DD-<slug>.md` (the `YYYY-MM-DD-` date prefix matches the frontmatter `date` and shows up directly in the terminal's `ls -1` listing):
 
 ```markdown
 ---

@@ -138,12 +138,20 @@ supplied, do not draft — brainstorm.
 
 ### Slug derivation
 
-If the user does not supply a slug:
+A post filename is `YYYY-MM-DD-<stem>.md`. The date prefix matches the
+frontmatter `date` (UTC, `YYYY-MM-DD` portion) so the terminal listing
+(`ls -1`) shows the date directly in the filename. The `<stem>` portion is
+derived from the title.
+
+If the user does not supply a stem:
 
 1. Lowercase the title.
 2. Replace runs of whitespace with a single hyphen.
 3. Strip every character not matching `[a-z0-9-]`.
 4. Collapse repeated hyphens; trim leading/trailing hyphens.
+
+The final `slug` (used as the filename and URL path) is
+`<YYYY-MM-DD>-<stem>`.
 
 ## Process
 
