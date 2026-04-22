@@ -236,6 +236,9 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
           next.run();
           schedule(BETWEEN_STEP_MS);
           return;
+        case "delay":
+          schedule(next.ms);
+          return;
       }
     };
 

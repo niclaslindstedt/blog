@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useRef,
   useState,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
@@ -90,12 +89,6 @@ export function Terminal({
   const [size, setSize] = useState(() => initialSize());
   const [pos, setPos] = useState(() => initialPos(initialSize()));
   const [dragging, setDragging] = useState(false);
-  const bodyRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = bodyRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [lines]);
 
   useEffect(() => {
     if (small) return; // mobile fills the viewport via CSS; size/pos state is ignored.
@@ -215,7 +208,7 @@ export function Terminal({
 
       {tabs}
 
-      <div ref={bodyRef} className="flex-1 overflow-auto px-3 pt-2 pb-4 text-fg sm:px-4 sm:pt-3">
+      <div className="flex-1 overflow-auto px-3 pt-2 pb-4 text-fg sm:px-4 sm:pt-3">
         {lines.map((l, i) => (
           <TerminalLine key={i} line={l} />
         ))}

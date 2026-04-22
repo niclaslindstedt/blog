@@ -34,4 +34,5 @@ export type Step =
       prefix?: string;
     }
   | { kind: "action"; label: string; onClick: () => void }
-  | { kind: "effect"; run: () => void };
+  | { kind: "effect"; run: () => void }
+  | { kind: "delay"; ms: number };
