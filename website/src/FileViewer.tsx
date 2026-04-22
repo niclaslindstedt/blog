@@ -12,6 +12,11 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const range = useMemo(() => parseLineRange(file.fragment), [file.fragment]);
   const firstRangeRef = useRef<HTMLDivElement | null>(null);
+  // Wrap defaults on narrow screens (keeps horizontal scroll off); double-tap
+  // the content to toggle — unwrapping re-enables horizontal scroll.
+  const [wrap, setWrap] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches,
+  );
 
   useEffect(() => {
     let canceled = false;
@@ -45,6 +50,23 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  // Push a history entry so the browser Back button closes the viewer.
+  // If popstate closed us, skip the cleanup history.back() to avoid
+  // navigating past the original page.
+  useEffect(() => {
+    window.history.pushState({ fileViewerOpen: true }, "");
+    let closedViaPop = false;
+    const onPop = () => {
+      closedViaPop = true;
+      onClose();
+    };
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      if (!closedViaPop) window.history.back();
+    };
   }, [onClose]);
 
   useEffect(() => {
@@ -86,7 +108,10 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto">
+      <div
+        className={`flex-1 touch-manipulation ${wrap ? "overflow-y-auto overflow-x-hidden" : "overflow-auto"}`}
+        onDoubleClick={() => setWrap((w) => !w)}
+      >
         {state.status === "loading" && <div className="p-4 text-dim">-- loading --</div>}
         {state.status === "error" && (
           <div className="p-4 text-red">-- error: {state.message} --</div>
@@ -117,11 +142,13 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
                       className={rowClass}
                     >
                       <span
-                        className={`mr-4 w-10 shrink-0 select-none text-right ${inRange ? "text-accent" : "text-dim"}`}
+                        className={`mr-2 w-8 shrink-0 select-none text-right ${inRange ? "text-accent" : "text-dim"}`}
                       >
                         {lineNumber}
                       </span>
-                      <span className="flex-1 whitespace-pre">
+                      <span
+                        className={`flex-1 ${wrap ? "whitespace-pre-wrap break-all" : "whitespace-pre"}`}
+                      >
                         {line.map((token, ti) => {
                           const { key: _tk, ...trest } = getTokenProps({ token });
                           return <span key={ti} {...trest} />;
@@ -133,7 +160,7 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
                 {/* vim-style tildes for empty space below EOF */}
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={`tilde-${i}`} className="flex text-dim">
-                    <span className="mr-4 w-10 shrink-0 text-right">~</span>
+                    <span className="mr-2 w-8 shrink-0 text-right">~</span>
                     <span />
                   </div>
                 ))}
@@ -151,7 +178,9 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
               ? "-- error --"
               : "-- loading --"}
         </span>
-        <span className="text-dim">-- VIEW -- &nbsp; ESC / q to close</span>
+        <span className="text-dim">
+          -- VIEW -- &nbsp; ESC / q &middot; dbl-tap: {wrap ? "unwrap" : "wrap"}
+        </span>
       </div>
     </div>
   );
