@@ -252,6 +252,13 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   };
 
   const runIntro = (a: Audience) => {
+    // A URL that targets a specific post is a direct "show me this file"
+    // request — the reader didn't ask for a listing, so skip the cd/ls/grep
+    // preamble and render the body straight into an otherwise empty session.
+    if (slugParam) {
+      enqueueOpen(slugParam, a);
+      return;
+    }
     const visible = postsForAudience(posts, a);
     enqueue([
       {
@@ -263,8 +270,6 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     ]);
     enqueueListing(a, visible);
     enqueueSummaries(a, visible);
-
-    if (slugParam) enqueueOpen(slugParam, a);
   };
 
   useEffect(() => {
@@ -279,8 +284,9 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   // Audience tab switch (after initial mount): each audience owns its own
   // terminal session, so swapping just swaps the scrollback — no `clear`, no
   // re-animated `cd`. The first time a tab is focused we run the intro from
-  // scratch (cd, ls, grep summaries) in that session; subsequent visits resume
-  // the session exactly where it was left.
+  // scratch in that session — cd/ls/grep summaries when the reader is at `/`,
+  // or just the `sed` body when the URL targets a specific post; subsequent
+  // visits resume the session exactly where it was left.
   useEffect(() => {
     if (!startedRef.current) return;
     if (audience === audienceRef.current) return;
