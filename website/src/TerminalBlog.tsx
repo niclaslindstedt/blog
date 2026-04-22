@@ -142,10 +142,14 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   // already rendered that post earlier — a reader clicking a filename expects
   // to see the command type out again, not a silent no-op. We clear the
   // "already opened" guard for this slug so enqueueOpen will proceed.
+  // The `clear` step wipes prior scrollback (intro, grep output, or a
+  // previously-opened post) so the reader lands on a clean screen showing
+  // just the sed command and the post body.
   const openPostFromClick = (slug: string) => {
     if (slugParam !== slug) navigate(`/posts/${slug}`);
     const key = openKey(audienceRef.current, slug);
     openedRef.current.delete(key);
+    enqueue([{ kind: "clear" }]);
     enqueueOpen(slug, audienceRef.current);
   };
 
