@@ -189,37 +189,71 @@ function renderRobots(): string {
   return `User-agent: *\nAllow: /\n\nSitemap: ${absoluteUrl(SITEMAP_PATH)}\n`;
 }
 
-// -- RSS 2.0 ----------------------------------------------------------------
+// -- Shared feed item -------------------------------------------------------
 
 function rfc822(iso: string): string {
   return new Date(iso).toUTCString();
 }
 
-function renderRss(): string {
-  const latest = posts.slice(0, FEED_POST_LIMIT);
-  const lastBuild = latest.length
-    ? rfc822(pickPrimaryVersion(latest[0]).edited_at)
-    : rfc822(new Date().toISOString());
+// Per-post data needed by both RSS and Atom, pre-escaped once. A single source
+// of truth for "which posts are in the feed, and what do they look like" means
+// a fix to escaping, date formatting, or URL shape lands in both feeds at once.
+interface FeedItem {
+  title: string;
+  url: string;
+  summary: string;
+  authorName: string;
+  authorUrl: string;
+  publishedRfc822: string;
+  publishedIso: string;
+  updatedIso: string;
+  categories: string[];
+}
 
-  const items = latest
-    .map((p) => {
-      const v = pickPrimaryVersion(p);
-      const url = absoluteUrl(`/posts/${p.slug}/`);
-      const categories = v.tags.map((t) => `      <category>${escapeXml(t)}</category>`).join("\n");
-      return [
+function feedItems(): FeedItem[] {
+  return posts.slice(0, FEED_POST_LIMIT).map((p) => {
+    const v = pickPrimaryVersion(p);
+    const url = absoluteUrl(`/posts/${p.slug}/`);
+    return {
+      title: escapeXml(v.title),
+      url: escapeXml(url),
+      summary: escapeXml(v.summary),
+      authorName: escapeXml(AUTHOR.name),
+      authorUrl: escapeXml(AUTHOR.url),
+      publishedRfc822: escapeXml(rfc822(v.date)),
+      publishedIso: escapeXml(v.date),
+      updatedIso: escapeXml(v.edited_at),
+      categories: v.tags.map((t) => escapeXml(t)),
+    };
+  });
+}
+
+function feedUpdatedIso(items: FeedItem[]): string {
+  if (items.length === 0) return new Date().toISOString();
+  const latest = posts.slice(0, FEED_POST_LIMIT)[0];
+  return pickPrimaryVersion(latest).edited_at;
+}
+
+// -- RSS 2.0 ----------------------------------------------------------------
+
+function renderRss(): string {
+  const items = feedItems();
+  const lastBuild = escapeXml(rfc822(feedUpdatedIso(items)));
+
+  const body = items
+    .map((it) =>
+      [
         "    <item>",
-        `      <title>${escapeXml(v.title)}</title>`,
-        `      <link>${escapeXml(url)}</link>`,
-        `      <guid isPermaLink="true">${escapeXml(url)}</guid>`,
-        `      <pubDate>${escapeXml(rfc822(v.date))}</pubDate>`,
-        `      <description>${escapeXml(v.summary)}</description>`,
-        categories,
-        `      <dc:creator>${escapeXml(AUTHOR.name)}</dc:creator>`,
+        `      <title>${it.title}</title>`,
+        `      <link>${it.url}</link>`,
+        `      <guid isPermaLink="true">${it.url}</guid>`,
+        `      <pubDate>${it.publishedRfc822}</pubDate>`,
+        `      <description>${it.summary}</description>`,
+        ...it.categories.map((c) => `      <category>${c}</category>`),
+        `      <dc:creator>${it.authorName}</dc:creator>`,
         "    </item>",
-      ]
-        .filter(Boolean)
-        .join("\n");
-    })
+      ].join("\n"),
+    )
     .join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -230,9 +264,9 @@ function renderRss(): string {
     <atom:link href="${escapeXml(absoluteUrl(RSS_PATH))}" rel="self" type="application/rss+xml" />
     <description>${escapeXml(SITE_DESCRIPTION)}</description>
     <language>${SITE_LANGUAGE}</language>
-    <lastBuildDate>${escapeXml(lastBuild)}</lastBuildDate>
+    <lastBuildDate>${lastBuild}</lastBuildDate>
     <generator>blog.niclaslindstedt.se</generator>
-${items}
+${body}
   </channel>
 </rss>
 `;
@@ -241,31 +275,24 @@ ${items}
 // -- Atom 1.0 ---------------------------------------------------------------
 
 function renderAtom(): string {
-  const latest = posts.slice(0, FEED_POST_LIMIT);
-  const updated = latest.length
-    ? pickPrimaryVersion(latest[0]).edited_at
-    : new Date().toISOString();
+  const items = feedItems();
+  const updated = escapeXml(feedUpdatedIso(items));
 
-  const entries = latest
-    .map((p) => {
-      const v = pickPrimaryVersion(p);
-      const url = absoluteUrl(`/posts/${p.slug}/`);
-      const categories = v.tags.map((t) => `    <category term="${escapeXml(t)}" />`).join("\n");
-      return [
+  const body = items
+    .map((it) =>
+      [
         "  <entry>",
-        `    <id>${escapeXml(url)}</id>`,
-        `    <title>${escapeXml(v.title)}</title>`,
-        `    <link rel="alternate" type="text/html" href="${escapeXml(url)}" />`,
-        `    <published>${escapeXml(v.date)}</published>`,
-        `    <updated>${escapeXml(v.edited_at)}</updated>`,
-        `    <author><name>${escapeXml(AUTHOR.name)}</name><uri>${escapeXml(AUTHOR.url)}</uri></author>`,
-        `    <summary type="text">${escapeXml(v.summary)}</summary>`,
-        categories,
+        `    <id>${it.url}</id>`,
+        `    <title>${it.title}</title>`,
+        `    <link rel="alternate" type="text/html" href="${it.url}" />`,
+        `    <published>${it.publishedIso}</published>`,
+        `    <updated>${it.updatedIso}</updated>`,
+        `    <author><name>${it.authorName}</name><uri>${it.authorUrl}</uri></author>`,
+        `    <summary type="text">${it.summary}</summary>`,
+        ...it.categories.map((c) => `    <category term="${c}" />`),
         "  </entry>",
-      ]
-        .filter(Boolean)
-        .join("\n");
-    })
+      ].join("\n"),
+    )
     .join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -275,10 +302,10 @@ function renderAtom(): string {
   <subtitle>${escapeXml(SITE_TAGLINE)}</subtitle>
   <link rel="self" type="application/atom+xml" href="${escapeXml(absoluteUrl(ATOM_PATH))}" />
   <link rel="alternate" type="text/html" href="${escapeXml(SITE_URL + "/")}" />
-  <updated>${escapeXml(updated)}</updated>
+  <updated>${updated}</updated>
   <author><name>${escapeXml(AUTHOR.name)}</name><uri>${escapeXml(AUTHOR.url)}</uri></author>
   <generator uri="${escapeXml(SITE_URL)}">blog.niclaslindstedt.se</generator>
-${entries}
+${body}
 </feed>
 `;
 }

@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { Audience, Post, PostVersion } from "./types.ts";
 import type { AnchorSignal, GithubFile, LineData, Step, TabStop } from "./terminal/index.ts";
-import { useTerminalAnimation, BLOG_WPM } from "./terminal/index.ts";
-import { useFileViewer } from "./terminal/FileViewerContext.tsx";
+import { useTerminalAnimation, useFileViewer, BLOG_WPM } from "./terminal/index.ts";
 import { postsForAudience } from "./postFilters.ts";
 
 function audienceCwd(audience: Audience): string {

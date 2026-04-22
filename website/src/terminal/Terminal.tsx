@@ -5,12 +5,14 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 import type { LineData } from "./types.ts";
 import type { AnchorSignal } from "./useTerminalAnimation.ts";
 import { TerminalLine } from "./TerminalLine.tsx";
+import { clamp } from "./pointerCapture.ts";
+import { useDraggable } from "./useDraggable.ts";
+import { useResizable } from "./useResizable.ts";
 
 const MIN_WIDTH = 320;
 const MIN_HEIGHT = 220;
@@ -27,10 +29,6 @@ const BOTTOM_SLACK_PX = 8;
 // than this from the top of the viewport — small drift from programmatic
 // re-pinning or browser layout jitter doesn't count.
 const ANCHOR_DRIFT_PX = 48;
-
-function clamp(n: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, n));
-}
 
 function detectSmall(): boolean {
   if (typeof window === "undefined") return false;
@@ -241,67 +239,22 @@ export function Terminal({
     return () => window.removeEventListener("resize", onResize);
   }, [small]);
 
-  const onResizeStart = useCallback(
-    (e: ReactPointerEvent<HTMLDivElement>) => {
-      if (fullscreen) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const startX = e.clientX;
-      const startY = e.clientY;
-      const startW = size.width;
-      const startH = size.height;
-      const originX = pos.x;
-      const originY = pos.y;
+  const onResizeStart = useResizable({
+    pos,
+    size,
+    min: { width: MIN_WIDTH, height: MIN_HEIGHT },
+    enabled: !fullscreen,
+    onChange: setSize,
+  });
 
-      const onMove = (ev: PointerEvent) => {
-        const maxW = Math.max(MIN_WIDTH, window.innerWidth - originX);
-        const maxH = Math.max(MIN_HEIGHT, window.innerHeight - originY);
-        setSize({
-          width: clamp(startW + (ev.clientX - startX), MIN_WIDTH, maxW),
-          height: clamp(startH + (ev.clientY - startY), MIN_HEIGHT, maxH),
-        });
-      };
-      const onUp = () => {
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", onUp);
-      };
-      window.addEventListener("pointermove", onMove);
-      window.addEventListener("pointerup", onUp);
-    },
-    [fullscreen, size.width, size.height, pos.x, pos.y],
-  );
-
-  const onDragStart = useCallback(
-    (e: ReactPointerEvent<HTMLDivElement>) => {
-      if (fullscreen) return;
-      if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
-      e.preventDefault();
-      setDragging(true);
-      const startX = e.clientX;
-      const startY = e.clientY;
-      const originX = pos.x;
-      const originY = pos.y;
-      const w = size.width;
-      const h = size.height;
-
-      const onMove = (ev: PointerEvent) => {
-        const maxX = Math.max(0, window.innerWidth - w);
-        const maxY = Math.max(0, window.innerHeight - h);
-        setPos({
-          x: clamp(originX + (ev.clientX - startX), 0, maxX),
-          y: clamp(originY + (ev.clientY - startY), 0, maxY),
-        });
-      };
-      const onUp = () => {
-        setDragging(false);
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", onUp);
-      };
-      window.addEventListener("pointermove", onMove);
-      window.addEventListener("pointerup", onUp);
-    },
-    [fullscreen, pos.x, pos.y, size.width, size.height],
-  );
+  const onDragStart = useDraggable({
+    pos,
+    size,
+    enabled: !fullscreen,
+    onChange: setPos,
+    onDraggingChange: setDragging,
+    ignoreSelector: "[data-no-drag]",
+  });
 
   const wrapperClass = fullscreen
     ? "fixed inset-0 flex flex-col overflow-hidden border-b border-term-border bg-term-bg"

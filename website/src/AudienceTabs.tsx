@@ -1,5 +1,5 @@
 import { AUDIENCES, type Audience } from "./types.ts";
-import { Tabs, type TabItem } from "./terminal/Tabs.tsx";
+import { Tabs, type TabItem } from "./terminal/index.ts";
 
 const TAB_ITEMS: readonly TabItem<Audience>[] = AUDIENCES.map((a) => ({ id: a, label: a }));
 
