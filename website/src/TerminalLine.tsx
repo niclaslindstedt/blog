@@ -74,5 +74,22 @@ export function TerminalLine({ line }: { line: LineData }) {
           </button>
         </div>
       );
+    case "tag-row":
+      // Inline row of `#tag` buttons, wraps on narrow viewports. Each tag is a
+      // real word-boundary token so a click can safely feed it to `grep`.
+      return (
+        <div className="flex flex-wrap gap-x-3 gap-y-1">
+          {line.tags.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => line.onClick(tag)}
+              className="cursor-pointer bg-transparent p-0 text-left font-[inherit] text-fg hover:underline focus-visible:underline focus-visible:outline-none"
+            >
+              #{tag}
+            </button>
+          ))}
+        </div>
+      );
   }
 }

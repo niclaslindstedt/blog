@@ -36,7 +36,10 @@ function AnchorOverride({ href, children }: { href?: string; children?: React.Re
 
 const components: Components = {
   h1: ({ children }) => (
-    <div className="mt-3 mb-1 font-bold uppercase tracking-[0.1em] text-fg-bright">{children}</div>
+    <div className="my-[1lh] uppercase tracking-[0.1em] text-fg-bright">
+      {"# "}
+      {children}
+    </div>
   ),
   h2: ({ children }) => <div className="mt-3 mb-1 font-bold text-fg-bright">{children}</div>,
   h3: ({ children }) => <div className="mt-2 mb-1 font-bold text-fg">{children}</div>,

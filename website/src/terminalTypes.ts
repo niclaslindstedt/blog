@@ -11,7 +11,8 @@ export type LineData =
       color?: LineColor;
       prefix?: string;
     }
-  | { kind: "action"; label: string; onClick: () => void };
+  | { kind: "action"; label: string; onClick: () => void }
+  | { kind: "tag-row"; tags: string[]; onClick: (tag: string) => void };
 
 export type Step =
   | { kind: "type-command"; text: string; prompt?: string; fast?: boolean; wpm?: number }
@@ -34,5 +35,6 @@ export type Step =
       prefix?: string;
     }
   | { kind: "action"; label: string; onClick: () => void }
+  | { kind: "tag-row"; tags: string[]; onClick: (tag: string) => void }
   | { kind: "effect"; run: () => void }
   | { kind: "delay"; ms: number };
