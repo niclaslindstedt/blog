@@ -15,8 +15,8 @@ import { BLOG_WPM } from "./typing.ts";
 
 const HOME_PROMPT = "~ $";
 
-function codePrompt(audience: Audience): string {
-  return `~/code/blog/${audience} $`;
+function postsPrompt(audience: Audience): string {
+  return `~/blog/posts/${audience} $`;
 }
 
 // What `sed '1,/^---$/d'` prints: the body with the YAML frontmatter stripped.
@@ -139,7 +139,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         {
           kind: "type-command",
           text,
-          prompt: codePrompt(audienceRef.current),
+          prompt: postsPrompt(audienceRef.current),
           wpm: BLOG_WPM,
           tabStops: [{ at: prefix.length, to: prefix.length + file.rawUrl.length }],
         },
@@ -152,7 +152,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   const enqueueOpen = (slug: string, a: Audience) => {
     const key = openKey(a, slug);
     if (openedRef.current.has(key) || notFoundRef.current.has(key)) return;
-    const prompt = codePrompt(a);
+    const prompt = postsPrompt(a);
     const post = posts.find((p) => p.slug === slug);
     const version = post?.versions[a];
     const candidates = filenamesInAudience(posts, a);
@@ -235,7 +235,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   // surfaces each matching filename as a clickable `sed` target — same shape
   // as the `ls -1` listing, just filtered.
   const enqueueTagSearch = (tag: string, a: Audience) => {
-    const prompt = codePrompt(a);
+    const prompt = postsPrompt(a);
     const matches = posts.filter((p) => {
       const v = p.versions[a];
       return v !== undefined && v.tags.includes(tag);
@@ -267,7 +267,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   };
 
   const enqueueListing = (a: Audience, visible: Post[]): void => {
-    const prompt = codePrompt(a);
+    const prompt = postsPrompt(a);
     // `ls -1` (one-per-line) keeps the listing a clean vertical column and
     // avoids the multi-column output real `ls` produces on a tty. The date
     // lives in the filename itself (`YYYY-MM-DD-<slug>.md`) so the listing
@@ -302,7 +302,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   // `<slug>.md:<text>` line is clickable — the summary is the hook, so
   // clicking anywhere on it should open the post.
   const enqueueSummaries = (a: Audience, visible: Post[]): void => {
-    const prompt = codePrompt(a);
+    const prompt = postsPrompt(a);
     const steps: Step[] = [
       {
         kind: "type-command",
@@ -333,7 +333,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     // real shell with bash_completion fills in directory names. The snap
     // includes the trailing `/`, matching how bash appends it when a
     // directory completion is unambiguous.
-    const text = `cd code/blog/${a}`;
+    const text = `cd blog/posts/${a}`;
     const afterCd = 3;
     enqueue([
       {
@@ -422,7 +422,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         lines={lines}
         idle={idle}
         anchor={anchor}
-        idlePrompt={codePrompt(audience)}
+        idlePrompt={postsPrompt(audience)}
         tabs={
           <AudienceTabs
             audience={audience}

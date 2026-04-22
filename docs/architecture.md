@@ -66,15 +66,15 @@ frontend picks the version that matches the reader's current audience.
 The React app is statically exported via Vite — no server runtime. The
 landing page is a single interactive terminal window. Below the titlebar
 there is a two-tab strip (`technical` / `non-technical`); the active tab
-determines both the cwd shown in the prompt (`~/code/blog/<audience> $`) and
+determines both the cwd shown in the prompt (`~/blog/posts/<audience> $`) and
 which post versions are listed.
 
-On mount at `/` the terminal auto-runs `cd code/blog/<audience>`, then `ls -1`
+On mount at `/` the terminal auto-runs `cd blog/posts/<audience>`, then `ls -1`
 (one-per-line, no mode/size/date column — the date is already in the
 filename), then `grep -oP '(?<=^summary: ).*' *.md` — the summary line doubles as the
 clickable preview for each post. When the URL targets a specific post
 (`/posts/<slug>`) the preamble is skipped: the session opens with the prompt
-already at `~/code/blog/<audience> $` and renders the `sed` body straight
+already at `~/blog/posts/<audience> $` and renders the `sed` body straight
 away, since the reader asked for that file and doesn't need the listing
 first. Clicking a filename (from the `ls -1`
 listing, the grep output, or a tag grep) runs `sed '1,/^---$/d' <slug>.md`,
@@ -117,7 +117,7 @@ two routes:
 - `/` — landing terminal (no post opened).
 - `/posts/<slug>` — terminal that opens that post's version for the reader's
   current audience directly via `sed`, with no listing preamble (the prompt
-  is already at `~/code/blog/<audience> $`). If the slug has no version in
+  is already at `~/blog/posts/<audience> $`). If the slug has no version in
   the current audience the terminal prints
   `sed: <slug>.md: No such file or directory` in red.
 

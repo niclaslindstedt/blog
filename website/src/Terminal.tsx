@@ -86,7 +86,7 @@ export function Terminal({
   title,
   lines,
   idle,
-  idlePrompt = "~/code/blog $",
+  idlePrompt = "~/blog/posts $",
   tabs,
   anchor,
   onClose,
