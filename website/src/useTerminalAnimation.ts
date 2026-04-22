@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { LineColor, LineData, Step } from "./terminalTypes.ts";
+import type { LineColor, LineData, Step, TabStop } from "./terminalTypes.ts";
 import { charDelayMs } from "./typing.ts";
 
 const COMMAND_MS_PER_CHAR_NORMAL = 36;
@@ -31,7 +31,7 @@ interface Active {
   fast?: boolean;
   wpm?: number;
   prompt?: string;
-  tabAt?: number;
+  tabStops?: TabStop[];
 }
 
 interface SessionState {
@@ -158,11 +158,18 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
         }
         if (
           current.kind === "command" &&
-          current.tabAt !== undefined &&
-          current.shown.length >= current.tabAt &&
+          current.tabStops !== undefined &&
+          current.tabStops.length > 0 &&
+          current.shown.length >= current.tabStops[0].at &&
           current.shown.length < current.full.length
         ) {
-          const snapped: Active = { ...current, shown: current.full, tabAt: undefined };
+          const [stop, ...rest] = current.tabStops;
+          const snapTo = Math.min(stop.to, current.full.length);
+          const snapped: Active = {
+            ...current,
+            shown: current.full.slice(0, snapTo),
+            tabStops: rest,
+          };
           activeRef.current = snapped;
           setActive(snapped);
           schedule(TAB_COMPLETE_PAUSE_MS);
@@ -221,7 +228,7 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
             prompt: next.prompt,
             fast: next.fast,
             wpm: next.wpm,
-            tabAt: next.tabAt,
+            tabStops: next.tabStops,
           });
           schedule(
             next.wpm !== undefined

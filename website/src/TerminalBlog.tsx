@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Audience, Post, PostVersion } from "./types.ts";
-import type { Step } from "./terminalTypes.ts";
+import type { Step, TabStop } from "./terminalTypes.ts";
 import type { GithubFile } from "./github.ts";
 import { Terminal } from "./Terminal.tsx";
 import { AudienceTabs } from "./AudienceTabs.tsx";
@@ -50,15 +50,35 @@ function minUniquePrefixLen(target: string, candidates: string[]): number {
   return target.length;
 }
 
-// Computes the index into `sed '1,/^---$/d' <filename>` at which a shell would
-// auto-complete the rest of `<filename>`. Returns `undefined` when no shortcut
-// is possible (single char already unique is still worth it; a filename with
-// no unique prefix is not).
-function sedTabAt(filename: string, candidates: string[]): number | undefined {
+// Tab stop for `sed '1,/^---$/d' <filename>`: pauses at the shortest unique
+// prefix and snaps to the full filename. Returns an empty list when no
+// shortcut is possible (another candidate equals target, or target is empty).
+function sedTabStops(filename: string, candidates: string[]): TabStop[] {
   const commandPrefix = `sed '1,/^---$/d' `;
   const unique = minUniquePrefixLen(filename, candidates);
-  if (unique >= filename.length) return undefined;
-  return commandPrefix.length + unique;
+  if (unique >= filename.length) return [];
+  return [{ at: commandPrefix.length + unique, to: commandPrefix.length + filename.length }];
+}
+
+// Tab stops for each folder segment of a path starting at `startOffset` in
+// `command`. A segment longer than `minTyped` characters gets a stop that
+// fires after `minTyped` keystrokes and snaps to the end of the segment —
+// including its trailing `/` for directory segments, mirroring how bash
+// tab-completion fills in a directory name.
+function pathTabStops(command: string, startOffset: number, minTyped = 3): TabStop[] {
+  const stops: TabStop[] = [];
+  let i = startOffset;
+  while (i < command.length) {
+    const slash = command.indexOf("/", i);
+    const segmentEnd = slash === -1 ? command.length : slash;
+    const segmentLen = segmentEnd - i;
+    if (segmentLen > minTyped) {
+      const snapTo = slash === -1 ? segmentEnd : segmentEnd + 1;
+      stops.push({ at: i + minTyped, to: snapTo });
+    }
+    i = slash === -1 ? command.length : slash + 1;
+  }
+  return stops;
 }
 
 export function TerminalBlog({ posts }: { posts: Post[] }) {
@@ -96,7 +116,12 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   const openedRef = useRef(new Set<string>());
   const notFoundRef = useRef(new Set<string>());
   const visitedRef = useRef(new Set<Audience>());
+  // Audiences whose working directory has already been cd'd into in this
+  // session. Going back from a post to the index just re-runs `ls` + `grep` —
+  // we're still in the directory, no need to cd again.
+  const cdedRef = useRef(new Set<Audience>());
   const audienceRef = useRef<Audience>(audience);
+  const prevSlugRef = useRef<string | undefined>(slugParam);
 
   const openKey = (a: Audience, slug: string) => `${a}:${slug}`;
 
@@ -122,7 +147,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     const post = posts.find((p) => p.slug === slug);
     const version = post?.versions[a];
     const candidates = filenamesInAudience(posts, a);
-    const tabAt = sedTabAt(`${slug}.md`, candidates);
+    const tabStops = sedTabStops(`${slug}.md`, candidates);
     // Every user-initiated body-render anchors its command to the top of the
     // viewport so the reader starts at the beginning of the post.
     if (!version) {
@@ -134,7 +159,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
           prompt,
           wpm: BLOG_WPM,
           anchor: true,
-          tabAt,
+          tabStops,
         },
         {
           kind: "print",
@@ -164,7 +189,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         prompt,
         wpm: BLOG_WPM,
         anchor: true,
-        tabAt,
+        tabStops,
       },
       { kind: "print", text: displayText(version), markdown: true },
       { kind: "blank" },
@@ -294,6 +319,25 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     enqueue(steps);
   };
 
+  const enqueueCd = (a: Audience) => {
+    // Tab-completing each folder segment after 3 keystrokes mirrors how a
+    // real shell with bash_completion fills in directory names. The snap
+    // includes the trailing `/`, matching how bash appends it when a
+    // directory completion is unambiguous.
+    const text = `cd code/blog/${a}`;
+    const afterCd = 3;
+    enqueue([
+      {
+        kind: "type-command",
+        text,
+        prompt: HOME_PROMPT,
+        wpm: BLOG_WPM,
+        tabStops: pathTabStops(text, afterCd),
+      },
+    ]);
+    cdedRef.current.add(a);
+  };
+
   const runIntro = (a: Audience) => {
     // A URL that targets a specific post is a direct "show me this file"
     // request — the reader didn't ask for a listing, so skip the cd/ls/grep
@@ -303,14 +347,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       return;
     }
     const visible = postsForAudience(posts, a);
-    enqueue([
-      {
-        kind: "type-command",
-        text: `cd code/blog/${a}`,
-        prompt: HOME_PROMPT,
-        wpm: BLOG_WPM,
-      },
-    ]);
+    enqueueCd(a);
     enqueueListing(a, visible);
     enqueueSummaries(a, visible);
   };
@@ -346,8 +383,27 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   }, [audience]);
 
   useEffect(() => {
-    if (!startedRef.current) return;
-    if (slugParam) enqueueOpen(slugParam, audienceRef.current);
+    if (!startedRef.current) {
+      prevSlugRef.current = slugParam;
+      return;
+    }
+    const prev = prevSlugRef.current;
+    prevSlugRef.current = slugParam;
+    if (slugParam) {
+      enqueueOpen(slugParam, audienceRef.current);
+      return;
+    }
+    // Back to index (× tab, browser back, or history pop). Clear the post
+    // body, then re-render the listing for the current audience. If we've
+    // already cd'd into this directory in the session, skip the cd — we're
+    // still standing in it, just running `ls` and `grep` again.
+    if (prev === undefined) return;
+    const a = audienceRef.current;
+    const visible = postsForAudience(posts, a);
+    enqueue([{ kind: "clear" }]);
+    if (!cdedRef.current.has(a)) enqueueCd(a);
+    enqueueListing(a, visible);
+    enqueueSummaries(a, visible);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slugParam]);
 
