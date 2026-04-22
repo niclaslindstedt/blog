@@ -27,6 +27,10 @@ export type Step =
       // other user-initiated commands whose response the reader wants to watch
       // unfold from the command downward rather than be dragged to the bottom.
       anchor?: boolean;
+      // Character index at which the typer "tabs": once `shown.length` reaches
+      // `tabAt` the rest of `text` is filled in instantaneously, mimicking a
+      // shell tab-completion on a uniquely-identifying filename prefix.
+      tabAt?: number;
     }
   | { kind: "print"; text: string; color?: LineColor; markdown?: boolean }
   | {

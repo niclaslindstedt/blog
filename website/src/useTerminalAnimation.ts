@@ -12,6 +12,10 @@ const IDLE_POLL_MS = 80;
 const BETWEEN_STEP_MS = 60;
 const ENTER_PAUSE_MIN_MS = 200;
 const ENTER_PAUSE_MAX_MS = 400;
+// Short beat between the last typed character of a unique filename prefix and
+// the snapped-in completion, long enough for the eye to register the "tab"
+// without feeling laggy.
+const TAB_COMPLETE_PAUSE_MS = 90;
 
 function enterPauseMs(): number {
   const span = ENTER_PAUSE_MAX_MS - ENTER_PAUSE_MIN_MS;
@@ -27,6 +31,7 @@ interface Active {
   fast?: boolean;
   wpm?: number;
   prompt?: string;
+  tabAt?: number;
 }
 
 interface SessionState {
@@ -151,6 +156,18 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
           schedule(wasCommand && !wasFast ? enterPauseMs() : BETWEEN_STEP_MS);
           return;
         }
+        if (
+          current.kind === "command" &&
+          current.tabAt !== undefined &&
+          current.shown.length >= current.tabAt &&
+          current.shown.length < current.full.length
+        ) {
+          const snapped: Active = { ...current, shown: current.full, tabAt: undefined };
+          activeRef.current = snapped;
+          setActive(snapped);
+          schedule(TAB_COMPLETE_PAUSE_MS);
+          return;
+        }
         let chunk: number;
         let delay: number;
         if (current.wpm !== undefined) {
@@ -204,6 +221,7 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
             prompt: next.prompt,
             fast: next.fast,
             wpm: next.wpm,
+            tabAt: next.tabAt,
           });
           schedule(
             next.wpm !== undefined
