@@ -29,13 +29,17 @@ function displayText(v: PostVersion): string {
   return `# ${v.title}\n\n${body}`;
 }
 
+function emptyAudienceMap<T>(): Record<Audience, Map<string, T>> {
+  return { technical: new Map(), "non-technical": new Map() };
+}
+
 export function TerminalBlog({ posts }: { posts: Post[] }) {
   const { slug: slugParam } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const { audience, setAudience } = useAudience();
   const { setTerminalClosed } = usePreferences();
-  const { lines, enqueue, idle, anchor } = useTerminalAnimation(audience);
+  const { lines, enqueue, idle, anchor, scrollToLine } = useTerminalAnimation(audience);
   const openFile = useFileViewer();
 
   // Red and yellow dots both dismiss the terminal. Persist the choice in
@@ -53,13 +57,28 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     );
   }, [setTerminalClosed, navigate, location.pathname, location.search]);
   const startedRef = useRef(false);
-  // Keyed by `${audience}:${slug}` — a post is "opened" independently in each audience.
-  const openedRef = useRef(new Set<string>());
-  const notFoundRef = useRef(new Set<string>());
+  // Per-audience map from slug → committed line index of that post's sed
+  // command. Populated on the fly by `onStart` callbacks as the for-loop
+  // types its way through each post. Scrolling just looks up the index and
+  // hands it to the animator.
+  const postIndexRef = useRef<Record<Audience, Map<string, number>>>(emptyAudienceMap());
+  // If a click or navigation targets a post whose sed command hasn't typed
+  // out yet (e.g. the reader clicked an `ls` entry mid-intro), remember the
+  // slug here and let the matching `onStart` fire the scroll once the index
+  // becomes known.
+  const pendingScrollRef = useRef<Record<Audience, string | null>>({
+    technical: null,
+    "non-technical": null,
+  });
+  // Slugs we've already surfaced a "no such file" error for, keyed by
+  // audience. Prevents duplicate error blocks if the user flicks between a
+  // missing slug and the listing.
+  const notFoundShownRef = useRef<Record<Audience, Set<string>>>({
+    technical: new Set(),
+    "non-technical": new Set(),
+  });
   const visitedRef = useRef(new Set<Audience>());
   const audienceRef = useRef<Audience>(audience);
-
-  const openKey = (a: Audience, slug: string) => `${a}:${slug}`;
 
   const openInVi = useCallback(
     (file: GithubFile) => {
@@ -76,45 +95,21 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     [enqueue, openFile],
   );
 
-  const enqueueOpen = (slug: string, a: Audience) => {
-    const key = openKey(a, slug);
-    if (openedRef.current.has(key) || notFoundRef.current.has(key)) return;
-    const prompt = codePrompt(a);
-    const post = posts.find((p) => p.slug === slug);
-    const version = post?.versions[a];
-    // Every user-initiated body-render anchors its command to the top of the
-    // viewport so the reader starts at the beginning of the post.
-    if (!version) {
-      notFoundRef.current.add(key);
-      enqueue([
-        {
-          kind: "type-command",
-          text: `sed '1,/^---$/d' ${slug}.md`,
-          prompt,
-          wpm: BLOG_WPM,
-          anchor: true,
-        },
-        {
-          kind: "print",
-          text: `sed: ${slug}.md: No such file or directory`,
-          color: "error",
-        },
-        { kind: "blank" },
-      ]);
-      const other: Audience = a === "technical" ? "non-technical" : "technical";
-      if (post?.versions[other]) {
-        enqueue([
-          {
-            kind: "action",
-            label: `[ switch to ${other} version ]`,
-            onClick: () => setAudience(other),
-          },
-          { kind: "blank" },
-        ]);
-      }
-      return;
+  const tryScrollToPost = (slug: string, a: Audience): boolean => {
+    const idx = postIndexRef.current[a].get(slug);
+    if (idx === undefined) {
+      pendingScrollRef.current[a] = slug;
+      return false;
     }
-    openedRef.current.add(key);
+    pendingScrollRef.current[a] = null;
+    scrollToLine(idx);
+    return true;
+  };
+
+  const enqueueNotFound = (slug: string, a: Audience): void => {
+    if (notFoundShownRef.current[a].has(slug)) return;
+    notFoundShownRef.current[a].add(slug);
+    const prompt = codePrompt(a);
     const steps: Step[] = [
       {
         kind: "type-command",
@@ -123,36 +118,40 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         wpm: BLOG_WPM,
         anchor: true,
       },
-      { kind: "print", text: displayText(version), markdown: true },
+      {
+        kind: "print",
+        text: `sed: ${slug}.md: No such file or directory`,
+        color: "error",
+      },
       { kind: "blank" },
     ];
-    if (version.tags.length > 0) {
+    const other: Audience = a === "technical" ? "non-technical" : "technical";
+    const otherPost = posts.find((p) => p.slug === slug);
+    if (otherPost?.versions[other]) {
       steps.push({
-        kind: "tag-row",
-        tags: version.tags,
-        onClick: (tag) => enqueueTagSearch(tag, a),
+        kind: "action",
+        label: `[ switch to ${other} version ]`,
+        onClick: () => setAudience(other),
       });
       steps.push({ kind: "blank" });
     }
     enqueue(steps);
   };
 
-  // An explicit click on a post filename (ls entry, summary line, or grep
-  // result) should always re-run the body render, even if this audience
-  // already rendered that post earlier — a reader clicking a filename expects
-  // to see the command type out again, not a silent no-op. We clear the
-  // "already opened" guard for this slug so enqueueOpen will proceed.
-  const openPostFromClick = (slug: string) => {
+  // User-initiated jump to a post. Always updates the URL so the address bar
+  // stays in sync with the on-screen post; always tries to scroll. If the
+  // post's sed command hasn't typed out yet (intro still animating), we mark
+  // it pending and the matching `onStart` will finish the scroll.
+  const jumpToPost = (slug: string) => {
+    const a = audienceRef.current;
     if (slugParam !== slug) navigate(`/posts/${slug}`);
-    const key = openKey(audienceRef.current, slug);
-    openedRef.current.delete(key);
-    enqueueOpen(slug, audienceRef.current);
+    tryScrollToPost(slug, a);
   };
 
-  // Clicking a #tag under a post runs a `grep` that filters *.md files by a
-  // `tags:` frontmatter line containing the tag as a whole word, and then
-  // surfaces each matching filename as a clickable `sed` target — same shape
-  // as the `ls -1` listing, just filtered.
+  // Clicking a #tag under a post runs a grep pipeline that first finds files
+  // tagged with the word, then pulls their `summary:` lines. Each result is a
+  // clickable summary that scrolls back up to the matching post — the summary
+  // acts as a search preview, not a secondary render.
   const enqueueTagSearch = (tag: string, a: Audience) => {
     const prompt = codePrompt(a);
     const matches = posts.filter((p) => {
@@ -162,7 +161,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     const steps: Step[] = [
       {
         kind: "type-command",
-        text: `grep -lE "^tags:.*\\b${tag}\\b" *.md`,
+        text: `grep -lE "^tags:.*\\b${tag}\\b" *.md | xargs grep "^summary:"`,
         prompt,
         wpm: BLOG_WPM,
         anchor: true,
@@ -174,11 +173,13 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       return;
     }
     for (const p of matches) {
+      const v = p.versions[a];
+      if (!v) continue;
       steps.push({
         kind: "clickable",
-        label: `${p.slug}.md`,
+        label: `${p.slug}.md:summary: ${v.summary}`,
         color: "accent",
-        onClick: () => openPostFromClick(p.slug),
+        onClick: () => jumpToPost(p.slug),
       });
     }
     steps.push({ kind: "blank" });
@@ -190,7 +191,9 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     // `ls -1` (one-per-line) keeps the listing a clean vertical column and
     // avoids the multi-column output real `ls` produces on a tty. The date
     // lives in the filename itself (`YYYY-MM-DD-<slug>.md`) so the listing
-    // stays readable on narrow viewports without horizontal scroll.
+    // stays readable on narrow viewports without horizontal scroll. Clicking
+    // a filename scrolls the viewport down to that post's sed command — the
+    // post itself is already rendered further below by the intro for-loop.
     const steps: Step[] = [{ kind: "type-command", text: "ls -1", prompt, wpm: BLOG_WPM }];
     if (visible.length === 0) {
       steps.push({
@@ -208,37 +211,51 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         kind: "clickable",
         label: `${p.slug}.md`,
         color: "accent",
-        onClick: () => openPostFromClick(p.slug),
+        onClick: () => jumpToPost(p.slug),
       });
     }
     steps.push({ kind: "blank" });
     enqueue(steps);
   };
 
-  // After `ls -1`, run `grep "^summary:" *.md` so the reader can pick a post
-  // from its one-line summary rather than from a bare filename. The whole
-  // `<slug>.md:summary: <text>` line is clickable — the summary is the hook,
-  // so clicking anywhere on it should open the post.
-  const enqueueSummaries = (a: Audience, visible: Post[]): void => {
+  // After the listing, stream every post's body into the scrollback in
+  // descending-date order (the extractor already sorts `posts` that way). Each
+  // post gets its own `sed` command so the reader can still see which file
+  // the prose came from, and so the ls-entry click target has a real line to
+  // anchor to. The sed command types fast to keep the intro snappy even with
+  // a dozen posts queued.
+  const enqueueAllPosts = (a: Audience, visible: Post[]): void => {
     const prompt = codePrompt(a);
-    const steps: Step[] = [
-      { kind: "type-command", text: `grep "^summary:" *.md`, prompt, wpm: BLOG_WPM },
-    ];
-    let printed = 0;
+    const steps: Step[] = [];
     for (const p of visible) {
       const v = p.versions[a];
       if (!v) continue;
+      const slug = p.slug;
       steps.push({
-        kind: "clickable",
-        label: `${p.slug}.md:summary: ${v.summary}`,
-        color: "accent",
-        onClick: () => openPostFromClick(p.slug),
+        kind: "type-command",
+        text: `sed '1,/^---$/d' ${slug}.md`,
+        prompt,
+        fast: true,
+        onStart: (index) => {
+          postIndexRef.current[a].set(slug, index);
+          if (pendingScrollRef.current[a] === slug && audienceRef.current === a) {
+            pendingScrollRef.current[a] = null;
+            scrollToLine(index);
+          }
+        },
       });
-      printed += 1;
+      steps.push({ kind: "print", text: displayText(v), markdown: true });
+      steps.push({ kind: "blank" });
+      if (v.tags.length > 0) {
+        steps.push({
+          kind: "tag-row",
+          tags: v.tags,
+          onClick: (tag) => enqueueTagSearch(tag, a),
+        });
+        steps.push({ kind: "blank" });
+      }
     }
-    if (printed === 0) return;
-    steps.push({ kind: "blank" });
-    enqueue(steps);
+    if (steps.length > 0) enqueue(steps);
   };
 
   const runIntro = (a: Audience) => {
@@ -252,9 +269,16 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       },
     ]);
     enqueueListing(a, visible);
-    enqueueSummaries(a, visible);
+    enqueueAllPosts(a, visible);
 
-    if (slugParam) enqueueOpen(slugParam, a);
+    if (slugParam) {
+      const hasVersion = visible.some((p) => p.slug === slugParam);
+      if (hasVersion) {
+        pendingScrollRef.current[a] = slugParam;
+      } else {
+        enqueueNotFound(slugParam, a);
+      }
+    }
   };
 
   useEffect(() => {
@@ -269,8 +293,8 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   // Audience tab switch (after initial mount): each audience owns its own
   // terminal session, so swapping just swaps the scrollback — no `clear`, no
   // re-animated `cd`. The first time a tab is focused we run the intro from
-  // scratch (cd, ls, grep summaries) in that session; subsequent visits resume
-  // the session exactly where it was left.
+  // scratch (cd, ls, all posts) in that session; subsequent visits resume the
+  // session where it was left and scroll back to the current slug, if any.
   useEffect(() => {
     if (!startedRef.current) return;
     if (audience === audienceRef.current) return;
@@ -282,13 +306,23 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       return;
     }
 
-    if (slugParam) enqueueOpen(slugParam, audience);
+    if (slugParam) {
+      const hasVersion = posts.some(
+        (p) => p.slug === slugParam && p.versions[audience] !== undefined,
+      );
+      if (hasVersion) tryScrollToPost(slugParam, audience);
+      else enqueueNotFound(slugParam, audience);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audience]);
 
   useEffect(() => {
     if (!startedRef.current) return;
-    if (slugParam) enqueueOpen(slugParam, audienceRef.current);
+    if (!slugParam) return;
+    const a = audienceRef.current;
+    const hasVersion = posts.some((p) => p.slug === slugParam && p.versions[a] !== undefined);
+    if (hasVersion) tryScrollToPost(slugParam, a);
+    else enqueueNotFound(slugParam, a);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slugParam]);
 

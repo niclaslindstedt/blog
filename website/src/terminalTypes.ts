@@ -27,6 +27,11 @@ export type Step =
       // other user-initiated commands whose response the reader wants to watch
       // unfold from the command downward rather than be dragged to the bottom.
       anchor?: boolean;
+      // Fires when this command step begins processing, with the committed
+      // line index it will occupy. Lets callers record post-to-line mappings
+      // so that a later click can scroll the viewport to that line without
+      // re-running the command.
+      onStart?: (index: number) => void;
     }
   | { kind: "print"; text: string; color?: LineColor; markdown?: boolean }
   | {

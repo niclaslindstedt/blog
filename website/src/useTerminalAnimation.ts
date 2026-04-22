@@ -52,6 +52,7 @@ export interface UseTerminalAnimation {
   idle: boolean;
   hasSession: (id: string) => boolean;
   anchor: AnchorSignal | null;
+  scrollToLine: (index: number) => void;
 }
 
 function newSession(): SessionState {
@@ -102,6 +103,16 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
   const enqueue = useCallback((steps: Step[]) => {
     queueRef.current.push(...steps);
     setIdle(false);
+  }, []);
+
+  // Imperatively emit a fresh anchor signal targeting an already-committed
+  // line. Used by click handlers (ls entry, tag search result) that want to
+  // jump the viewport back to an earlier post without re-running the command.
+  const scrollToLine = useCallback((index: number) => {
+    anchorEpochRef.current += 1;
+    const signal: AnchorSignal = { index, epoch: anchorEpochRef.current };
+    anchorRef.current = signal;
+    setAnchor(signal);
   }, []);
 
   const hasSession = useCallback(
@@ -183,15 +194,17 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
       setIdle(false);
 
       switch (next.kind) {
-        case "type-command":
+        case "type-command": {
+          // Capture the future committed index of this command. The active
+          // typing line lives at `lines[committed.length]`, and when typing
+          // finishes it commits at that same index — the index stays valid
+          // before and after the transition.
+          const startIndex = committedRef.current.length;
+          next.onStart?.(startIndex);
           if (next.anchor === true) {
-            // Capture the future committed index of this command. The active
-            // typing line lives at `lines[committed.length]`, and when typing
-            // finishes it commits at that same index — the anchor stays valid
-            // before and after the transition.
             anchorEpochRef.current += 1;
             const signal: AnchorSignal = {
-              index: committedRef.current.length,
+              index: startIndex,
               epoch: anchorEpochRef.current,
             };
             anchorRef.current = signal;
@@ -213,6 +226,7 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
                 : COMMAND_MS_PER_CHAR_NORMAL,
           );
           return;
+        }
         case "type":
           startActive({
             kind: "output",
@@ -305,5 +319,5 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
       ]
     : committed;
 
-  return { lines, enqueue, idle, hasSession, anchor };
+  return { lines, enqueue, idle, hasSession, anchor, scrollToLine };
 }
