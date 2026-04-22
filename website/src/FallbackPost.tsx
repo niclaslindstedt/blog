@@ -1,0 +1,108 @@
+import { Link, useParams } from "react-router-dom";
+import type { Audience, Post } from "./types.ts";
+import { useAudience } from "./AudienceContext.tsx";
+import { FallbackShell } from "./FallbackShell.tsx";
+import { MarkdownBody } from "./MarkdownBody.tsx";
+import { fallbackHref } from "./postFilters.ts";
+
+function formatDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toISOString().slice(0, 10);
+  } catch {
+    return iso;
+  }
+}
+
+export function FallbackPost({ posts }: { posts: Post[] }) {
+  const { slug } = useParams<{ slug: string }>();
+  const { audience, setAudience } = useAudience();
+  const post = posts.find((p) => p.slug === slug);
+  const version = post && slug ? post.versions[audience] : undefined;
+
+  if (!post || !slug) {
+    return (
+      <FallbackShell>
+        <div className="flex flex-col gap-4">
+          <h1 className="text-2xl font-bold text-fg-bright">Post not found</h1>
+          <p className="text-dim">
+            There's no post at <code className="text-fg">/posts/{slug}</code>.
+          </p>
+          <Link
+            to={fallbackHref("/")}
+            className="text-fg underline decoration-dotted hover:text-accent"
+          >
+            Back to all posts
+          </Link>
+        </div>
+      </FallbackShell>
+    );
+  }
+
+  if (!version) {
+    const other: Audience = audience === "technical" ? "non-technical" : "technical";
+    const hasOther = !!post.versions[other];
+    return (
+      <FallbackShell>
+        <div className="flex flex-col gap-4">
+          <h1 className="text-2xl font-bold text-fg-bright">{post.title || slug}</h1>
+          <p className="text-dim">No {audience} version of this post.</p>
+          {hasOther && (
+            <button
+              type="button"
+              onClick={() => setAudience(other)}
+              className="self-start cursor-pointer bg-transparent p-0 text-fg underline decoration-dotted hover:text-accent"
+            >
+              Read the {other} version
+            </button>
+          )}
+          <Link
+            to={fallbackHref("/")}
+            className="text-dim underline decoration-dotted hover:text-fg"
+          >
+            Back to all posts
+          </Link>
+        </div>
+      </FallbackShell>
+    );
+  }
+
+  const edited = version.edited_at && version.edited_at !== version.date;
+
+  return (
+    <FallbackShell>
+      <article>
+        <header className="mb-8">
+          <h1 className="mb-3 text-3xl leading-tight font-bold text-fg-bright">{version.title}</h1>
+          <div className="text-sm text-dim">
+            <time dateTime={version.date}>{formatDate(version.date)}</time>
+            {edited && (
+              <>
+                {" · edited "}
+                <time dateTime={version.edited_at}>{formatDate(version.edited_at)}</time>
+              </>
+            )}
+          </div>
+        </header>
+
+        <div className="text-fg">
+          <MarkdownBody text={version.body} variant="prose" />
+        </div>
+
+        {version.tags.length > 0 && (
+          <footer className="mt-10 flex flex-wrap gap-2 border-t border-term-border pt-5 text-sm">
+            {version.tags.map((t) => (
+              <Link
+                key={t}
+                to={fallbackHref("/", { tag: t })}
+                className="text-dim underline decoration-dotted hover:text-fg"
+              >
+                #{t}
+              </Link>
+            ))}
+          </footer>
+        )}
+      </article>
+    </FallbackShell>
+  );
+}

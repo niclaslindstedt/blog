@@ -89,6 +89,8 @@ export function Terminal({
   idlePrompt = "~/code/blog $",
   tabs,
   anchor,
+  onClose,
+  onMinimize,
 }: {
   user?: string;
   title?: string;
@@ -97,12 +99,15 @@ export function Terminal({
   idlePrompt?: string;
   tabs?: ReactNode;
   anchor?: AnchorSignal | null;
+  onClose?: () => void;
+  onMinimize?: () => void;
 }) {
   const computedTitle = title ?? `${user} — ${cwdFromLines(lines)}`;
   const small = useSmallViewport();
   const [size, setSize] = useState(() => initialSize());
   const [pos, setPos] = useState(() => initialPos(initialSize()));
   const [dragging, setDragging] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   // Active anchor = the anchor signal the terminal is currently honoring. We
   // also remember the highest epoch we've seen (honored or dismissed) so the
@@ -119,6 +124,34 @@ export function Terminal({
   // that fires as a result must not be interpreted as a user gesture, or we'd
   // fight our own anchor/stick logic.
   const programmaticScrollRef = useRef<boolean>(false);
+  // Snapshot of pre-zoom geometry so the green dot can restore the window to
+  // the exact size/position the user had before zooming.
+  const preZoomRef = useRef<{
+    size: { width: number; height: number };
+    pos: { x: number; y: number };
+  } | null>(null);
+  const fullscreen = small || zoomed;
+
+  const toggleZoom = useCallback(() => {
+    if (small) return;
+    setZoomed((z) => {
+      if (!z) {
+        preZoomRef.current = { size, pos };
+      } else if (preZoomRef.current) {
+        // Clamp the restored geometry against the current viewport — the
+        // window may have shrunk while zoomed.
+        const prev = preZoomRef.current;
+        const w = Math.min(prev.size.width, window.innerWidth - VIEWPORT_MARGIN);
+        const h = Math.min(prev.size.height, window.innerHeight - VIEWPORT_MARGIN);
+        setSize({ width: Math.max(MIN_WIDTH, w), height: Math.max(MIN_HEIGHT, h) });
+        setPos({
+          x: clamp(prev.pos.x, 0, Math.max(0, window.innerWidth - MIN_WIDTH)),
+          y: clamp(prev.pos.y, 0, Math.max(0, window.innerHeight - MIN_HEIGHT)),
+        });
+      }
+      return !z;
+    });
+  }, [small, size, pos]);
 
   const scrollLineToTop = useCallback((index: number): boolean => {
     const el = bodyRef.current;
@@ -213,7 +246,7 @@ export function Terminal({
 
   const onResizeStart = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
-      if (small) return;
+      if (fullscreen) return;
       e.preventDefault();
       e.stopPropagation();
       const startX = e.clientX;
@@ -238,12 +271,12 @@ export function Terminal({
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
     },
-    [small, size.width, size.height, pos.x, pos.y],
+    [fullscreen, size.width, size.height, pos.x, pos.y],
   );
 
   const onDragStart = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
-      if (small) return;
+      if (fullscreen) return;
       if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
       e.preventDefault();
       setDragging(true);
@@ -270,14 +303,14 @@ export function Terminal({
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
     },
-    [small, pos.x, pos.y, size.width, size.height],
+    [fullscreen, pos.x, pos.y, size.width, size.height],
   );
 
-  const wrapperClass = small
+  const wrapperClass = fullscreen
     ? "fixed inset-0 flex flex-col overflow-hidden border-b border-term-border bg-term-bg"
     : "absolute flex flex-col overflow-hidden rounded-lg border border-term-border bg-term-bg shadow-2xl";
 
-  const wrapperStyle: CSSProperties = small
+  const wrapperStyle: CSSProperties = fullscreen
     ? {
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
@@ -295,14 +328,31 @@ export function Terminal({
   return (
     <div className={wrapperClass} style={wrapperStyle}>
       <div
-        className={`flex select-none items-center gap-3 border-b border-term-border bg-term-titlebar px-3 py-2 ${small ? "" : dragging ? "cursor-grabbing" : "cursor-grab"}`}
-        onPointerDown={small ? undefined : onDragStart}
-        style={{ touchAction: small ? undefined : "none" }}
+        className={`flex select-none items-center gap-3 border-b border-term-border bg-term-titlebar px-3 py-2 ${fullscreen ? "" : dragging ? "cursor-grabbing" : "cursor-grab"}`}
+        onPointerDown={fullscreen ? undefined : onDragStart}
+        style={{ touchAction: fullscreen ? undefined : "none" }}
       >
         <div className="flex gap-1.5" data-no-drag>
-          <span className="h-3 w-3 rounded-full bg-red" />
-          <span className="h-3 w-3 rounded-full bg-yellow" />
-          <span className="h-3 w-3 rounded-full bg-green" />
+          <button
+            type="button"
+            aria-label="Close terminal"
+            onClick={onClose}
+            className="h-3 w-3 cursor-pointer rounded-full border-0 bg-red p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg"
+          />
+          <button
+            type="button"
+            aria-label="Minimize terminal"
+            onClick={onMinimize}
+            className="h-3 w-3 cursor-pointer rounded-full border-0 bg-yellow p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg"
+          />
+          <button
+            type="button"
+            aria-label={zoomed ? "Restore terminal size" : "Zoom terminal"}
+            aria-pressed={zoomed}
+            onClick={toggleZoom}
+            disabled={small}
+            className="h-3 w-3 cursor-pointer rounded-full border-0 bg-green p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg disabled:cursor-default disabled:opacity-60"
+          />
         </div>
         <div className="flex-1 text-center font-ui text-[13px] tracking-wide text-dim">
           {computedTitle}
@@ -332,7 +382,7 @@ export function Terminal({
         )}
       </div>
 
-      {!small && (
+      {!fullscreen && (
         <div
           className="resize-handle-grip absolute right-0 bottom-0 h-4 w-4 cursor-nwse-resize text-dim hover:text-accent"
           style={{ touchAction: "none" }}

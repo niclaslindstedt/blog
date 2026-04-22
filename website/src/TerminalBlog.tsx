@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Audience, Post, PostVersion } from "./types.ts";
 import type { Step } from "./terminalTypes.ts";
 import type { GithubFile } from "./github.ts";
@@ -7,8 +7,10 @@ import { Terminal } from "./Terminal.tsx";
 import { AudienceTabs } from "./AudienceTabs.tsx";
 import { useAudience } from "./AudienceContext.tsx";
 import { useFileViewer } from "./FileViewerContext.tsx";
+import { usePreferences } from "./PreferencesContext.tsx";
 import { ViOpenerContext } from "./ViOpenerContext.tsx";
 import { useTerminalAnimation } from "./useTerminalAnimation.ts";
+import { postsForAudience, withViewParam } from "./postFilters.ts";
 import { BLOG_WPM } from "./typing.ts";
 
 const HEAD_LINES = 10;
@@ -39,16 +41,29 @@ function tailBlock(raw: string, startLine: number): string {
     .join("\n");
 }
 
-function postsForAudience(posts: Post[], audience: Audience): Post[] {
-  return posts.filter((p) => p.versions[audience]);
-}
-
 export function TerminalBlog({ posts }: { posts: Post[] }) {
   const { slug: slugParam } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { audience, setAudience } = useAudience();
+  const { setTerminalClosed } = usePreferences();
   const { lines, enqueue, idle, anchor } = useTerminalAnimation(audience);
   const openFile = useFileViewer();
+
+  // Red and yellow dots both dismiss the terminal. Persist the choice in
+  // localStorage *and* reflect it in the URL (`?view=blog`) so the fallback
+  // state is shareable — pasting the URL into another browser lands the
+  // recipient directly on the prose view without relying on their storage.
+  const closeTerminal = useCallback(() => {
+    setTerminalClosed(true);
+    navigate(
+      {
+        pathname: location.pathname,
+        search: withViewParam(location.search, "blog"),
+      },
+      { replace: true },
+    );
+  }, [setTerminalClosed, navigate, location.pathname, location.search]);
   const startedRef = useRef(false);
   // Keyed by `${audience}:${slug}` — a post is "opened" independently in each audience.
   const openedRef = useRef(new Set<string>());
@@ -342,6 +357,8 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         anchor={anchor}
         idlePrompt={codePrompt(audience)}
         tabs={<AudienceTabs audience={audience} onSwitch={setAudience} />}
+        onClose={closeTerminal}
+        onMinimize={closeTerminal}
       />
     </ViOpenerContext.Provider>
   );
