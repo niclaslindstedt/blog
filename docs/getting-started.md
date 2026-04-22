@@ -1,6 +1,6 @@
 # Getting started with blog
 
-> A retro pixel-art React blog where posts are git-tracked markdown files authored and managed via Claude skills.
+> A technical blog with a focus on AI — posts are git-tracked markdown files authored and managed via Claude skills.
 
 ## Install
 
