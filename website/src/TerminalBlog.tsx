@@ -13,10 +13,8 @@ import { useTerminalAnimation } from "./terminal/useTerminalAnimation.ts";
 import { postsForAudience, withViewParam } from "./postFilters.ts";
 import { BLOG_WPM } from "./terminal/typing.ts";
 
-const HOME_PROMPT = "~ $";
-
-function postsPrompt(audience: Audience): string {
-  return `~/blog/posts/${audience} $`;
+function audienceCwd(audience: Audience): string {
+  return `~/blog/posts/${audience}`;
 }
 
 // What `sed '1,/^---$/d'` prints: the body with the YAML frontmatter stripped.
@@ -87,7 +85,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   const location = useLocation();
   const { audience, setAudience } = useAudience();
   const { setTerminalClosed } = usePreferences();
-  const { lines, enqueue, idle, anchor } = useTerminalAnimation(audience);
+  const { lines, enqueue, idle, anchor, cwd, prompt } = useTerminalAnimation(audience);
   const openFile = useFileViewer();
 
   // Red and yellow dots both dismiss the terminal. Persist the choice in
@@ -139,7 +137,6 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         {
           kind: "type-command",
           text,
-          prompt: postsPrompt(audienceRef.current),
           wpm: BLOG_WPM,
           tabStops: [{ at: prefix.length, to: prefix.length + file.rawUrl.length }],
         },
@@ -152,7 +149,6 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   const enqueueOpen = (slug: string, a: Audience) => {
     const key = openKey(a, slug);
     if (openedRef.current.has(key) || notFoundRef.current.has(key)) return;
-    const prompt = postsPrompt(a);
     const post = posts.find((p) => p.slug === slug);
     const version = post?.versions[a];
     const candidates = filenamesInAudience(posts, a);
@@ -165,7 +161,6 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         {
           kind: "type-command",
           text: `sed '1,/^---$/d' ${slug}.md`,
-          prompt,
           wpm: BLOG_WPM,
           anchor: true,
           tabStops,
@@ -195,7 +190,6 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       {
         kind: "type-command",
         text: `sed '1,/^---$/d' ${slug}.md`,
-        prompt,
         wpm: BLOG_WPM,
         anchor: true,
         tabStops,
@@ -235,7 +229,6 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   // surfaces each matching filename as a clickable `sed` target — same shape
   // as the `ls -1` listing, just filtered.
   const enqueueTagSearch = (tag: string, a: Audience) => {
-    const prompt = postsPrompt(a);
     const matches = posts.filter((p) => {
       const v = p.versions[a];
       return v !== undefined && v.tags.includes(tag);
@@ -244,7 +237,6 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       {
         kind: "type-command",
         text: `grep -lE "^tags:.*\\b${tag}\\b" *.md`,
-        prompt,
         wpm: BLOG_WPM,
         anchor: true,
       },
@@ -267,12 +259,11 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   };
 
   const enqueueListing = (a: Audience, visible: Post[]): void => {
-    const prompt = postsPrompt(a);
     // `ls -1` (one-per-line) keeps the listing a clean vertical column and
     // avoids the multi-column output real `ls` produces on a tty. The date
     // lives in the filename itself (`YYYY-MM-DD-<slug>.md`) so the listing
     // stays readable on narrow viewports without horizontal scroll.
-    const steps: Step[] = [{ kind: "type-command", text: "ls -1", prompt, wpm: BLOG_WPM }];
+    const steps: Step[] = [{ kind: "type-command", text: "ls -1", wpm: BLOG_WPM }];
     if (visible.length === 0) {
       steps.push({
         kind: "print",
@@ -304,12 +295,10 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   // is clickable — the summary is the hook, so clicking anywhere on it
   // should open the post.
   const enqueueSummaries = (a: Audience, visible: Post[]): void => {
-    const prompt = postsPrompt(a);
     const steps: Step[] = [
       {
         kind: "type-command",
         text: `grep -oP '(?<=^summary: ).*' *.md | xargs -I{} printf '%s\\n\\n' {}`,
-        prompt,
         wpm: BLOG_WPM,
       },
     ];
@@ -334,17 +323,18 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     // Tab-completing each folder segment after 3 keystrokes mirrors how a
     // real shell with bash_completion fills in directory names. The snap
     // includes the trailing `/`, matching how bash appends it when a
-    // directory completion is unambiguous.
+    // directory completion is unambiguous. The `cd` step after the typed
+    // command moves session cwd, so subsequent prompts render the new path.
     const text = `cd blog/posts/${a}`;
     const afterCd = 3;
     enqueue([
       {
         kind: "type-command",
         text,
-        prompt: HOME_PROMPT,
         wpm: BLOG_WPM,
         tabStops: pathTabStops(text, afterCd),
       },
+      { kind: "cd", to: audienceCwd(a) },
     ]);
     cdedRef.current.add(a);
   };
@@ -424,7 +414,8 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         lines={lines}
         idle={idle}
         anchor={anchor}
-        idlePrompt={postsPrompt(audience)}
+        cwd={cwd}
+        prompt={prompt}
         tabs={
           <AudienceTabs
             audience={audience}

@@ -50,6 +50,7 @@ interface SessionState {
   queue: Step[];
   active: Active | null;
   anchor: AnchorSignal | null;
+  cwd: string;
 }
 
 // The terminal's scroll container listens on `anchor.epoch`: a fresh epoch
@@ -68,32 +69,60 @@ export interface UseTerminalAnimation {
   idle: boolean;
   hasSession: (id: string) => boolean;
   anchor: AnchorSignal | null;
+  cwd: string;
+  prompt: string;
 }
 
-function newSession(): SessionState {
-  return { committed: [], queue: [], active: null, anchor: null };
+export interface UseTerminalAnimationOpts {
+  // Default cwd for any session not already seen. Callers can override per
+  // session by enqueuing a `cd` step as the first step of that session.
+  initialCwd?: string;
+  // Renders a prompt string from a cwd. Used for typed commands and for the
+  // idle prompt shown at the bottom of the scrollback.
+  promptFor?: (cwd: string) => string;
+}
+
+const DEFAULT_INITIAL_CWD = "~";
+const DEFAULT_PROMPT_FOR = (cwd: string) => `${cwd} $`;
+
+function newSession(initialCwd: string): SessionState {
+  return { committed: [], queue: [], active: null, anchor: null, cwd: initialCwd };
 }
 
 // Multi-session terminal animator. Each `sessionId` keeps its own scrollback,
-// pending step queue, and in-flight animation. Changing the id snapshots the
-// previous session into the map and loads the target's state, so tabs behave
-// like real terminal tabs — focusing one restores exactly what was there.
-export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
+// pending step queue, in-flight animation, and cwd. Changing the id snapshots
+// the previous session into the map and loads the target's state, so tabs
+// behave like real terminal tabs — focusing one restores exactly what was
+// there, including the working directory its prompt will render.
+export function useTerminalAnimation(
+  sessionId: string,
+  opts: UseTerminalAnimationOpts = {},
+): UseTerminalAnimation {
+  const initialCwd = opts.initialCwd ?? DEFAULT_INITIAL_CWD;
+  const promptFor = opts.promptFor ?? DEFAULT_PROMPT_FOR;
   const [committed, setCommitted] = useState<LineData[]>([]);
   const [active, setActive] = useState<Active | null>(null);
   const [idle, setIdle] = useState(true);
   const [anchor, setAnchor] = useState<AnchorSignal | null>(null);
+  const [cwd, setCwd] = useState<string>(initialCwd);
   const queueRef = useRef<Step[]>([]);
   const activeRef = useRef<Active | null>(null);
   const committedRef = useRef<LineData[]>([]);
   const anchorRef = useRef<AnchorSignal | null>(null);
+  const cwdRef = useRef<string>(initialCwd);
   const anchorEpochRef = useRef<number>(0);
   const currentIdRef = useRef<string>(sessionId);
   const sessionsRef = useRef<Map<string, SessionState>>(new Map());
+  const promptForRef = useRef(promptFor);
+  promptForRef.current = promptFor;
 
   useEffect(() => {
     committedRef.current = committed;
   }, [committed]);
+
+  useEffect(() => {
+    cwdRef.current = cwd;
+  }, [cwd]);
 
   useEffect(() => {
     if (currentIdRef.current === sessionId) return;
@@ -102,18 +131,21 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
       queue: queueRef.current,
       active: activeRef.current,
       anchor: anchorRef.current,
+      cwd: cwdRef.current,
     });
-    const target = sessionsRef.current.get(sessionId) ?? newSession();
+    const target = sessionsRef.current.get(sessionId) ?? newSession(initialCwd);
     queueRef.current = target.queue;
     activeRef.current = target.active;
     committedRef.current = target.committed;
     anchorRef.current = target.anchor;
+    cwdRef.current = target.cwd;
     setCommitted(target.committed);
     setActive(target.active);
     setAnchor(target.anchor);
+    setCwd(target.cwd);
     setIdle(target.queue.length === 0 && target.active === null);
     currentIdRef.current = sessionId;
-  }, [sessionId]);
+  }, [sessionId, initialCwd]);
 
   const enqueue = useCallback((steps: Step[]) => {
     queueRef.current.push(...steps);
@@ -244,7 +276,7 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
             kind: "command",
             full: next.text,
             shown: "",
-            prompt: next.prompt,
+            prompt: promptForRef.current(cwdRef.current),
             fast: next.fast,
             wpm: next.wpm,
             tabStops: next.tabStops,
@@ -291,6 +323,11 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
         case "clear":
           committedRef.current = [];
           setCommitted([]);
+          schedule(BETWEEN_STEP_MS);
+          return;
+        case "cd":
+          cwdRef.current = next.to;
+          setCwd(next.to);
           schedule(BETWEEN_STEP_MS);
           return;
         case "clickable":
@@ -349,5 +386,5 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
       ]
     : committed;
 
-  return { lines, enqueue, idle, hasSession, anchor };
+  return { lines, enqueue, idle, hasSession, anchor, cwd, prompt: promptFor(cwd) };
 }

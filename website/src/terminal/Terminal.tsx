@@ -71,22 +71,13 @@ function initialPos(size: { width: number; height: number }): { x: number; y: nu
   return { x, y };
 }
 
-function cwdFromLines(lines: LineData[]): string {
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const l = lines[i];
-    if (l.kind === "command" && l.prompt) {
-      return l.prompt.replace(/\s*\$\s*$/, "").trim();
-    }
-  }
-  return "~";
-}
-
 export function Terminal({
   user = "niclaslindstedt",
   title,
   lines,
   idle,
-  idlePrompt = "~/blog/posts $",
+  cwd,
+  prompt,
   tabs,
   anchor,
   onClose,
@@ -96,13 +87,19 @@ export function Terminal({
   title?: string;
   lines: LineData[];
   idle: boolean;
-  idlePrompt?: string;
+  // Working directory shown in the titlebar. Derived by the caller from
+  // session state (see `useTerminalAnimation`), not from the scrollback.
+  cwd: string;
+  // Idle prompt shown when the terminal is between commands. Typically
+  // `<cwd> $`, but the caller supplies the exact string so a host app can
+  // use a different prompt style without the widget prescribing it.
+  prompt: string;
   tabs?: ReactNode;
   anchor?: AnchorSignal | null;
   onClose?: () => void;
   onMinimize?: () => void;
 }) {
-  const computedTitle = title ?? `${user} — ${cwdFromLines(lines)}`;
+  const computedTitle = title ?? `${user} — ${cwd}`;
   const small = useSmallViewport();
   const [size, setSize] = useState(() => initialSize());
   const [pos, setPos] = useState(() => initialPos(initialSize()));
@@ -374,7 +371,7 @@ export function Terminal({
         ))}
         {idle && (
           <div className="flex gap-2">
-            <span className="shrink-0 text-accent">{idlePrompt}</span>
+            <span className="shrink-0 text-accent">{prompt}</span>
             <span className="flex-1">
               <span className="animate-blink-cursor" aria-hidden="true" />
             </span>
