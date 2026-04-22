@@ -10,10 +10,15 @@ function outputColor(_color?: LineColor): string {
 export function TerminalLine({ line }: { line: LineData }) {
   switch (line.kind) {
     case "command":
+      // Inline layout (not flex) so that when the prompt + command don't fit
+      // on one line, the wrap happens at the space between them and the
+      // command uses the full viewport width on line 2 — matching how a real
+      // terminal wraps a long command. `break-words` is kept as a fallback
+      // for single tokens longer than the viewport (e.g. a URL argument).
       return (
-        <div className="flex gap-2 whitespace-pre-wrap break-words">
-          <span className="shrink-0 text-accent">{line.prompt ?? "$"}</span>
-          <span className="flex-1 text-fg-bright">
+        <div className="whitespace-pre-wrap break-words">
+          <span className="text-accent">{line.prompt ?? "$"}</span>{" "}
+          <span className="text-fg-bright">
             {highlightCommand(line.text)}
             {line.active && <span className="animate-blink-cursor" aria-hidden="true" />}
           </span>
@@ -41,8 +46,12 @@ export function TerminalLine({ line }: { line: LineData }) {
     case "blank":
       return <div className="h-[1em]">&nbsp;</div>;
     case "clickable":
+      // `whitespace-pre-wrap` keeps the aligned spaces inside an `ls -l`
+      // prefix while still allowing the row to wrap on narrow viewports so it
+      // never forces horizontal scroll. `break-words` only kicks in if a
+      // single filename is longer than the available width.
       return (
-        <div className="whitespace-pre">
+        <div className="whitespace-pre-wrap break-words">
           {line.prefix && <span className="text-dim">{line.prefix}</span>}
           <button
             type="button"

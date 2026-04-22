@@ -19,9 +19,16 @@ function codePrompt(audience: Audience): string {
   return `~/code/blog/${audience} $`;
 }
 
+function rawFrontmatter(v: PostVersion): string {
+  return `---\ntitle: ${v.title}\ndate: ${v.date}\nedited_at: ${v.edited_at}\n---`;
+}
+
+function rawBody(v: PostVersion): string {
+  return v.body.replace(/\s+$/, "");
+}
+
 function rawFile(v: PostVersion): string {
-  const fm = `---\ntitle: ${v.title}\ndate: ${v.date}\nedited_at: ${v.edited_at}\n---`;
-  return `${fm}\n\n${v.body.replace(/\s+$/, "")}`;
+  return `${rawFrontmatter(v)}\n\n${rawBody(v)}`;
 }
 
 function headBlock(raw: string, n: number): string {
@@ -224,6 +231,9 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       const version = latest.versions[a];
       if (version) {
         openedRef.current.add(openKey(a, latest.slug));
+        // Frontmatter is printed as plain text so each field appears on its
+        // own line. If it went through react-markdown the trailing `---`
+        // would turn the three fields into a single setext H2 heading.
         enqueue([
           {
             kind: "type-command",
@@ -231,7 +241,9 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
             prompt: codePrompt(a),
             fast: true,
           },
-          { kind: "type", text: rawFile(version), markdown: true, fast: true },
+          { kind: "print", text: rawFrontmatter(version) },
+          { kind: "blank" },
+          { kind: "type", text: rawBody(version), markdown: true, fast: true },
           { kind: "blank" },
         ]);
       }
