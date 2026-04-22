@@ -6,13 +6,23 @@ const TAB_ITEMS: readonly TabItem<Audience>[] = AUDIENCES.map((a) => ({ id: a, l
 export function AudienceTabs({
   audience,
   onSwitch,
+  onClose,
 }: {
   audience: Audience;
   onSwitch: (next: Audience) => void;
+  /** Override the default close behavior (e.g. navigate away instead of swapping audience). */
+  onClose?: () => void;
 }) {
   // "Close" in a fixed two-audience model means focusing the other view —
-  // matches iTerm2's close-current → next-tab-takes-focus semantics.
+  // matches iTerm2's close-current → next-tab-takes-focus semantics. Hosts
+  // can override this (e.g. a post page closes the tab by returning to the
+  // index, since swapping audience on a missing post would just land on
+  // another missing post).
   const handleClose = (id: Audience) => {
+    if (onClose) {
+      onClose();
+      return;
+    }
     const other = AUDIENCES.find((a) => a !== id);
     if (other) onSwitch(other);
   };

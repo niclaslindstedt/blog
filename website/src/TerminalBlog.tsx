@@ -84,6 +84,13 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       { replace: true },
     );
   }, [setTerminalClosed, navigate, location.pathname, location.search]);
+
+  // On a post page, the tab × returns to the index instead of swapping
+  // audience — the reader is closing this post, not asking for the same
+  // post in the other voice.
+  const closeTabToIndex = useCallback(() => {
+    navigate({ pathname: "/", search: location.search });
+  }, [navigate, location.search]);
   const startedRef = useRef(false);
   // Keyed by `${audience}:${slug}` — a post is "opened" independently in each audience.
   const openedRef = useRef(new Set<string>());
@@ -351,7 +358,13 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         idle={idle}
         anchor={anchor}
         idlePrompt={codePrompt(audience)}
-        tabs={<AudienceTabs audience={audience} onSwitch={setAudience} />}
+        tabs={
+          <AudienceTabs
+            audience={audience}
+            onSwitch={setAudience}
+            onClose={slugParam ? closeTabToIndex : undefined}
+          />
+        }
         onClose={closeTerminal}
         onMinimize={closeTerminal}
       />
