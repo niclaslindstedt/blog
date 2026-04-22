@@ -14,10 +14,13 @@ export function FallbackShell({ children }: { children: ReactNode }) {
 
   // Reopen the terminal: clear the persisted close flag and strip `view=blog`
   // from the URL in a single navigation so the user lands back in the
-  // terminal at the same path.
+  // terminal at the same path. /tags/<tag>/ has no terminal analogue, so
+  // that case redirects to `/` — otherwise the click would appear to do
+  // nothing because the tag route always renders the fallback.
   const openTerminal = () => {
     setTerminalClosed(false);
-    navigate({ pathname: location.pathname, search: withViewParam(location.search, null) });
+    const pathname = location.pathname.startsWith("/tags/") ? "/" : location.pathname;
+    navigate({ pathname, search: withViewParam(location.search, null) });
   };
 
   return (
