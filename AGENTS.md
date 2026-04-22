@@ -35,6 +35,10 @@ npm run fmt:check && npm run lint && npm run build && npm test
 
 `cd website && npm run build` is only the extractor + vite gate; it does not run prettier or eslint.
 
+## Fix what you break — and what you find
+
+If any step of the gate (`fmt:check`, `lint`, `build`, `test`) fails while you're working, **fix it before declaring the task done**, regardless of whether you caused the failure. A pre-existing breakage is still a breakage; leaving it in place means the next change ships on top of a broken baseline. The same applies to anything else you stumble across while working — missing deps, stale generated files, broken links, dead code paths. Root-cause and fix; don't route around. The only acceptable exception is a failure that is genuinely orthogonal AND out of scope AND too large for the current change — in that case, flag it explicitly to the user instead of silently ignoring it.
+
 ## Commit and PR conventions
 
 - All commits follow [Conventional Commits](https://www.conventionalcommits.org/).
