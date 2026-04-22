@@ -29,6 +29,38 @@ function displayText(v: PostVersion): string {
   return `# ${v.title}\n\n${body}`;
 }
 
+// Files that `ls -1` would list in the audience's working directory. These are
+// the tab-completion candidates a real shell would have to choose from.
+function filenamesInAudience(posts: Post[], a: Audience): string[] {
+  return posts.flatMap((p) => (p.versions[a] ? [`${p.slug}.md`] : []));
+}
+
+// Length of the shortest prefix of `target` that no other candidate starts
+// with — i.e. how many characters the user would have to type before Tab
+// can unambiguously complete the filename. Returns `target.length` when no
+// such prefix exists (another candidate equals target, or target is empty).
+function minUniquePrefixLen(target: string, candidates: string[]): number {
+  const others = candidates.filter((c) => c !== target);
+  if (target.length === 0) return 0;
+  if (others.length === 0) return 1;
+  for (let n = 1; n <= target.length; n++) {
+    const pfx = target.slice(0, n);
+    if (!others.some((o) => o.startsWith(pfx))) return n;
+  }
+  return target.length;
+}
+
+// Computes the index into `sed '1,/^---$/d' <filename>` at which a shell would
+// auto-complete the rest of `<filename>`. Returns `undefined` when no shortcut
+// is possible (single char already unique is still worth it; a filename with
+// no unique prefix is not).
+function sedTabAt(filename: string, candidates: string[]): number | undefined {
+  const commandPrefix = `sed '1,/^---$/d' `;
+  const unique = minUniquePrefixLen(filename, candidates);
+  if (unique >= filename.length) return undefined;
+  return commandPrefix.length + unique;
+}
+
 export function TerminalBlog({ posts }: { posts: Post[] }) {
   const { slug: slugParam } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -82,6 +114,8 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     const prompt = codePrompt(a);
     const post = posts.find((p) => p.slug === slug);
     const version = post?.versions[a];
+    const candidates = filenamesInAudience(posts, a);
+    const tabAt = sedTabAt(`${slug}.md`, candidates);
     // Every user-initiated body-render anchors its command to the top of the
     // viewport so the reader starts at the beginning of the post.
     if (!version) {
@@ -93,6 +127,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
           prompt,
           wpm: BLOG_WPM,
           anchor: true,
+          tabAt,
         },
         {
           kind: "print",
@@ -122,6 +157,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         prompt,
         wpm: BLOG_WPM,
         anchor: true,
+        tabAt,
       },
       { kind: "print", text: displayText(version), markdown: true },
       { kind: "blank" },
