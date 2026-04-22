@@ -24,6 +24,7 @@ The easiest path is the `/write-post` Claude skill — it asks for a title and a
 title: Hello World
 date: 2026-04-21T14:30:00Z
 edited_at: 2026-04-21T14:30:00Z
+summary: A one-line lede shown as the clickable preview in the terminal list view.
 ---
 
 This is my first post. Welcome to the blog.
