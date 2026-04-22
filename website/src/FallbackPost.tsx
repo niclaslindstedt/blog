@@ -2,7 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import type { Audience, Post } from "./types.ts";
 import { useAudience } from "./AudienceContext.tsx";
 import { FallbackShell } from "./FallbackShell.tsx";
-import { MarkdownBody } from "./MarkdownBody.tsx";
+import { MarkdownBody } from "./terminal/index.ts";
 import { fallbackHref } from "./postFilters.ts";
 import { usePageTitle } from "./seo/usePageTitle.ts";
 import { SITE_NAME } from "./seo/siteConfig.ts";

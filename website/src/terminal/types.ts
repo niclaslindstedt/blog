@@ -23,7 +23,6 @@ export type Step =
   | {
       kind: "type-command";
       text: string;
-      prompt?: string;
       fast?: boolean;
       wpm?: number;
       // When true, once this command begins rendering, the terminal scrolls so
@@ -50,6 +49,11 @@ export type Step =
     }
   | { kind: "blank" }
   | { kind: "clear" }
+  // Updates the session cwd instantly, with no animation. Pair it with a
+  // `type-command "cd …"` to give the reader both the visible command and
+  // the state change (the next prompt rendered will reflect the new cwd).
+  // `to` is the full resolved path — the engine does not resolve relatives.
+  | { kind: "cd"; to: string }
   | {
       kind: "clickable";
       label: string;

@@ -6,13 +6,11 @@ import { TerminalBlog } from "./TerminalBlog.tsx";
 import { FallbackBlog } from "./FallbackBlog.tsx";
 import { FallbackPost } from "./FallbackPost.tsx";
 import { TagRoute } from "./TagRoute.tsx";
-import { FileViewer } from "./FileViewer.tsx";
-import { FileViewerContext } from "./FileViewerContext.tsx";
+import { FileViewer, FileViewerContext, type GithubFile } from "./terminal/index.ts";
 import { AudienceProvider } from "./AudienceContext.tsx";
 import { PreferencesProvider, useActiveView } from "./PreferencesContext.tsx";
 import { usePageTitle } from "./seo/usePageTitle.ts";
 import { SITE_NAME, SITE_TAGLINE } from "./seo/siteConfig.ts";
-import type { GithubFile } from "./github.ts";
 
 const posts = postsData as Post[];
 

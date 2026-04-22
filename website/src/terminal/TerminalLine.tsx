@@ -1,4 +1,4 @@
-import type { LineColor, LineData } from "./terminalTypes.ts";
+import type { LineColor, LineData } from "./types.ts";
 import { highlightCommand } from "./CommandHighlighter.tsx";
 import { MarkdownBody } from "./MarkdownBody.tsx";
 
