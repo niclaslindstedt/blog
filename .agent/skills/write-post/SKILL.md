@@ -1,6 +1,6 @@
 ---
 name: write-post
-description: "Use this skill whenever the user wants to write, draft, or start a new blog post. Produces up to two audience-specific files under posts/technical/ and posts/non-technical/ with date-prefixed filenames (YYYY-MM-DD-<slug>.md). The slug is always derived from the title — do not ask the user for one."
+description: "Drafts a new blog post as up to two audience-specific files under posts/technical/ and posts/non-technical/. Use whenever the user wants to write, draft, or start a new blog post."
 ---
 
 # Writing a New Post
