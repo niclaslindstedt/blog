@@ -16,10 +16,21 @@ const ENTER_PAUSE_MAX_MS = 400;
 // the snapped-in completion, long enough for the eye to register the "tab"
 // without feeling laggy.
 const TAB_COMPLETE_PAUSE_MS = 90;
+// Per-keystroke jitter range applied to `charDelayMs`. ±15% is wide enough to
+// shake off the metronome feel without breaking the rhythm of same-finger /
+// modifier penalties.
+const TYPING_JITTER_MIN = 0.85;
+const TYPING_JITTER_MAX = 1.15;
 
 function enterPauseMs(): number {
   const span = ENTER_PAUSE_MAX_MS - ENTER_PAUSE_MIN_MS;
   return ENTER_PAUSE_MIN_MS + Math.floor(Math.random() * (span + 1));
+}
+
+function jitter(ms: number): number {
+  const span = TYPING_JITTER_MAX - TYPING_JITTER_MIN;
+  const factor = TYPING_JITTER_MIN + Math.random() * span;
+  return Math.max(1, Math.round(ms * factor));
 }
 
 interface Active {
@@ -179,9 +190,17 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
         let delay: number;
         if (current.wpm !== undefined) {
           chunk = 1;
-          const prev = current.shown.length === 0 ? null : current.shown[current.shown.length - 1];
-          const next = current.full[current.shown.length];
-          delay = charDelayMs(prev, next, current.wpm);
+          // `charDelayMs(a, b)` models the real-world gap between pressing `a`
+          // and pressing `b`. We schedule AFTER revealing a character, so the
+          // delay to queue here is the gap from the character we're about to
+          // reveal to the one AFTER it — not from the previously shown char to
+          // the about-to-be-shown one (which is already in the past by now).
+          const revealedIdx = current.shown.length;
+          const justRevealed = current.full[revealedIdx];
+          const successor =
+            revealedIdx + 1 < current.full.length ? current.full[revealedIdx + 1] : null;
+          delay =
+            successor !== null ? jitter(charDelayMs(justRevealed, successor, current.wpm)) : 0;
         } else if (current.kind === "command") {
           chunk = 1;
           delay = current.fast ? COMMAND_MS_PER_CHAR_FAST : COMMAND_MS_PER_CHAR_NORMAL;
@@ -232,7 +251,7 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
           });
           schedule(
             next.wpm !== undefined
-              ? charDelayMs(null, next.text[0] ?? "", next.wpm)
+              ? jitter(charDelayMs(null, next.text[0] ?? "", next.wpm))
               : next.fast
                 ? COMMAND_MS_PER_CHAR_FAST
                 : COMMAND_MS_PER_CHAR_NORMAL,
@@ -250,7 +269,7 @@ export function useTerminalAnimation(sessionId: string): UseTerminalAnimation {
           });
           schedule(
             next.wpm !== undefined
-              ? charDelayMs(null, next.text[0] ?? "", next.wpm)
+              ? jitter(charDelayMs(null, next.text[0] ?? "", next.wpm))
               : next.fast
                 ? OUTPUT_MS_PER_TICK_FAST
                 : OUTPUT_MS_PER_TICK_NORMAL,
