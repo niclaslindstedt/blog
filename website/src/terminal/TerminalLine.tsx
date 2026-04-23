@@ -10,12 +10,21 @@ function outputColor(color?: LineColor): string {
   return "text-fg";
 }
 
-// Renders a shell prompt like `~/blog/posts/technical $` in the bright
-// foreground colour. The cwd and the trailing symbol share a single colour so
-// the prompt reads as chrome — the reader's eye skips past it to the command
-// word, which is the first thing highlighted by `highlightCommand`.
+// Renders a shell prompt like `~/blog/posts/technical $`. The cwd segment is
+// coloured in the terminal's path blue (the same role a real zsh theme gives
+// `%~`) while the trailing `$` stays bright white as a neutral separator —
+// the reader's eye then lands on the command word, which `highlightCommand`
+// paints green once it's recognised as valid.
 export function PromptText({ text }: { text: string }) {
-  return <span className="text-fg-bright">{text}</span>;
+  const dollar = text.lastIndexOf("$");
+  if (dollar <= 0) return <span className="text-fg-bright">{text}</span>;
+  const dir = text.slice(0, dollar).trimEnd();
+  return (
+    <>
+      <span className="text-path">{dir}</span>
+      <span className="text-fg-bright"> $</span>
+    </>
+  );
 }
 
 export function TerminalLine({ line }: { line: LineData }) {
@@ -67,7 +76,7 @@ export function TerminalLine({ line }: { line: LineData }) {
           <button
             type="button"
             onClick={line.onClick}
-            className={`cursor-pointer bg-transparent p-0 text-left font-[inherit] hover:underline focus-visible:underline focus-visible:outline-none ${outputColor(line.color ?? "accent")}`}
+            className={`cursor-pointer bg-transparent p-0 text-left font-[inherit] hover:underline focus-visible:underline focus-visible:outline-none ${line.color ? outputColor(line.color) : "text-fg-bright"}`}
           >
             {line.label}
           </button>
