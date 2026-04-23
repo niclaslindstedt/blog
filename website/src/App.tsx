@@ -9,7 +9,7 @@ import { TagRoute } from "./TagRoute.tsx";
 import { TagsIndex } from "./TagsIndex.tsx";
 import { FileViewer, FileViewerContext, type GithubFile } from "./terminal/index.ts";
 import { AudienceProvider } from "./AudienceContext.tsx";
-import { PreferencesProvider, useActiveView } from "./PreferencesContext.tsx";
+import { PreferencesProvider, useActiveView, usePreferences } from "./PreferencesContext.tsx";
 import { usePageTitle } from "./seo/usePageTitle.ts";
 import { useAnalytics } from "./seo/useAnalytics.ts";
 import { SITE_NAME, SITE_TAGLINE } from "./seo/siteConfig.ts";
@@ -27,20 +27,19 @@ function HomeTitle() {
 // animation) survives when the reader clicks a post filename.
 function BlogRoute() {
   const view = useActiveView();
+  const { terminalMinimized } = usePreferences();
   const { slug } = useParams<{ slug: string }>();
   const isHome = slug === undefined;
+  // When the terminal is minimized we still show the prose view behind the
+  // bar so the reader isn't staring at a blank page — the minimized widget
+  // is a fixed-position bar at the bottom and the fallback content flows
+  // normally underneath.
+  const showFallback = view === "blog" || (view === "terminal" && terminalMinimized);
   return (
     <>
       {isHome && <HomeTitle />}
-      {view === "blog" ? (
-        isHome ? (
-          <FallbackBlog posts={posts} />
-        ) : (
-          <FallbackPost posts={posts} />
-        )
-      ) : (
-        <TerminalBlog posts={posts} />
-      )}
+      {showFallback && (isHome ? <FallbackBlog posts={posts} /> : <FallbackPost posts={posts} />)}
+      {view === "terminal" && <TerminalBlog posts={posts} />}
     </>
   );
 }
