@@ -21,10 +21,11 @@ const DEFAULT_WIDTH = 820;
 const DEFAULT_HEIGHT = 560;
 const VIEWPORT_MARGIN = 12;
 const MOBILE_BREAKPOINT = 900;
-// Height (px) of the titlebar-only bar shown when the terminal is minimized.
-// The titlebar itself is py-2 (16px) + one row of 12px dots + 1px border; 37px
-// matches the rendered height and keeps the minimize animation's end state
-// pixel-identical to the chrome it flattens into.
+// Fallback height (px) for the titlebar-only bar shown when the terminal is
+// minimized. The titlebar itself is py-2 (16px) + one row of 12px dots + 1px
+// border; 37px matches the single-line rendered height. When the title wraps
+// (narrow mobile viewports), we measure the titlebar and use that instead so
+// the bar always fits its content.
 const MINIMIZED_HEIGHT = 37;
 // Duration (ms) of the minimize / restore / zoom size-and-position tween.
 // Kept short so the animation feels like a window manager response, not a
@@ -174,6 +175,11 @@ export function Terminal({
     h: typeof window === "undefined" ? DEFAULT_HEIGHT : window.innerHeight,
   }));
   const bodyRef = useRef<HTMLDivElement>(null);
+  const titlebarRef = useRef<HTMLDivElement>(null);
+  // Measured titlebar height, used as the minimized-state rectangle height so
+  // a wrapped (two-line) title on narrow viewports isn't clipped by the fixed
+  // 37px fallback.
+  const [titlebarHeight, setTitlebarHeight] = useState<number>(MINIMIZED_HEIGHT);
   // Active anchor = the anchor signal the terminal is currently honoring. We
   // also remember the highest epoch we've seen (honored or dismissed) so the
   // user can scroll past an anchor and we don't reactivate it on the next
@@ -304,6 +310,20 @@ export function Terminal({
     writeStored(SIZE_KEY, size);
   }, [size, small]);
 
+  useLayoutEffect(() => {
+    const el = titlebarRef.current;
+    if (!el) return;
+    const update = () => {
+      const h = el.offsetHeight;
+      if (h > 0) setTitlebarHeight(h);
+    };
+    update();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   useEffect(() => {
     const onResize = () => {
       setViewport({ w: window.innerWidth, h: window.innerHeight });
@@ -363,9 +383,9 @@ export function Terminal({
   const wrapperStyle: CSSProperties = minimized
     ? {
         left: 0,
-        top: Math.max(0, viewport.h - MINIMIZED_HEIGHT),
+        top: Math.max(0, viewport.h - titlebarHeight),
         width: viewport.w,
-        height: MINIMIZED_HEIGHT,
+        height: titlebarHeight,
         transition,
       }
     : fullscreen
@@ -411,6 +431,7 @@ export function Terminal({
   return (
     <div className={wrapperClass} style={wrapperStyle}>
       <div
+        ref={titlebarRef}
         className={`flex shrink-0 select-none items-center gap-3 border-b border-term-border bg-term-titlebar px-3 py-2 ${titlebarCursor}`}
         onPointerDown={fullscreen || minimized ? undefined : onDragStart}
         onClick={onTitlebarClick}
@@ -439,7 +460,7 @@ export function Terminal({
             className="h-3 w-3 cursor-pointer rounded-full border-0 bg-green p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg disabled:cursor-default disabled:opacity-60"
           />
         </div>
-        <div className="flex-1 text-center font-ui text-[13px] tracking-wide text-dim">
+        <div className="flex-1 text-center font-ui text-[13px] tracking-wide break-words text-dim">
           {computedTitle}
         </div>
         <div className="w-14" aria-hidden="true" />
