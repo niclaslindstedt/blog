@@ -34,7 +34,7 @@ export default function App() {
     <AudienceProvider>
       <PreferencesProvider>
         <FileViewerContext.Provider value={openFile}>
-          <main className="relative min-h-screen w-screen overflow-hidden">
+          <main className="relative min-h-screen w-full overflow-hidden">
             <Routes>
               <Route path="/" element={<HomeRoute />} />
               <Route path="/posts/:slug" element={<PostRoute />} />
