@@ -5,6 +5,7 @@
 
 import {
   AUTHOR,
+  AUTHOR_SAME_AS,
   DEFAULT_OG_IMAGE,
   FEED_POST_LIMIT,
   OG_IMAGE_HEIGHT,
@@ -155,7 +156,7 @@ export function homeJsonLd(posts: Post[]): object[] {
     "@id": `${SITE_URL}/#author`,
     name: AUTHOR.name,
     url: AUTHOR.url,
-    sameAs: [AUTHOR.github],
+    sameAs: [...AUTHOR_SAME_AS],
   };
   const website = {
     "@context": "https://schema.org",
