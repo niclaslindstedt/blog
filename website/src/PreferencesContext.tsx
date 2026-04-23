@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 
 const CLOSED_KEY = "blog:terminal-closed";
+const MINIMIZED_KEY = "blog:terminal-minimized";
 const THEME_KEY = "blog:theme";
 
 export type Theme = "light" | "dark";
@@ -11,6 +12,8 @@ export type View = "terminal" | "blog";
 interface PreferencesContextValue {
   terminalClosed: boolean;
   setTerminalClosed: (v: boolean) => void;
+  terminalMinimized: boolean;
+  setTerminalMinimized: (v: boolean) => void;
   theme: Theme;
   setTheme: (t: Theme) => void;
   toggleTheme: () => void;
@@ -22,6 +25,15 @@ function readClosed(): boolean {
   if (typeof window === "undefined") return false;
   try {
     return window.localStorage.getItem(CLOSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function readMinimized(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(MINIMIZED_KEY) === "1";
   } catch {
     return false;
   }
@@ -39,6 +51,7 @@ function readTheme(): Theme {
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [terminalClosed, setClosedState] = useState<boolean>(() => readClosed());
+  const [terminalMinimized, setMinimizedState] = useState<boolean>(() => readMinimized());
   const [theme, setThemeState] = useState<Theme>(() => readTheme());
 
   const setTerminalClosed = useCallback((next: boolean) => {
@@ -46,6 +59,16 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     try {
       if (next) window.localStorage.setItem(CLOSED_KEY, "1");
       else window.localStorage.removeItem(CLOSED_KEY);
+    } catch {
+      // localStorage unavailable — ignore.
+    }
+  }, []);
+
+  const setTerminalMinimized = useCallback((next: boolean) => {
+    setMinimizedState(next);
+    try {
+      if (next) window.localStorage.setItem(MINIMIZED_KEY, "1");
+      else window.localStorage.removeItem(MINIMIZED_KEY);
     } catch {
       // localStorage unavailable — ignore.
     }
@@ -67,6 +90,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === CLOSED_KEY) setClosedState(e.newValue === "1");
+      else if (e.key === MINIMIZED_KEY) setMinimizedState(e.newValue === "1");
       else if (e.key === THEME_KEY) setThemeState(e.newValue === "light" ? "light" : "dark");
     };
     window.addEventListener("storage", onStorage);
@@ -74,8 +98,24 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ terminalClosed, setTerminalClosed, theme, setTheme, toggleTheme }),
-    [terminalClosed, setTerminalClosed, theme, setTheme, toggleTheme],
+    () => ({
+      terminalClosed,
+      setTerminalClosed,
+      terminalMinimized,
+      setTerminalMinimized,
+      theme,
+      setTheme,
+      toggleTheme,
+    }),
+    [
+      terminalClosed,
+      setTerminalClosed,
+      terminalMinimized,
+      setTerminalMinimized,
+      theme,
+      setTheme,
+      toggleTheme,
+    ],
   );
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
 }

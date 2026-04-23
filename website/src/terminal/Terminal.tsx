@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
 import type { LineData } from "./types.ts";
@@ -20,6 +21,15 @@ const DEFAULT_WIDTH = 820;
 const DEFAULT_HEIGHT = 560;
 const VIEWPORT_MARGIN = 12;
 const MOBILE_BREAKPOINT = 900;
+// Height (px) of the titlebar-only bar shown when the terminal is minimized.
+// The titlebar itself is py-2 (16px) + one row of 12px dots + 1px border; 37px
+// matches the rendered height and keeps the minimize animation's end state
+// pixel-identical to the chrome it flattens into.
+const MINIMIZED_HEIGHT = 37;
+// Duration (ms) of the minimize / restore / zoom size-and-position tween.
+// Kept short so the animation feels like a window manager response, not a
+// page transition. Mirrored in the inline `transition` style below.
+const MINIMIZE_MS = 260;
 // Persisted window geometry so a drag or resize survives client-side
 // navigation (clicking a post, then going back) and full reloads.
 const POS_KEY = "blog:terminal-pos";
@@ -126,8 +136,10 @@ export function Terminal({
   prompt,
   tabs,
   anchor,
+  minimized = false,
   onClose,
   onMinimize,
+  onRestore,
 }: {
   user?: string;
   title?: string;
@@ -142,15 +154,25 @@ export function Terminal({
   prompt: string;
   tabs?: ReactNode;
   anchor?: AnchorSignal | null;
+  minimized?: boolean;
   onClose?: () => void;
   onMinimize?: () => void;
+  onRestore?: () => void;
 }) {
   const computedTitle = title ?? `${user} — ${cwd}`;
   const small = useSmallViewport();
   const [size, setSize] = useState(() => initialSize());
   const [pos, setPos] = useState(() => initialPos(initialSize()));
   const [dragging, setDragging] = useState(false);
+  const [resizing, setResizing] = useState(false);
   const [zoomed, setZoomed] = useState(false);
+  // Viewport dimensions, tracked so the minimized bar and the fullscreen
+  // rectangle can animate to numeric px targets rather than mixing px with
+  // `vw`/`vh`/`inset-0` values that CSS can't interpolate between.
+  const [viewport, setViewport] = useState<{ w: number; h: number }>(() => ({
+    w: typeof window === "undefined" ? DEFAULT_WIDTH : window.innerWidth,
+    h: typeof window === "undefined" ? DEFAULT_HEIGHT : window.innerHeight,
+  }));
   const bodyRef = useRef<HTMLDivElement>(null);
   // Active anchor = the anchor signal the terminal is currently honoring. We
   // also remember the highest epoch we've seen (honored or dismissed) so the
@@ -283,8 +305,9 @@ export function Terminal({
   }, [size, small]);
 
   useEffect(() => {
-    if (small) return; // mobile fills the viewport via CSS; size/pos state is ignored.
     const onResize = () => {
+      setViewport({ w: window.innerWidth, h: window.innerHeight });
+      if (small) return; // mobile fills the viewport via CSS; size/pos state is ignored.
       setSize((s) => {
         const nextW = Math.min(s.width, window.innerWidth - VIEWPORT_MARGIN);
         const nextH = Math.min(s.height, window.innerHeight - VIEWPORT_MARGIN);
@@ -303,44 +326,95 @@ export function Terminal({
     pos,
     size,
     min: { width: MIN_WIDTH, height: MIN_HEIGHT },
-    enabled: !fullscreen,
+    enabled: !fullscreen && !minimized,
     onChange: setSize,
+    onResizingChange: setResizing,
   });
 
   const onDragStart = useDraggable({
     pos,
     size,
-    enabled: !fullscreen,
+    enabled: !fullscreen && !minimized,
     onChange: setPos,
     onDraggingChange: setDragging,
     ignoreSelector: "[data-no-drag]",
   });
 
-  const wrapperClass = fullscreen
-    ? "fixed inset-0 flex flex-col overflow-hidden border-b border-term-border bg-term-bg"
-    : "absolute flex flex-col overflow-hidden rounded-lg border border-term-border bg-term-bg shadow-2xl";
+  // Base wrapper classes are identical across states — the rectangle is always
+  // position:fixed so the minimize tween can animate between numeric
+  // top/left/width/height values without swapping positioning strategies.
+  // Rounded corners, borders, and shadow only apply in the floating state.
+  const wrapperClass = `fixed flex flex-col overflow-hidden bg-term-bg ${
+    minimized
+      ? "border-t border-term-border shadow-[0_-4px_12px_rgba(0,0,0,0.25)]"
+      : fullscreen
+        ? "border-b border-term-border"
+        : "rounded-lg border border-term-border shadow-2xl"
+  }`;
 
-  const wrapperStyle: CSSProperties = fullscreen
+  // During drag/resize, don't tween — those are direct manipulations and any
+  // transition would cause visible lag. Everything else (minimize, restore,
+  // zoom toggle, window-resize clamp) animates.
+  const transition =
+    dragging || resizing
+      ? undefined
+      : `top ${MINIMIZE_MS}ms ease, left ${MINIMIZE_MS}ms ease, width ${MINIMIZE_MS}ms ease, height ${MINIMIZE_MS}ms ease, border-radius ${MINIMIZE_MS}ms ease`;
+
+  const wrapperStyle: CSSProperties = minimized
     ? {
-        paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: "env(safe-area-inset-bottom)",
-        paddingLeft: "env(safe-area-inset-left)",
-        paddingRight: "env(safe-area-inset-right)",
+        left: 0,
+        top: Math.max(0, viewport.h - MINIMIZED_HEIGHT),
+        width: viewport.w,
+        height: MINIMIZED_HEIGHT,
+        transition,
       }
-    : {
-        left: pos.x,
-        top: pos.y,
-        width: size.width,
-        height: size.height,
-        userSelect: dragging ? "none" : undefined,
-      };
+    : fullscreen
+      ? {
+          left: 0,
+          top: 0,
+          width: viewport.w,
+          height: viewport.h,
+          paddingTop: "env(safe-area-inset-top)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+          paddingLeft: "env(safe-area-inset-left)",
+          paddingRight: "env(safe-area-inset-right)",
+          transition,
+        }
+      : {
+          left: pos.x,
+          top: pos.y,
+          width: size.width,
+          height: size.height,
+          userSelect: dragging ? "none" : undefined,
+          transition,
+        };
+
+  const titlebarCursor = minimized
+    ? "cursor-pointer"
+    : fullscreen
+      ? ""
+      : dragging
+        ? "cursor-grabbing"
+        : "cursor-grab";
+
+  // When minimized, clicking empty titlebar space restores the terminal. We
+  // skip the restore if the click landed on (or inside) one of the
+  // traffic-light buttons so they keep their own behavior.
+  const onTitlebarClick =
+    minimized && onRestore
+      ? (e: ReactMouseEvent<HTMLDivElement>) => {
+          if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
+          onRestore();
+        }
+      : undefined;
 
   return (
     <div className={wrapperClass} style={wrapperStyle}>
       <div
-        className={`flex select-none items-center gap-3 border-b border-term-border bg-term-titlebar px-3 py-2 ${fullscreen ? "" : dragging ? "cursor-grabbing" : "cursor-grab"}`}
-        onPointerDown={fullscreen ? undefined : onDragStart}
-        style={{ touchAction: fullscreen ? undefined : "none" }}
+        className={`flex shrink-0 select-none items-center gap-3 border-b border-term-border bg-term-titlebar px-3 py-2 ${titlebarCursor}`}
+        onPointerDown={fullscreen || minimized ? undefined : onDragStart}
+        onClick={onTitlebarClick}
+        style={{ touchAction: fullscreen || minimized ? undefined : "none" }}
       >
         <div className="flex gap-1.5" data-no-drag>
           <button
@@ -351,8 +425,9 @@ export function Terminal({
           />
           <button
             type="button"
-            aria-label="Minimize terminal"
-            onClick={onMinimize}
+            aria-label={minimized ? "Restore terminal" : "Minimize terminal"}
+            aria-pressed={minimized}
+            onClick={minimized ? onRestore : onMinimize}
             className="h-3 w-3 cursor-pointer rounded-full border-0 bg-yellow p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg"
           />
           <button
@@ -360,7 +435,7 @@ export function Terminal({
             aria-label={zoomed ? "Restore terminal size" : "Zoom terminal"}
             aria-pressed={zoomed}
             onClick={toggleZoom}
-            disabled={small}
+            disabled={small || minimized}
             className="h-3 w-3 cursor-pointer rounded-full border-0 bg-green p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg disabled:cursor-default disabled:opacity-60"
           />
         </div>
@@ -370,12 +445,13 @@ export function Terminal({
         <div className="w-14" aria-hidden="true" />
       </div>
 
-      {tabs}
+      {!minimized && tabs}
 
       <div
         ref={bodyRef}
         onScroll={onBodyScroll}
         className="flex-1 overflow-auto px-3 pt-2 pb-4 text-fg sm:px-4 sm:pt-3"
+        aria-hidden={minimized ? true : undefined}
       >
         {lines.map((l, i) => (
           <div key={i} data-line-index={i}>
@@ -394,7 +470,7 @@ export function Terminal({
         )}
       </div>
 
-      {!fullscreen && (
+      {!fullscreen && !minimized && (
         <div
           className="resize-handle-grip absolute right-0 bottom-0 h-4 w-4 cursor-nwse-resize text-dim hover:text-accent"
           style={{ touchAction: "none" }}

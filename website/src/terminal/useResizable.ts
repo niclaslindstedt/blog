@@ -7,6 +7,7 @@ export interface UseResizableOpts {
   min: { width: number; height: number };
   enabled: boolean;
   onChange: (size: { width: number; height: number }) => void;
+  onResizingChange?: (resizing: boolean) => void;
 }
 
 // Returns a pointerdown handler that resizes the element from its bottom-right
@@ -19,19 +20,25 @@ export function useResizable({
   min,
   enabled,
   onChange,
+  onResizingChange,
 }: UseResizableOpts): (e: ReactPointerEvent<HTMLElement>) => void {
   return (e) => {
     if (!enabled) return;
     e.stopPropagation();
     const origin = { x: pos.x, y: pos.y };
     const start = { width: size.width, height: size.height };
-    startPointerCapture(e, ({ dx, dy }) => {
-      const maxW = Math.max(min.width, window.innerWidth - origin.x);
-      const maxH = Math.max(min.height, window.innerHeight - origin.y);
-      onChange({
-        width: clamp(start.width + dx, min.width, maxW),
-        height: clamp(start.height + dy, min.height, maxH),
-      });
-    });
+    onResizingChange?.(true);
+    startPointerCapture(
+      e,
+      ({ dx, dy }) => {
+        const maxW = Math.max(min.width, window.innerWidth - origin.x);
+        const maxH = Math.max(min.height, window.innerHeight - origin.y);
+        onChange({
+          width: clamp(start.width + dx, min.width, maxW),
+          height: clamp(start.height + dy, min.height, maxH),
+        });
+      },
+      () => onResizingChange?.(false),
+    );
   };
 }
