@@ -35,9 +35,12 @@ import {
   escapeXml,
   homeJsonLd,
   pickPrimaryVersion,
+  postBreadcrumbJsonLd,
   postJsonLd,
   renderHead,
   tagJsonLd,
+  tagsIndexBreadcrumbJsonLd,
+  tagsIndexJsonLd,
 } from "./seo/meta.ts";
 
 const DIST = path.resolve("dist");
@@ -122,7 +125,7 @@ function renderPost(shell: string, post: Post): string {
       modifiedTime: v.edited_at,
       tags: v.tags,
     },
-    jsonLd: postJsonLd(post),
+    jsonLd: [postJsonLd(post), postBreadcrumbJsonLd(post)],
   });
   return injectHead(shell, head);
 }
@@ -137,6 +140,20 @@ function renderTag(shell: string, tag: string, tagPosts: Post[]): string {
     ogType: "website",
     keywords: [tag, ...DEFAULT_KEYWORDS],
     jsonLd: tagJsonLd(tag, tagPosts),
+  });
+  return injectHead(shell, head);
+}
+
+// -- Tags index -------------------------------------------------------------
+
+function renderTagsIndex(shell: string, tagCounts: { tag: string; count: number }[]): string {
+  const head = renderHead({
+    title: `All tags — ${SITE_NAME}`,
+    description: `Every topic tag used across posts on ${SITE_NAME}.`,
+    canonicalPath: `/tags/`,
+    ogType: "website",
+    keywords: [...DEFAULT_KEYWORDS, ...tagCounts.slice(0, 10).map((t) => t.tag)],
+    jsonLd: [tagsIndexJsonLd(tagCounts), tagsIndexBreadcrumbJsonLd()],
   });
   return injectHead(shell, head);
 }
@@ -161,6 +178,16 @@ function renderSitemap(): string {
       lastmod: v.edited_at,
       changefreq: "monthly",
       priority: "0.8",
+    });
+  }
+
+  if (tags.size > 0) {
+    const allPosts = [...tags.values()].flat();
+    urls.push({
+      loc: absoluteUrl(`/tags/`),
+      lastmod: maxEditedAt(allPosts),
+      changefreq: "weekly",
+      priority: "0.6",
     });
   }
 
@@ -328,13 +355,20 @@ function main(): void {
     writeFile(path.join("tags", tag, "index.html"), renderTag(shell, tag, tagPosts));
   }
 
+  const tagCounts = [...tags.entries()]
+    .map(([tag, list]) => ({ tag, count: list.length }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+  if (tagCounts.length > 0) {
+    writeFile(path.join("tags", "index.html"), renderTagsIndex(shell, tagCounts));
+  }
+
   writeFile("sitemap.xml", renderSitemap());
   writeFile("robots.txt", renderRobots());
   writeFile("feed.xml", renderRss());
   writeFile("feed.atom", renderAtom());
 
   process.stderr.write(
-    `generate-seo: wrote homepage + ${posts.length} post page(s) + ${tags.size} tag page(s), sitemap, robots, RSS + Atom feeds\n`,
+    `generate-seo: wrote homepage + ${posts.length} post page(s) + ${tags.size} tag page(s) + tags index, sitemap, robots, RSS + Atom feeds\n`,
   );
 }
 

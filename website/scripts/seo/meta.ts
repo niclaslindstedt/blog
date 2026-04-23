@@ -254,3 +254,65 @@ export function tagJsonLd(tag: string, posts: Post[]): object {
     }),
   };
 }
+
+// Breadcrumb trail for a single post: Home › #<primary-tag> › <title>. Posts
+// without tags get a two-item trail (Home › Title) so the BreadcrumbList is
+// always valid — single-element lists are rejected by Google's validator.
+export function postBreadcrumbJsonLd(post: Post): object {
+  const v = pickPrimaryVersion(post);
+  const items: { "@type": "ListItem"; position: number; name: string; item: string }[] = [
+    { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+  ];
+  const primaryTag = v.tags[0];
+  if (primaryTag) {
+    items.push({
+      "@type": "ListItem",
+      position: 2,
+      name: `#${primaryTag}`,
+      item: absoluteUrl(`/tags/${encodeURIComponent(primaryTag)}/`),
+    });
+  }
+  items.push({
+    "@type": "ListItem",
+    position: items.length + 1,
+    name: v.title,
+    item: absoluteUrl(`/posts/${post.slug}/`),
+  });
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items,
+  };
+}
+
+// Breadcrumb for the all-tags index page: Home › Tags.
+export function tagsIndexBreadcrumbJsonLd(): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+      { "@type": "ListItem", position: 2, name: "Tags", item: `${SITE_URL}/tags/` },
+    ],
+  };
+}
+
+// CollectionPage listing every tag with its post count — powers /tags/.
+export function tagsIndexJsonLd(tagCounts: { tag: string; count: number }[]): object {
+  const url = `${SITE_URL}/tags/`;
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "@id": `${url}#collection`,
+    url,
+    name: `All tags — ${SITE_NAME}`,
+    description: `Every topic tag used across posts on ${SITE_NAME}.`,
+    inLanguage: SITE_LANGUAGE,
+    isPartOf: { "@id": `${SITE_URL}/#website` },
+    hasPart: tagCounts.map((t) => ({
+      "@type": "CollectionPage",
+      name: `#${t.tag}`,
+      url: absoluteUrl(`/tags/${encodeURIComponent(t.tag)}/`),
+    })),
+  };
+}

@@ -6,6 +6,7 @@ import { TerminalBlog } from "./TerminalBlog.tsx";
 import { FallbackBlog } from "./FallbackBlog.tsx";
 import { FallbackPost } from "./FallbackPost.tsx";
 import { TagRoute } from "./TagRoute.tsx";
+import { TagsIndex } from "./TagsIndex.tsx";
 import { FileViewer, FileViewerContext, type GithubFile } from "./terminal/index.ts";
 import { AudienceProvider } from "./AudienceContext.tsx";
 import { PreferencesProvider, useActiveView } from "./PreferencesContext.tsx";
@@ -40,6 +41,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<HomeRoute />} />
               <Route path="/posts/:slug" element={<PostRoute />} />
+              <Route path="/tags" element={<TagsIndex posts={posts} />} />
               <Route path="/tags/:tag" element={<TagRoute posts={posts} />} />
             </Routes>
           </main>

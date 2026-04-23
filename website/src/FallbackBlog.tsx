@@ -37,6 +37,14 @@ export function FallbackBlog({ posts, tag: tagProp }: { posts: Post[]; tag?: str
         </div>
       )}
 
+      {!tag && visible.length > 0 && (
+        <div className="mb-6 text-xs text-dim">
+          <Link to={fallbackHref("/tags")} className="underline decoration-dotted hover:text-fg">
+            Browse all tags →
+          </Link>
+        </div>
+      )}
+
       {visible.length === 0 ? (
         <p className="text-dim">
           {tag
@@ -58,6 +66,8 @@ export function FallbackBlog({ posts, tag: tagProp }: { posts: Post[]; tag?: str
                 </Link>
                 <div className="text-xs text-dim">
                   <time dateTime={v.date}>{formatDate(v.date)}</time>
+                  {" · "}
+                  {v.readingTimeMinutes} min read
                 </div>
                 <p className="text-sm text-fg">{v.summary}</p>
                 {v.tags.length > 0 && (

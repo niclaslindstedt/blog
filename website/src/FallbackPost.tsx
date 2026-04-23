@@ -6,6 +6,7 @@ import { MarkdownBody } from "./terminal/index.ts";
 import { fallbackHref } from "./postFilters.ts";
 import { usePageTitle } from "./seo/usePageTitle.ts";
 import { SITE_NAME } from "./seo/siteConfig.ts";
+import { pickRelated } from "./seo/relatedPosts.ts";
 
 function formatDate(iso: string): string {
   try {
@@ -73,9 +74,30 @@ export function FallbackPost({ posts }: { posts: Post[] }) {
   }
 
   const edited = version.edited_at && version.edited_at !== version.date;
+  const primaryTag = version.tags[0];
+  const related = pickRelated(post, audience, posts);
 
   return (
     <FallbackShell>
+      <nav aria-label="Breadcrumb" className="mb-4 text-xs text-dim">
+        <Link to={fallbackHref("/")} className="underline decoration-dotted hover:text-fg">
+          Home
+        </Link>
+        {primaryTag && (
+          <>
+            {" › "}
+            <Link
+              to={`/tags/${encodeURIComponent(primaryTag)}/`}
+              className="underline decoration-dotted hover:text-fg"
+            >
+              #{primaryTag}
+            </Link>
+          </>
+        )}
+        {" › "}
+        <span className="text-fg">{version.title}</span>
+      </nav>
+
       <article itemScope itemType="https://schema.org/BlogPosting">
         <header className="mb-8">
           <h1
@@ -96,6 +118,10 @@ export function FallbackPost({ posts }: { posts: Post[] }) {
                 </time>
               </>
             )}
+            {" · "}
+            <span itemProp="timeRequired" content={`PT${version.readingTimeMinutes}M`}>
+              {version.readingTimeMinutes} min read
+            </span>
           </div>
           <meta itemProp="description" content={version.summary} />
           <meta itemProp="wordCount" content={String(version.wordCount)} />
@@ -125,6 +151,36 @@ export function FallbackPost({ posts }: { posts: Post[] }) {
           </footer>
         )}
       </article>
+
+      {related.length > 0 && (
+        <aside className="mt-12 border-t border-term-border pt-5" aria-labelledby="related-heading">
+          <h2 id="related-heading" className="mb-3 text-sm font-bold text-dim uppercase">
+            Related posts
+          </h2>
+          <ul className="flex flex-col gap-3">
+            {related.map((r) => {
+              const rv = r.versions[audience];
+              if (!rv) return null;
+              return (
+                <li key={r.slug}>
+                  <Link
+                    to={fallbackHref(`/posts/${r.slug}`)}
+                    rel="related"
+                    className="text-dim underline decoration-dotted hover:text-fg-bright"
+                  >
+                    {rv.title}
+                  </Link>
+                  <div className="text-xs text-dim">
+                    <time dateTime={rv.date}>{formatDate(rv.date)}</time>
+                    {" · "}
+                    {rv.readingTimeMinutes} min read
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </aside>
+      )}
     </FallbackShell>
   );
 }
