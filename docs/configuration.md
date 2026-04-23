@@ -53,9 +53,10 @@ in the new folder so the terminal illusion stays consistent.
 
 ## Build environment variables
 
-| Variable   | Default | Description                                                              |
-| ---------- | ------- | ------------------------------------------------------------------------ |
-| `BASE_URL` | `/`     | URL prefix for all generated links. Set to `/blog/` for subpath deploys. |
+| Variable                    | Default | Description                                                                                                                                                                                    |
+| --------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BASE_URL`                  | `/`     | URL prefix for all generated links. Set to `/blog/` for subpath deploys.                                                                                                                       |
+| `VITE_GOATCOUNTER_ENDPOINT` | unset   | Full GoatCounter count URL (e.g. `https://<code>.goatcounter.com/count`). When unset, the `useAnalytics` hook no-ops, so local dev and previews record no traffic. See `website/.env.example`. |
 
 ## Website build
 
