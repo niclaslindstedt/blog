@@ -78,6 +78,15 @@ export interface AnchorSignal {
 export interface UseTerminalAnimation {
   lines: LineData[];
   enqueue: (steps: Step[]) => void;
+  // Ctrl-C equivalent: drops any pending steps and any in-flight typing, and
+  // commits a `^C` line so the reader sees a visible interrupt instead of a
+  // silent jump. If a command was mid-type, `^C` is appended to whatever the
+  // reader had seen typed so far; otherwise a bare prompt + `^C` is committed.
+  // Committed scrollback is otherwise left alone — callers typically follow
+  // up with a brief `delay` and then a `clear` before enqueuing the next
+  // sequence, matching how a bash user would press ^C and then type a new
+  // command on the fresh prompt.
+  interrupt: () => void;
   idle: boolean;
   hasSession: (id: string) => boolean;
   anchor: AnchorSignal | null;
@@ -159,6 +168,33 @@ export function useTerminalAnimation(
     queueRef.current.push(...steps);
     setIdle(false);
   }, []);
+
+  const interrupt = useCallback(() => {
+    queueRef.current = [];
+    update((s) => {
+      const line: LineData =
+        s.active === null
+          ? {
+              kind: "command",
+              text: "^C",
+              prompt: promptForRef.current(s.cwd),
+            }
+          : s.active.kind === "command"
+            ? {
+                kind: "command",
+                text: `${s.active.shown}^C`,
+                prompt: s.active.prompt,
+              }
+            : {
+                kind: "output",
+                text: `${s.active.shown}^C`,
+                color: s.active.color,
+                markdown: s.active.markdown,
+              };
+      return { ...s, committed: [...s.committed, line], active: null };
+    });
+    setIdle(true);
+  }, [update]);
 
   const hasSession = useCallback(
     (id: string) => id === currentIdRef.current || sessionsRef.current.has(id),
@@ -389,5 +425,5 @@ export function useTerminalAnimation(
       ]
     : committed;
 
-  return { lines, enqueue, idle, hasSession, anchor, cwd, prompt: promptFor(cwd) };
+  return { lines, enqueue, interrupt, idle, hasSession, anchor, cwd, prompt: promptFor(cwd) };
 }
