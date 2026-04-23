@@ -52,7 +52,7 @@ export function FallbackBlog({ posts, tag: tagProp }: { posts: Post[]; tag?: str
               <li key={p.slug} className="flex flex-col gap-2">
                 <Link
                   to={fallbackHref(`/posts/${p.slug}`)}
-                  className="text-lg leading-snug font-bold text-fg-bright hover:text-accent hover:underline"
+                  className="text-lg leading-snug font-bold text-dim underline decoration-dotted hover:text-fg-bright"
                 >
                   {v.title}
                 </Link>
