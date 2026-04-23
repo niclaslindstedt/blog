@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useParams } from "react-router-dom";
 import postsData from "./generated/posts.json";
 import type { Post } from "./types.ts";
 import { TerminalBlog } from "./TerminalBlog.tsx";
@@ -16,15 +16,33 @@ import { SITE_NAME, SITE_TAGLINE } from "./seo/siteConfig.ts";
 
 const posts = postsData as Post[];
 
-function HomeRoute() {
-  const view = useActiveView();
+function HomeTitle() {
   usePageTitle(`${SITE_NAME} — ${SITE_TAGLINE}`);
-  return view === "blog" ? <FallbackBlog posts={posts} /> : <TerminalBlog posts={posts} />;
+  return null;
 }
 
-function PostRoute() {
+// Shared element for `/` and `/posts/:slug`. Using the same component for both
+// routes lets React reconcile the inner tree across the navigation instead of
+// unmounting it, so `TerminalBlog`'s session state (cwd, scrollback, pending
+// animation) survives when the reader clicks a post filename.
+function BlogRoute() {
   const view = useActiveView();
-  return view === "blog" ? <FallbackPost posts={posts} /> : <TerminalBlog posts={posts} />;
+  const { slug } = useParams<{ slug: string }>();
+  const isHome = slug === undefined;
+  return (
+    <>
+      {isHome && <HomeTitle />}
+      {view === "blog" ? (
+        isHome ? (
+          <FallbackBlog posts={posts} />
+        ) : (
+          <FallbackPost posts={posts} />
+        )
+      ) : (
+        <TerminalBlog posts={posts} />
+      )}
+    </>
+  );
 }
 
 export default function App() {
@@ -39,8 +57,8 @@ export default function App() {
         <FileViewerContext.Provider value={openFile}>
           <main className="relative min-h-screen w-full overflow-hidden">
             <Routes>
-              <Route path="/" element={<HomeRoute />} />
-              <Route path="/posts/:slug" element={<PostRoute />} />
+              <Route path="/" element={<BlogRoute />} />
+              <Route path="/posts/:slug" element={<BlogRoute />} />
               <Route path="/tags" element={<TagsIndex posts={posts} />} />
               <Route path="/tags/:tag" element={<TagRoute posts={posts} />} />
             </Routes>
