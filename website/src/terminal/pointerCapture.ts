@@ -19,11 +19,17 @@ export function startPointerCapture(
   const startY = e.clientY;
   const handleMove = (ev: PointerEvent) =>
     onMove({ dx: ev.clientX - startX, dy: ev.clientY - startY });
-  const handleUp = () => {
+  // `pointercancel` covers the mobile case where the OS/browser hijacks the
+  // gesture (system back-swipe, scroll intervention): `pointerup` never
+  // fires, so without handling cancel we'd leak the move listener and
+  // leave callers stuck in their dragging/resizing state.
+  const handleEnd = () => {
     window.removeEventListener("pointermove", handleMove);
-    window.removeEventListener("pointerup", handleUp);
+    window.removeEventListener("pointerup", handleEnd);
+    window.removeEventListener("pointercancel", handleEnd);
     onEnd?.();
   };
   window.addEventListener("pointermove", handleMove);
-  window.addEventListener("pointerup", handleUp);
+  window.addEventListener("pointerup", handleEnd);
+  window.addEventListener("pointercancel", handleEnd);
 }

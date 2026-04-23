@@ -260,8 +260,10 @@ function feedItems(): FeedItem[] {
 
 function feedUpdatedIso(items: FeedItem[]): string {
   if (items.length === 0) return new Date().toISOString();
-  const latest = posts.slice(0, FEED_POST_LIMIT)[0];
-  return pickPrimaryVersion(latest).edited_at;
+  // The max `edited_at` across the feed slice — not `posts[0]`'s, since
+  // `posts` is sorted by published date, so editing an older post would
+  // otherwise leave the feed's updated timestamp stale.
+  return maxEditedAt(posts.slice(0, FEED_POST_LIMIT));
 }
 
 // -- RSS 2.0 ----------------------------------------------------------------
