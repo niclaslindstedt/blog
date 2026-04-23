@@ -31,7 +31,7 @@ export function FallbackShell({ children }: { children: ReactNode }) {
           : "min-h-screen w-full bg-page-bg text-fg"
       }
     >
-      <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-8">
+      <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-8 break-words">
         <header className="mb-10 flex items-center justify-between gap-4 border-b border-term-border pb-5">
           <Link
             to={fallbackHref("/")}
