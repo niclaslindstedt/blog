@@ -115,6 +115,13 @@ export function useTerminalBlogSession(
   // session. Going back from a post to the index just re-runs `ls` + `grep` —
   // we're still in the directory, no need to cd again.
   const cdedRef = useRef(new Set<Audience>());
+  // Audiences whose `ls -1` / `grep summary` phases have finished animating at
+  // least once. On back-to-index we re-emit completed phases instantly (via
+  // `print-command`) instead of retyping — the reader already watched these
+  // characters appear once, so resuming from the first unfinished phase is
+  // what they expect.
+  const lsedRef = useRef(new Set<Audience>());
+  const grepedRef = useRef(new Set<Audience>());
   const audienceRef = useRef<Audience>(audience);
   const slugParamRef = useRef<string | undefined>(slugParam);
   const prevSlugRef = useRef<string | undefined>(slugParam);
@@ -256,12 +263,15 @@ export function useTerminalBlogSession(
     enqueueOpen(slug, audienceRef.current);
   };
 
-  const enqueueListing = (a: Audience, visible: Post[]): void => {
+  const enqueueListing = (a: Audience, visible: Post[], animate = true): void => {
     // `ls -1` (one-per-line) keeps the listing a clean vertical column and
     // avoids the multi-column output real `ls` produces on a tty. The date
     // lives in the filename itself (`YYYY-MM-DD-<slug>.md`) so the listing
     // stays readable on narrow viewports without horizontal scroll.
-    const steps: Step[] = [{ kind: "type-command", text: "ls -1", wpm: BLOG_WPM }];
+    const lsStep: Step = animate
+      ? { kind: "type-command", text: "ls -1", wpm: BLOG_WPM }
+      : { kind: "print-command", text: "ls -1" };
+    const steps: Step[] = [lsStep];
     if (visible.length === 0) {
       steps.push({
         kind: "print",
@@ -269,6 +279,7 @@ export function useTerminalBlogSession(
         color: "dim",
       });
       steps.push({ kind: "blank" });
+      if (animate) steps.push({ kind: "effect", run: () => lsedRef.current.add(a) });
       enqueue(steps);
       return;
     }
@@ -281,6 +292,7 @@ export function useTerminalBlogSession(
       });
     }
     steps.push({ kind: "blank" });
+    if (animate) steps.push({ kind: "effect", run: () => lsedRef.current.add(a) });
     enqueue(steps);
   };
 
@@ -291,14 +303,12 @@ export function useTerminalBlogSession(
   // so the summaries don't run together. The whole `<slug>.md:<text>` line
   // is clickable — the summary is the hook, so clicking anywhere on it
   // should open the post.
-  const enqueueSummaries = (a: Audience, visible: Post[]): void => {
-    const steps: Step[] = [
-      {
-        kind: "type-command",
-        text: `grep -oP '(?<=^summary: ).*' *.md | xargs -I{} printf '%s\\n\\n' {}`,
-        wpm: BLOG_WPM,
-      },
-    ];
+  const enqueueSummaries = (a: Audience, visible: Post[], animate = true): void => {
+    const grepText = `grep -oP '(?<=^summary: ).*' *.md | xargs -I{} printf '%s\\n\\n' {}`;
+    const grepStep: Step = animate
+      ? { kind: "type-command", text: grepText, wpm: BLOG_WPM }
+      : { kind: "print-command", text: grepText };
+    const steps: Step[] = [grepStep];
     let printed = 0;
     for (const p of visible) {
       const v = p.versions[a];
@@ -312,6 +322,7 @@ export function useTerminalBlogSession(
       printed += 1;
     }
     if (printed === 0) return;
+    if (animate) steps.push({ kind: "effect", run: () => grepedRef.current.add(a) });
     enqueue(steps);
   };
 
@@ -391,16 +402,18 @@ export function useTerminalBlogSession(
       return;
     }
     // Back to index (× tab, browser back, or history pop). Clear the post
-    // body, then re-render the listing for the current audience. If we've
-    // already cd'd into this directory in the session, skip the cd — we're
-    // still standing in it, just running `ls` and `grep` again.
+    // body, then re-render the listing for the current audience. Each intro
+    // phase (cd / ls / grep) is only re-animated if it hasn't already run in
+    // this session — phases the reader already watched are re-emitted
+    // instantly, so a back-nav resumes from the first unfinished phase
+    // instead of retyping everything.
     if (prev === undefined) return;
     const a = audienceRef.current;
     const visible = postsForAudience(posts, a);
     enqueue([{ kind: "clear" }]);
     if (!cdedRef.current.has(a)) enqueueCd(a);
-    enqueueListing(a, visible);
-    enqueueSummaries(a, visible);
+    enqueueListing(a, visible, !lsedRef.current.has(a));
+    enqueueSummaries(a, visible, !grepedRef.current.has(a));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slugParam]);
 
