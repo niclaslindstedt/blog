@@ -76,7 +76,7 @@ export function TerminalLine({ line }: { line: LineData }) {
           <button
             type="button"
             onClick={line.onClick}
-            className={`cursor-pointer bg-transparent p-0 text-left font-[inherit] hover:underline focus-visible:underline focus-visible:outline-none ${line.color ? outputColor(line.color) : "text-fg-bright"}`}
+            className={`cursor-pointer bg-transparent p-0 text-left font-[inherit] underline decoration-dotted hover:text-fg-bright focus-visible:text-fg-bright focus-visible:outline-none ${line.color ? outputColor(line.color) : "text-dim"}`}
           >
             {line.label}
           </button>

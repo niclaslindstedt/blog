@@ -17,7 +17,7 @@ function AnchorOverride({ href, children }: { href?: string; children?: React.Re
           e.preventDefault();
           open(parsed);
         }}
-        className="cursor-pointer bg-transparent p-0 font-[inherit] text-accent underline decoration-dotted hover:text-fg-bright focus-visible:text-fg-bright focus-visible:outline-none"
+        className="cursor-pointer bg-transparent p-0 font-[inherit] text-fg-bright underline decoration-dim decoration-dotted hover:decoration-fg-bright focus-visible:decoration-fg-bright focus-visible:outline-none"
         title={`vi ${parsed.owner}/${parsed.repo}:${parsed.path}`}
       >
         {children}
@@ -29,7 +29,7 @@ function AnchorOverride({ href, children }: { href?: string; children?: React.Re
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="text-link underline decoration-dotted hover:text-accent"
+      className="text-fg-bright underline decoration-dim decoration-dotted visited:text-fg-bright visited:decoration-dim hover:decoration-fg-bright"
     >
       {children}
     </a>
