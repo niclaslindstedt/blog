@@ -16,7 +16,7 @@
     Arial, sans-serif;
   --color-fg: #abb2bf;
   --color-fg-bright: #e6e6e6;
-  --color-dim: #5c6370;
+  --color-dim: #848b98;
   /* Prompt symbol + recognised command name — the oh-my-zsh "valid command"
      green you see on every keystroke when zsh-syntax-highlighting is on. */
   --color-accent: #98c379;
@@ -110,7 +110,7 @@ body {
   --color-term-border: #d9d9d6;
   --color-fg: #383a42;
   --color-fg-bright: #1b1b1b;
-  --color-dim: #a0a1a7;
+  --color-dim: #737680;
   --color-accent: #50a14f;
   --color-meta: #c18401;
   --color-link: #4078f2;
