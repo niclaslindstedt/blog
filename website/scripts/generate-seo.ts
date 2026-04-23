@@ -30,14 +30,19 @@ import {
   SITE_TAGLINE,
   SITE_URL,
   absoluteUrl,
+  postOgImagePath,
 } from "../src/seo/siteConfig.ts";
+import { renderOgImage } from "./seo/ogImage.ts";
 import {
   escapeXml,
   homeJsonLd,
   pickPrimaryVersion,
+  postBreadcrumbJsonLd,
   postJsonLd,
   renderHead,
   tagJsonLd,
+  tagsIndexBreadcrumbJsonLd,
+  tagsIndexJsonLd,
 } from "./seo/meta.ts";
 
 const DIST = path.resolve("dist");
@@ -64,7 +69,7 @@ function injectHead(shell: string, headFragment: string): string {
   return stripped.slice(0, idx) + "\n" + headFragment + "\n  " + stripped.slice(idx);
 }
 
-function writeFile(rel: string, body: string): void {
+function writeFile(rel: string, body: string | Buffer): void {
   const full = path.join(DIST, rel);
   fs.mkdirSync(path.dirname(full), { recursive: true });
   fs.writeFileSync(full, body);
@@ -116,13 +121,14 @@ function renderPost(shell: string, post: Post): string {
     description: v.summary,
     canonicalPath: `/posts/${post.slug}/`,
     ogType: "article",
+    ogImagePath: postOgImagePath(post.slug),
     keywords: [...v.tags, ...DEFAULT_KEYWORDS.slice(0, 3)],
     article: {
       publishedTime: v.date,
       modifiedTime: v.edited_at,
       tags: v.tags,
     },
-    jsonLd: postJsonLd(post),
+    jsonLd: [postJsonLd(post), postBreadcrumbJsonLd(post)],
   });
   return injectHead(shell, head);
 }
@@ -137,6 +143,20 @@ function renderTag(shell: string, tag: string, tagPosts: Post[]): string {
     ogType: "website",
     keywords: [tag, ...DEFAULT_KEYWORDS],
     jsonLd: tagJsonLd(tag, tagPosts),
+  });
+  return injectHead(shell, head);
+}
+
+// -- Tags index -------------------------------------------------------------
+
+function renderTagsIndex(shell: string, tagCounts: { tag: string; count: number }[]): string {
+  const head = renderHead({
+    title: `All tags — ${SITE_NAME}`,
+    description: `Every topic tag used across posts on ${SITE_NAME}.`,
+    canonicalPath: `/tags/`,
+    ogType: "website",
+    keywords: [...DEFAULT_KEYWORDS, ...tagCounts.slice(0, 10).map((t) => t.tag)],
+    jsonLd: [tagsIndexJsonLd(tagCounts), tagsIndexBreadcrumbJsonLd()],
   });
   return injectHead(shell, head);
 }
@@ -161,6 +181,16 @@ function renderSitemap(): string {
       lastmod: v.edited_at,
       changefreq: "monthly",
       priority: "0.8",
+    });
+  }
+
+  if (tags.size > 0) {
+    const allPosts = [...tags.values()].flat();
+    urls.push({
+      loc: absoluteUrl(`/tags/`),
+      lastmod: maxEditedAt(allPosts),
+      changefreq: "weekly",
+      priority: "0.6",
     });
   }
 
@@ -312,7 +342,7 @@ ${body}
 
 // -- Main -------------------------------------------------------------------
 
-function main(): void {
+async function main(): Promise<void> {
   const shell = readShell();
   const tags = collectTags();
 
@@ -328,14 +358,32 @@ function main(): void {
     writeFile(path.join("tags", tag, "index.html"), renderTag(shell, tag, tagPosts));
   }
 
+  const tagCounts = [...tags.entries()]
+    .map(([tag, list]) => ({ tag, count: list.length }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+  if (tagCounts.length > 0) {
+    writeFile(path.join("tags", "index.html"), renderTagsIndex(shell, tagCounts));
+  }
+
+  // Per-post OG cards. Rendered serially because wawoff2 (inside ogImage.ts)
+  // isn't re-entrant; with a 2-figure post count the sequential cost is
+  // negligible, and serial output keeps the generator's log readable.
+  for (const post of posts) {
+    const png = await renderOgImage(post);
+    writeFile(path.join("og", `${post.slug}.png`), png);
+  }
+
   writeFile("sitemap.xml", renderSitemap());
   writeFile("robots.txt", renderRobots());
   writeFile("feed.xml", renderRss());
   writeFile("feed.atom", renderAtom());
 
   process.stderr.write(
-    `generate-seo: wrote homepage + ${posts.length} post page(s) + ${tags.size} tag page(s), sitemap, robots, RSS + Atom feeds\n`,
+    `generate-seo: wrote homepage + ${posts.length} post page(s) + ${tags.size} tag page(s) + tags index + ${posts.length} OG image(s), sitemap, robots, RSS + Atom feeds\n`,
   );
 }
 
-main();
+main().catch((err) => {
+  process.stderr.write(`generate-seo: ${err instanceof Error ? err.stack : String(err)}\n`);
+  process.exit(1);
+});
