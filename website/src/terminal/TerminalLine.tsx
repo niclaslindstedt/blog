@@ -10,22 +10,12 @@ function outputColor(color?: LineColor): string {
   return "text-fg";
 }
 
-// Renders a shell prompt like `~/blog/posts/technical $` with the cwd in the
-// path colour and the trailing symbol in the prompt-accent colour, mirroring a
-// classic oh-my-zsh two-tone prompt. Falls back to a single accent-coloured
-// span for callers that pass a custom prompt string without the standard
-// `<cwd> <symbol>` shape.
+// Renders a shell prompt like `~/blog/posts/technical $` in the bright
+// foreground colour. The cwd and the trailing symbol share a single colour so
+// the prompt reads as chrome — the reader's eye skips past it to the command
+// word, which is the first thing highlighted by `highlightCommand`.
 export function PromptText({ text }: { text: string }) {
-  const match = text.match(/^(.+?)(\s+)([$#%>➜]+)\s*$/);
-  if (!match) return <span className="text-accent">{text}</span>;
-  const [, cwd, space, symbol] = match;
-  return (
-    <>
-      <span className="text-path">{cwd}</span>
-      {space}
-      <span className="text-accent">{symbol}</span>
-    </>
-  );
+  return <span className="text-fg-bright">{text}</span>;
 }
 
 export function TerminalLine({ line }: { line: LineData }) {
@@ -39,8 +29,8 @@ export function TerminalLine({ line }: { line: LineData }) {
       return (
         <div className="whitespace-pre-wrap break-words">
           <PromptText text={line.prompt ?? "$"} />{" "}
-          <span className="text-fg">
-            {highlightCommand(line.text)}
+          <span className="text-fg-bright">
+            {highlightCommand(line.text, line.active ?? false)}
             {line.active && <span className="animate-blink-cursor" aria-hidden="true" />}
           </span>
         </div>
