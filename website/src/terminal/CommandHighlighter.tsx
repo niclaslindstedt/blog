@@ -1,14 +1,15 @@
 import { Fragment, type ReactNode } from "react";
 
 // Syntax-highlighter for a shell command line. The first word of each simple
-// command (start of line, or immediately after a pipe) turns green once it has
-// been fully typed, mirroring how zsh-syntax-highlighting flips an "unknown
-// command" to a "valid command" the moment the reader finishes the word.
-// Everything else — flags, quoted strings, paths, pipes, plain arguments —
-// stays in the bright foreground colour, so the eye lands on the verb of each
-// command rather than a rainbow of argument syntax. When `active` is true the
-// caller is still typing the trailing token, so we keep the in-progress
-// command word white until a boundary (space / pipe) lands after it.
+// command (start of line, or immediately after a command separator — `|`,
+// `&&`, `||`, `;`, `&`) turns green once it has been fully typed, mirroring
+// how zsh-syntax-highlighting flips an "unknown command" to a "valid command"
+// the moment the reader finishes the word. Everything else — flags, quoted
+// strings, paths, separators, plain arguments — stays in the bright
+// foreground colour, so the eye lands on the verb of each command rather
+// than a rainbow of argument syntax. When `active` is true the caller is
+// still typing the trailing token, so we keep the in-progress command word
+// white until a boundary lands after it.
 export function highlightCommand(text: string, active = false): ReactNode {
   const parts: ReactNode[] = [];
   let i = 0;
@@ -16,10 +17,43 @@ export function highlightCommand(text: string, active = false): ReactNode {
   let tokenStart = true;
 
   while (i < text.length) {
+    if (text[i] === "&" && text[i + 1] === "&") {
+      parts.push(
+        <span key={key++} className="text-fg-bright mx-1">
+          &&
+        </span>,
+      );
+      i += 2;
+      tokenStart = true;
+      continue;
+    }
+
+    if (text[i] === "|" && text[i + 1] === "|") {
+      parts.push(
+        <span key={key++} className="text-fg-bright mx-1">
+          ||
+        </span>,
+      );
+      i += 2;
+      tokenStart = true;
+      continue;
+    }
+
     if (text[i] === "|") {
       parts.push(
         <span key={key++} className="text-fg-bright mx-1">
           |
+        </span>,
+      );
+      i++;
+      tokenStart = true;
+      continue;
+    }
+
+    if (text[i] === ";" || text[i] === "&") {
+      parts.push(
+        <span key={key++} className="text-fg-bright">
+          {text[i]}
         </span>,
       );
       i++;
@@ -56,6 +90,8 @@ export function highlightCommand(text: string, active = false): ReactNode {
       end < text.length &&
       !/\s/.test(text[end]) &&
       text[end] !== "|" &&
+      text[end] !== "&" &&
+      text[end] !== ";" &&
       text[end] !== "'" &&
       text[end] !== '"'
     ) {
