@@ -172,26 +172,25 @@ export function useTerminalAnimation(
   const interrupt = useCallback(() => {
     queueRef.current = [];
     update((s) => {
-      const line: LineData =
-        s.active === null
-          ? {
-              kind: "command",
-              text: "^C",
-              prompt: promptForRef.current(s.cwd),
-            }
-          : s.active.kind === "command"
-            ? {
-                kind: "command",
-                text: `${s.active.shown}^C`,
-                prompt: s.active.prompt,
-              }
+      // Commit whatever was mid-typing as a finalised line (so the reader
+      // still sees the partial command they aborted), then drop a standalone
+      // `^C` line underneath — matching how bash echoes the control char on
+      // its own row rather than pasting it after the prompt.
+      const rest: LineData[] = [];
+      if (s.active !== null) {
+        rest.push(
+          s.active.kind === "command"
+            ? { kind: "command", text: s.active.shown, prompt: s.active.prompt }
             : {
                 kind: "output",
-                text: `${s.active.shown}^C`,
+                text: s.active.shown,
                 color: s.active.color,
                 markdown: s.active.markdown,
-              };
-      return { ...s, committed: [...s.committed, line], active: null };
+              },
+        );
+      }
+      rest.push({ kind: "output", text: "^C" });
+      return { ...s, committed: [...s.committed, ...rest], active: null };
     });
     setIdle(true);
   }, [update]);
