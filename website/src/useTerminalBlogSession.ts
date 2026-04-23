@@ -359,7 +359,13 @@ export function useTerminalBlogSession(
     // A URL that targets a specific post is a direct "show me this file"
     // request — the reader didn't ask for a listing, so skip the cd/ls/grep
     // preamble and render the body straight into an otherwise empty session.
+    // Still pin the session cwd to the audience folder so the sed prompt
+    // reads `~/blog/posts/<audience> $` instead of the default `~ $`, and
+    // flag this audience as already-cd'd so a subsequent back-nav doesn't
+    // re-animate the cd either.
     if (slugParamRef.current) {
+      enqueue([{ kind: "cd", to: audienceCwd(a) }]);
+      cdedRef.current.add(a);
       enqueueOpen(slugParamRef.current, a);
       return;
     }
