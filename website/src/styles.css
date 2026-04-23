@@ -1,27 +1,38 @@
 @import "tailwindcss";
 
 @theme {
-  --color-page-bg: #11141a;
-  --color-term-bg: #0a0e14;
-  --color-term-titlebar: #181b22;
-  --color-term-border: #2a2f3a;
+  /* Dark palette inspired by One Dark and zsh-syntax-highlighting defaults.
+     Each text token maps to a recognisable zsh / oh-my-zsh colour role so a
+     typed command reads like real shell syntax highlighting rather than a
+     monochrome xterm dump. */
+  --color-page-bg: #1d2027;
+  --color-term-bg: #282c34;
+  --color-term-titlebar: #21252b;
+  --color-term-border: #3e4451;
   /* UI chrome (titlebar + tabs) uses the system sans, like real terminal
      emulators. Content keeps the monospace body font. */
   --font-ui:
     ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue",
     Arial, sans-serif;
-  /* Single foreground — every text token collapses to white so the terminal
-     reads like a plain xterm: one color, no semantic highlighting. */
-  --color-fg: #ffffff;
-  --color-fg-bright: #ffffff;
-  --color-dim: #ffffff;
-  --color-accent: #ffffff;
-  --color-meta: #ffffff;
-  --color-link: #9ca3af;
-  --color-pipe: #ffffff;
-  --color-flag: #ffffff;
-  --color-path: #ffffff;
-  /* Traffic-light dots only — these tokens are used as backgrounds. */
+  --color-fg: #abb2bf;
+  --color-fg-bright: #e6e6e6;
+  --color-dim: #5c6370;
+  /* Prompt symbol + recognised command name — the oh-my-zsh "valid command"
+     green you see on every keystroke when zsh-syntax-highlighting is on. */
+  --color-accent: #98c379;
+  /* Quoted strings, inline code, meta blurbs. */
+  --color-meta: #e5c07b;
+  /* External links — classic terminal blue. */
+  --color-link: #61afef;
+  /* `|` between piped commands. */
+  --color-pipe: #c678dd;
+  /* `-f` / `--flag` arguments. */
+  --color-flag: #d19a66;
+  /* Paths and the cwd segment of the prompt. */
+  --color-path: #56b6c2;
+  /* macOS traffic-light dots — kept as backgrounds on the close/min/zoom
+     controls so they look like the terminal window buttons everyone
+     recognises, independent of the text palette above. */
   --color-red: #ff5f57;
   --color-yellow: #febc2e;
   --color-green: #28c840;
@@ -67,7 +78,7 @@ body {
   display: inline-block;
   width: 0.55ch;
   height: 1em;
-  background-color: var(--color-accent);
+  background-color: var(--color-fg-bright);
   vertical-align: text-bottom;
   margin-left: 1px;
   animation: blink-cursor 1s step-end infinite;
@@ -88,23 +99,24 @@ body {
   );
 }
 
-/* Scoped light palette for the fallback (prose) view. The Tailwind utility
-   classes resolve `var(--color-…)` at runtime, so rebinding the variables on
-   this class cascades through every descendant without touching any JSX. */
+/* Scoped light palette for the fallback (prose) view, mirroring the One Light
+   colour scheme so the terminal-like syntax roles still read the same way
+   against a bright background. Rebinding the variables on this class cascades
+   through every Tailwind utility that resolves `var(--color-…)` at runtime. */
 .theme-light {
-  --color-page-bg: #f7f7f4;
+  --color-page-bg: #fafafa;
   --color-term-bg: #ffffff;
   --color-term-titlebar: #ececec;
   --color-term-border: #d9d9d6;
-  --color-fg: #1b1b1b;
-  --color-fg-bright: #000000;
-  --color-dim: #6b6b6b;
-  --color-accent: #1b1b1b;
-  --color-meta: #6b6b6b;
-  --color-link: #0b63c6;
-  --color-pipe: #1b1b1b;
-  --color-flag: #1b1b1b;
-  --color-path: #1b1b1b;
+  --color-fg: #383a42;
+  --color-fg-bright: #1b1b1b;
+  --color-dim: #a0a1a7;
+  --color-accent: #50a14f;
+  --color-meta: #c18401;
+  --color-link: #4078f2;
+  --color-pipe: #a626a4;
+  --color-flag: #d75f00;
+  --color-path: #0184bc;
   background: var(--color-page-bg);
   color: var(--color-fg);
 }

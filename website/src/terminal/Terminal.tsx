@@ -9,7 +9,7 @@ import {
 } from "react";
 import type { LineData } from "./types.ts";
 import type { AnchorSignal } from "./useTerminalAnimation.ts";
-import { TerminalLine } from "./TerminalLine.tsx";
+import { PromptText, TerminalLine } from "./TerminalLine.tsx";
 import { clamp } from "./pointerCapture.ts";
 import { useDraggable } from "./useDraggable.ts";
 import { useResizable } from "./useResizable.ts";
@@ -384,7 +384,9 @@ export function Terminal({
         ))}
         {idle && (
           <div className="flex gap-2">
-            <span className="shrink-0 text-accent">{prompt}</span>
+            <span className="shrink-0">
+              <PromptText text={prompt} />
+            </span>
             <span className="flex-1">
               <span className="animate-blink-cursor" aria-hidden="true" />
             </span>

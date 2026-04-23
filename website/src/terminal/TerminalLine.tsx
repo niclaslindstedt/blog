@@ -2,9 +2,30 @@ import type { LineColor, LineData } from "./types.ts";
 import { highlightCommand } from "./CommandHighlighter.tsx";
 import { MarkdownBody } from "./MarkdownBody.tsx";
 
-function outputColor(_color?: LineColor): string {
-  // Plain-terminal look: every output line renders in the single fg color.
+function outputColor(color?: LineColor): string {
+  if (color === "dim") return "text-dim";
+  if (color === "accent") return "text-accent";
+  if (color === "meta") return "text-meta";
+  if (color === "error") return "text-flag";
   return "text-fg";
+}
+
+// Renders a shell prompt like `~/blog/posts/technical $` with the cwd in the
+// path colour and the trailing symbol in the prompt-accent colour, mirroring a
+// classic oh-my-zsh two-tone prompt. Falls back to a single accent-coloured
+// span for callers that pass a custom prompt string without the standard
+// `<cwd> <symbol>` shape.
+export function PromptText({ text }: { text: string }) {
+  const match = text.match(/^(.+?)(\s+)([$#%>➜]+)\s*$/);
+  if (!match) return <span className="text-accent">{text}</span>;
+  const [, cwd, space, symbol] = match;
+  return (
+    <>
+      <span className="text-path">{cwd}</span>
+      {space}
+      <span className="text-accent">{symbol}</span>
+    </>
+  );
 }
 
 export function TerminalLine({ line }: { line: LineData }) {
@@ -17,8 +38,8 @@ export function TerminalLine({ line }: { line: LineData }) {
       // for single tokens longer than the viewport (e.g. a URL argument).
       return (
         <div className="whitespace-pre-wrap break-words">
-          <span className="text-accent">{line.prompt ?? "$"}</span>{" "}
-          <span className="text-fg-bright">
+          <PromptText text={line.prompt ?? "$"} />{" "}
+          <span className="text-fg">
             {highlightCommand(line.text)}
             {line.active && <span className="animate-blink-cursor" aria-hidden="true" />}
           </span>
