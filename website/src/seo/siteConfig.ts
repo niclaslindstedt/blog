@@ -26,6 +26,14 @@ export const DEFAULT_OG_IMAGE = "/og-default.png";
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 
+// Directory (under dist/) where per-post OG cards are written. Kept as a
+// constant so the generator's output path and <meta og:image> values can't
+// drift apart.
+export const OG_IMAGE_DIR = "/og";
+export function postOgImagePath(slug: string): string {
+  return `${OG_IMAGE_DIR}/${slug}.png`;
+}
+
 // Broad topic keywords that always describe the site, independent of which
 // posts exist. The generator merges these with the union of every post's tags
 // for the homepage and with a post's own tags for each post page.
