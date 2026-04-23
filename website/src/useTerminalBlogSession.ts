@@ -171,7 +171,6 @@ export function useTerminalBlogSession(
       steps.push({
         kind: "clickable",
         label: `${p.slug}.md`,
-        color: "accent",
         onClick: () => openPostFromClick(p.slug),
       });
     }
@@ -278,7 +277,6 @@ export function useTerminalBlogSession(
       steps.push({
         kind: "clickable",
         label: `${p.slug}.md`,
-        color: "accent",
         onClick: () => openPostFromClick(p.slug),
       });
     }
@@ -308,7 +306,6 @@ export function useTerminalBlogSession(
       steps.push({
         kind: "clickable",
         label: `${p.slug}.md:${v.summary}`,
-        color: "accent",
         onClick: () => openPostFromClick(p.slug),
       });
       steps.push({ kind: "blank" });
