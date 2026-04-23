@@ -253,19 +253,21 @@ export function useTerminalBlogSession(
   // to see the command type out again, not a silent no-op. We clear the
   // "already opened" guard for this slug so enqueueOpen will proceed.
   //
-  // The transition mirrors how a bash user would actually pivot mid-task:
-  //   1. `^C` committed synchronously to interrupt the in-flight animation.
-  //   2. A short pause before the next keystroke, to register the interrupt.
-  //   3. `clear` typed out as a visible command on the fresh prompt.
-  //   4. The `clear` step wipes the scrollback (the "page change" moment).
-  //   5. `sed '1,/^---$/d' <slug>.md` types out and prints the post body.
+  // When a command was actually mid-type, the transition mirrors a bash user
+  // pivoting out of a running command: `^C` interrupts it, a short beat lets
+  // the reader register the interrupt, then `clear` types out on the fresh
+  // prompt before the screen wipes and the new `sed` command types. When the
+  // terminal was idle (e.g. the reader clicked after all animation finished),
+  // the `^C` beat is skipped — hitting Ctrl-C at an empty prompt is a bash
+  // quirk, not a signal worth echoing in that case.
   const openPostFromClick = (slug: string) => {
     if (slugParamRef.current !== slug) onNavigateToSlug(slug);
     const key = openKey(audienceRef.current, slug);
     openedRef.current.delete(key);
-    interrupt();
+    const interrupted = interrupt();
+    const preClear: Step[] = interrupted ? [{ kind: "delay", ms: 220 }] : [];
     enqueue([
-      { kind: "delay", ms: 220 },
+      ...preClear,
       { kind: "type-command", text: "clear", wpm: BLOG_WPM },
       { kind: "clear" },
     ]);
@@ -357,15 +359,13 @@ export function useTerminalBlogSession(
 
   const runIntro = (a: Audience) => {
     // A URL that targets a specific post is a direct "show me this file"
-    // request — the reader didn't ask for a listing, so skip the cd/ls/grep
-    // preamble and render the body straight into an otherwise empty session.
-    // Still pin the session cwd to the audience folder so the sed prompt
-    // reads `~/blog/posts/<audience> $` instead of the default `~ $`, and
-    // flag this audience as already-cd'd so a subsequent back-nav doesn't
-    // re-animate the cd either.
+    // request — the reader didn't ask for a listing, so skip the ls/grep
+    // preamble. We still animate the `cd` into the audience folder on a
+    // cold load (hard refresh on a post URL) so the reader sees where the
+    // session lands before `sed` types; if the audience has already been
+    // cd'd in this session (tab-switch, within-session navigation), skip it.
     if (slugParamRef.current) {
-      enqueue([{ kind: "cd", to: audienceCwd(a) }]);
-      cdedRef.current.add(a);
+      if (!cdedRef.current.has(a)) enqueueCd(a);
       enqueueOpen(slugParamRef.current, a);
       return;
     }
