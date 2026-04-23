@@ -30,7 +30,6 @@ export function highlightCommand(text: string, active = false): ReactNode {
     if (/\s/.test(text[i])) {
       parts.push(<Fragment key={key++}>{text[i]}</Fragment>);
       i++;
-      tokenStart = true;
       continue;
     }
 
