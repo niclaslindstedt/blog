@@ -1,5 +1,10 @@
 import { Fragment, type ReactNode } from "react";
 
+// Syntax-highlighter for an already-typed shell command, mirroring the set of
+// roles that zsh-syntax-highlighting + oh-my-zsh paint by default: the command
+// word in green, flags in orange, pipes in magenta, paths in cyan, and quoted
+// strings in yellow. Anything that doesn't match a rule falls back to the
+// foreground colour so the user still sees it.
 export function highlightCommand(text: string): ReactNode {
   const parts: ReactNode[] = [];
   let i = 0;
@@ -25,6 +30,24 @@ export function highlightCommand(text: string): ReactNode {
       continue;
     }
 
+    if (text[i] === "'" || text[i] === '"') {
+      const quote = text[i];
+      let end = i + 1;
+      while (end < text.length && text[end] !== quote) {
+        if (text[end] === "\\" && end + 1 < text.length) end += 2;
+        else end++;
+      }
+      if (end < text.length) end++;
+      parts.push(
+        <span key={key++} className="text-meta">
+          {text.slice(i, end)}
+        </span>,
+      );
+      i = end;
+      tokenStart = false;
+      continue;
+    }
+
     if (text[i] === "-" && tokenStart && i + 1 < text.length) {
       let end = i + 1;
       if (text[end] === "-") end++;
@@ -40,7 +63,15 @@ export function highlightCommand(text: string): ReactNode {
     }
 
     let end = i;
-    while (end < text.length && !/\s/.test(text[end]) && text[end] !== "|") end++;
+    while (
+      end < text.length &&
+      !/\s/.test(text[end]) &&
+      text[end] !== "|" &&
+      text[end] !== "'" &&
+      text[end] !== '"'
+    ) {
+      end++;
+    }
     const token = text.slice(i, end);
 
     if (tokenStart && !token.startsWith("-") && !/^\d/.test(token)) {
@@ -57,7 +88,7 @@ export function highlightCommand(text: string): ReactNode {
       );
     } else {
       parts.push(
-        <span key={key++} className="text-fg-bright">
+        <span key={key++} className="text-fg">
           {token}
         </span>,
       );
