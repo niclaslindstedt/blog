@@ -78,6 +78,12 @@ export interface AnchorSignal {
 export interface UseTerminalAnimation {
   lines: LineData[];
   enqueue: (steps: Step[]) => void;
+  // Drops any pending steps and any in-flight typing, so a freshly enqueued
+  // sequence starts from a quiescent state instead of waiting behind a long
+  // queue. Committed scrollback is left alone — the caller is expected to
+  // follow up with a `clear` step (or leave existing lines in place) as
+  // appropriate for the transition being made.
+  flush: () => void;
   idle: boolean;
   hasSession: (id: string) => boolean;
   anchor: AnchorSignal | null;
@@ -159,6 +165,12 @@ export function useTerminalAnimation(
     queueRef.current.push(...steps);
     setIdle(false);
   }, []);
+
+  const flush = useCallback(() => {
+    queueRef.current = [];
+    update((s) => (s.active === null ? s : { ...s, active: null }));
+    setIdle(true);
+  }, [update]);
 
   const hasSession = useCallback(
     (id: string) => id === currentIdRef.current || sessionsRef.current.has(id),
@@ -389,5 +401,5 @@ export function useTerminalAnimation(
       ]
     : committed;
 
-  return { lines, enqueue, idle, hasSession, anchor, cwd, prompt: promptFor(cwd) };
+  return { lines, enqueue, flush, idle, hasSession, anchor, cwd, prompt: promptFor(cwd) };
 }

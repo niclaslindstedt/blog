@@ -103,7 +103,7 @@ export function useTerminalBlogSession(
   config: UseTerminalBlogSessionConfig,
 ): UseTerminalBlogSession {
   const { posts, audience, slugParam, setAudience, onNavigateToSlug } = config;
-  const { lines, enqueue, idle, anchor, cwd, prompt } = useTerminalAnimation(audience);
+  const { lines, enqueue, flush, idle, anchor, cwd, prompt } = useTerminalAnimation(audience);
   const openFile = useFileViewer();
 
   const startedRef = useRef(false);
@@ -254,11 +254,15 @@ export function useTerminalBlogSession(
   // "already opened" guard for this slug so enqueueOpen will proceed.
   // The `clear` step wipes prior scrollback (intro, grep output, or a
   // previously-opened post) so the reader lands on a clean screen showing
-  // just the sed command and the post body.
+  // just the sed command and the post body. Flushing first drops any pending
+  // intro steps (remaining filenames, the grep phase) so the post opens
+  // immediately instead of waiting for the rest of the intro to finish
+  // animating behind it.
   const openPostFromClick = (slug: string) => {
     if (slugParamRef.current !== slug) onNavigateToSlug(slug);
     const key = openKey(audienceRef.current, slug);
     openedRef.current.delete(key);
+    flush();
     enqueue([{ kind: "clear" }]);
     enqueueOpen(slug, audienceRef.current);
   };
