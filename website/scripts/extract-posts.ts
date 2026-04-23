@@ -18,6 +18,11 @@ function parseFrontmatter(
   raw: string,
   file: string,
 ): { fields: Record<string, string>; body: string } {
+  // Normalize CRLF / CR to LF so a file saved on Windows (or by a tool that
+  // emits CRLF) parses identically to a LF file — otherwise `raw` would
+  // begin with `---\r\n` and the startsWith check below would die with a
+  // misleading "missing YAML frontmatter" error.
+  raw = raw.replace(/\r\n?/g, "\n");
   if (!raw.startsWith("---\n")) die(`${file}: missing YAML frontmatter opening '---'`);
   const end = raw.indexOf("\n---\n", 4);
   if (end === -1) die(`${file}: missing YAML frontmatter closing '---'`);
