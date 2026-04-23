@@ -10,6 +10,7 @@ import { FileViewer, FileViewerContext, type GithubFile } from "./terminal/index
 import { AudienceProvider } from "./AudienceContext.tsx";
 import { PreferencesProvider, useActiveView } from "./PreferencesContext.tsx";
 import { usePageTitle } from "./seo/usePageTitle.ts";
+import { useAnalytics } from "./seo/useAnalytics.ts";
 import { SITE_NAME, SITE_TAGLINE } from "./seo/siteConfig.ts";
 
 const posts = postsData as Post[];
@@ -29,6 +30,7 @@ export default function App() {
   const [viewerFile, setViewerFile] = useState<GithubFile | null>(null);
   const openFile = useCallback((file: GithubFile) => setViewerFile(file), []);
   const closeFile = useCallback(() => setViewerFile(null), []);
+  useAnalytics();
 
   return (
     <AudienceProvider>

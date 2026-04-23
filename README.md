@@ -85,6 +85,11 @@ Authoring skills (invoked inside a Claude Code session):
 
 - **Post frontmatter.** `title`, `date`, `summary`, and `edited_at`. `date` and `edited_at` are ISO 8601 UTC datetimes (`YYYY-MM-DDTHH:MM:SSZ`); `summary` is a single-line lede used as the clickable preview in the list view. See [`docs/configuration.md`](docs/configuration.md).
 - **Build env vars.** `BASE_URL` (default `/`) sets the URL prefix for generated assets. The production deploy uses the custom domain `blog.niclaslindstedt.se` (see `website/public/CNAME`) and keeps `BASE_URL` at `/`; override it only when serving from a subpath.
+- **Analytics endpoint.** `VITE_GOATCOUNTER_ENDPOINT` (optional) points at a GoatCounter count URL, e.g. `https://<code>.goatcounter.com/count`. Leave unset to disable tracking; see `website/.env.example`.
+
+## Analytics & privacy
+
+The site uses [GoatCounter](https://www.goatcounter.com/) for aggregate visitor counts. It is **cookieless**, stores **no PII**, respects Do Not Track, and is legally exempt from consent banners under the ePrivacy Directive. Only a hashed URL, page title, referrer, and a coarse bucket (country, screen size, browser family) are recorded — nothing that identifies a reader. The endpoint is build-time configurable via `VITE_GOATCOUNTER_ENDPOINT`; when unset, no tracking script is injected at all.
 
 ## Examples
 
