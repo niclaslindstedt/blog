@@ -10,42 +10,55 @@ src/                            placeholder top-level TypeScript module (unused)
 website/                        Vite + React + TypeScript + Tailwind v4 frontend
   scripts/
     extract-posts.ts            reads posts/{technical,non-technical}/ → writes src/generated/posts.json
-    generate-seo.ts              post-build: emits sitemap.xml, robots.txt, feed.xml, feed.atom, per-route meta
-    seo/meta.ts                  shared meta-tag builder used by generate-seo.ts
+    generate-seo.ts              post-build: pre-renders per-post/per-tag index.html, emits sitemap.xml, robots.txt, feed.xml, feed.atom, and /og/<slug>.png cards
+    seo/meta.ts                  head-fragment + JSON-LD builder used by generate-seo.ts
+    seo/ogImage.ts               satori + resvg renderer for per-post Open Graph PNG cards (no Chromium)
   src/
     types.ts                    Post / PostVersion / Audience (single source of truth)
-    terminalTypes.ts            terminal line/step union types
-    App.tsx                     page layout + Routes (HomeRoute / PostRoute / TagRoute); wraps AudienceProvider + PreferencesProvider + FileViewerProvider
+    App.tsx                     page layout + Routes (/ + /posts/:slug share BlogRoute; /tags and /tags/:tag); wraps AudienceProvider + PreferencesProvider + FileViewerProvider
     AudienceContext.tsx         React context + localStorage-backed audience preference
     AudienceTabs.tsx            two-tab strip rendered in the terminal chrome
     PreferencesContext.tsx      view (terminal vs. blog fallback) + light/dark theme persistence
     TerminalBlog.tsx            audience-aware transcript controller (ls / grep summaries / sed)
-    Terminal.tsx                window chrome + drag-to-resize + tabs slot + live-cwd titlebar
-    TerminalLine.tsx            renders one transcript line by kind
-    Tabs.tsx                    generic tab-strip primitive used by AudienceTabs
-    CommandHighlighter.tsx      shell-syntax colouring for commands
-    MarkdownBody.tsx            shared react-markdown + remark-gfm + rehype-raw renderer with terminal overrides
+    useTerminalBlogSession.ts   per-audience session state for TerminalBlog (cwd, scrollback, animation cursor)
     FallbackBlog.tsx            prose list view (rendered when ?view=blog or the terminal is closed)
     FallbackPost.tsx            prose post view used by the same fallback
     FallbackShell.tsx           shared chrome for the prose fallback views
     TagRoute.tsx                /tags/:tag route — filters posts by tag in either view
+    TagsIndex.tsx               /tags route — lists every tag with post counts
     postFilters.ts              audience / tag filtering helpers shared by terminal + fallback
     ThemeToggle.tsx             light/dark toggle bound to PreferencesContext
-    FileViewer.tsx              full-viewport vi-style overlay for github.com/.../blob/ links
-    FileViewerContext.tsx       React context exposing the file-viewer open() callback
-    ViOpenerContext.tsx         animates `vi <path>` at the prompt before popping FileViewer (used from markdown body links)
-    github.ts                   GitHub blob-URL parser and raw-content fetcher
-    typing.ts                   WPM-aware keystroke timing model (finger-aware delays)
-    useTerminalAnimation.ts     sequence-driven typing animation hook (consumes typing.ts)
-    seo/siteConfig.ts            origin, site name, tagline, OG image defaults
-    seo/usePageTitle.ts          React hook that sets document.title per route
+    terminal/                   reusable terminal kernel — chrome, typing engine, markdown, file viewer
+      index.ts                  public surface (Terminal, Tabs, TerminalLine, MarkdownBody, FileViewer, hooks)
+      Terminal.tsx              window chrome + drag-to-resize + tabs slot + live-cwd titlebar; remembers position across navigations
+      TerminalLine.tsx          renders one transcript line by kind
+      Tabs.tsx                  generic tab-strip primitive used by AudienceTabs
+      CommandHighlighter.tsx    shell-syntax colouring for commands
+      MarkdownBody.tsx          shared react-markdown + remark-gfm + rehype-raw renderer with terminal overrides
+      FileViewer.tsx            full-viewport vi-style overlay for github.com/.../blob/ links
+      FileViewerContext.tsx     React context exposing the file-viewer open() callback
+      ViOpenerContext.tsx       animates `vi <path>` at the prompt before popping FileViewer (used from markdown body links)
+      github.ts                 GitHub blob-URL parser and raw-content fetcher
+      typing.ts                 WPM-aware keystroke timing model (finger-aware delays)
+      useTerminalAnimation.ts   sequence-driven typing animation hook (consumes typing.ts)
+      useDraggable.ts           titlebar drag-to-move hook
+      useResizable.ts           edge/corner drag-to-resize hook
+      pointerCapture.ts         pointer-capture helpers shared by useDraggable / useResizable
+      types.ts                  terminal line / step / tab-stop union types
+    seo/siteConfig.ts           origin, site name, tagline, AUTHOR + AUTHOR_SAME_AS (GitHub / LinkedIn / DockerHub / PyPI / crates.io), OG image paths, feed paths
+    seo/usePageTitle.ts         React hook that sets document.title per route
+    seo/useAnalytics.ts         route-change GoatCounter page-view hook (no-op when endpoint is unset)
+    seo/analytics.ts            reads VITE_GOATCOUNTER_ENDPOINT at build time
+    seo/relatedPosts.ts         tag-overlap scoring for the "Related posts" block on each post page
     styles.css                  Tailwind entry + theme variables + blink-cursor keyframes
     main.tsx                    React entry point
     generated/                  extractor output — never edit by hand
   public/
     CNAME                        custom domain (blog.niclaslindstedt.se)
     robots.txt                   baseline; overwritten with sitemap link by generate-seo.ts
+    favicon.svg                  terminal-style `>` favicon
     og-default.png               default Open Graph preview image
+  .env.example                  template listing VITE_GOATCOUNTER_ENDPOINT (analytics opt-in)
 prompts/                        reserved for versioned Claude prompt templates (none active yet)
 ```
 
@@ -145,6 +158,8 @@ three routes:
   the current audience the terminal prints
   `sed: <slug>.md: No such file or directory` in red. Renders the prose
   fallback post view under the same view-override rules as `/`.
+- `/tags` — flat index of every tag across both audiences with post counts,
+  linking to `/tags/<tag>`.
 - `/tags/<tag>` — tag-filtered index. Shows every post whose current-audience
   version carries `<tag>` in its comma-separated `tags` frontmatter. Uses
   the same terminal / prose-fallback toggle as the other routes.
@@ -174,17 +189,29 @@ devices that have not yet opted into the fallback.
 `website/scripts/generate-seo.ts` runs after `vite build` (chained from the
 website `build` script) and writes static artifacts into `dist/`:
 
-- `sitemap.xml` — one URL per route (`/`, each post, each tag page).
+- `posts/<slug>/index.html` and `tags/<tag>/index.html` — pre-rendered SPA
+  shells with per-route `<title>`, description, canonical URL, Open Graph /
+  Twitter meta, and JSON-LD (`BlogPosting` for posts, `CollectionPage` +
+  `BreadcrumbList` for tag pages). Link unfurls and crawlers work without JS.
+- `og/<slug>.png` — per-post 1200×630 Open Graph card rendered at build time
+  by `scripts/seo/ogImage.ts` via `satori` + `@resvg/resvg-js` (Inter WOFF2
+  decompressed with `wawoff2`). Pure Node; no Chromium.
+- `sitemap.xml` — one URL per route (`/`, each post, each tag page, `/tags`).
 - `robots.txt` — overwrites `public/robots.txt` with the canonical sitemap
   link for the custom domain.
-- `feed.xml` — RSS 2.0 (summary-level, one entry per post).
-- `feed.atom` — Atom 1.0 (summary-level, one entry per post).
-- Per-route `index.html` variants with baked `<title>`, description, canonical
-  URL, and Open Graph / Twitter meta — so link unfurls work without JS.
+- `feed.xml` — RSS 2.0 (summary-level, capped at `FEED_POST_LIMIT`).
+- `feed.atom` — Atom 1.0 (summary-level, capped at `FEED_POST_LIMIT`).
+- `404.html` — a copy of `index.html` so GitHub Pages's 404 fallback still
+  serves the SPA shell for unknown paths.
 
-`website/src/seo/` holds the runtime hooks (`usePageTitle`) and the shared
-site config (`siteConfig.ts` — origin, site name, tagline, default OG
-image). The domain is `blog.niclaslindstedt.se` via `website/public/CNAME`.
+`website/src/seo/` holds the runtime helpers: `usePageTitle` for per-route
+titles, `useAnalytics` for GoatCounter page-view beacons (no-op when
+`VITE_GOATCOUNTER_ENDPOINT` is unset — see `docs/configuration.md`),
+`relatedPosts.ts` for the tag-overlap "Related posts" block shown under each
+post, and `siteConfig.ts` — origin, site name, tagline, default OG image,
+and `AUTHOR_SAME_AS` (GitHub / LinkedIn / DockerHub / PyPI / crates.io)
+emitted as `sameAs` on the homepage `Person` JSON-LD. The domain is
+`blog.niclaslindstedt.se` via `website/public/CNAME`.
 
 ## Cross-cutting concerns
 
