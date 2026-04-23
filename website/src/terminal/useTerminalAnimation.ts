@@ -78,12 +78,15 @@ export interface AnchorSignal {
 export interface UseTerminalAnimation {
   lines: LineData[];
   enqueue: (steps: Step[]) => void;
-  // Drops any pending steps and any in-flight typing, so a freshly enqueued
-  // sequence starts from a quiescent state instead of waiting behind a long
-  // queue. Committed scrollback is left alone — the caller is expected to
-  // follow up with a `clear` step (or leave existing lines in place) as
-  // appropriate for the transition being made.
-  flush: () => void;
+  // Ctrl-C equivalent: drops any pending steps and any in-flight typing, and
+  // commits a `^C` line so the reader sees a visible interrupt instead of a
+  // silent jump. If a command was mid-type, `^C` is appended to whatever the
+  // reader had seen typed so far; otherwise a bare prompt + `^C` is committed.
+  // Committed scrollback is otherwise left alone — callers typically follow
+  // up with a brief `delay` and then a `clear` before enqueuing the next
+  // sequence, matching how a bash user would press ^C and then type a new
+  // command on the fresh prompt.
+  interrupt: () => void;
   idle: boolean;
   hasSession: (id: string) => boolean;
   anchor: AnchorSignal | null;
@@ -166,9 +169,30 @@ export function useTerminalAnimation(
     setIdle(false);
   }, []);
 
-  const flush = useCallback(() => {
+  const interrupt = useCallback(() => {
     queueRef.current = [];
-    update((s) => (s.active === null ? s : { ...s, active: null }));
+    update((s) => {
+      const line: LineData =
+        s.active === null
+          ? {
+              kind: "command",
+              text: "^C",
+              prompt: promptForRef.current(s.cwd),
+            }
+          : s.active.kind === "command"
+            ? {
+                kind: "command",
+                text: `${s.active.shown}^C`,
+                prompt: s.active.prompt,
+              }
+            : {
+                kind: "output",
+                text: `${s.active.shown}^C`,
+                color: s.active.color,
+                markdown: s.active.markdown,
+              };
+      return { ...s, committed: [...s.committed, line], active: null };
+    });
     setIdle(true);
   }, [update]);
 
@@ -401,5 +425,5 @@ export function useTerminalAnimation(
       ]
     : committed;
 
-  return { lines, enqueue, flush, idle, hasSession, anchor, cwd, prompt: promptFor(cwd) };
+  return { lines, enqueue, interrupt, idle, hasSession, anchor, cwd, prompt: promptFor(cwd) };
 }

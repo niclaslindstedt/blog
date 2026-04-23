@@ -103,7 +103,7 @@ export function useTerminalBlogSession(
   config: UseTerminalBlogSessionConfig,
 ): UseTerminalBlogSession {
   const { posts, audience, slugParam, setAudience, onNavigateToSlug } = config;
-  const { lines, enqueue, flush, idle, anchor, cwd, prompt } = useTerminalAnimation(audience);
+  const { lines, enqueue, interrupt, idle, anchor, cwd, prompt } = useTerminalAnimation(audience);
   const openFile = useFileViewer();
 
   const startedRef = useRef(false);
@@ -252,18 +252,23 @@ export function useTerminalBlogSession(
   // already rendered that post earlier — a reader clicking a filename expects
   // to see the command type out again, not a silent no-op. We clear the
   // "already opened" guard for this slug so enqueueOpen will proceed.
-  // The `clear` step wipes prior scrollback (intro, grep output, or a
-  // previously-opened post) so the reader lands on a clean screen showing
-  // just the sed command and the post body. Flushing first drops any pending
-  // intro steps (remaining filenames, the grep phase) so the post opens
-  // immediately instead of waiting for the rest of the intro to finish
-  // animating behind it.
+  //
+  // The transition mirrors how a bash user would actually pivot mid-task:
+  //   1. `^C` committed synchronously to interrupt the in-flight animation.
+  //   2. A short pause before the next keystroke, to register the interrupt.
+  //   3. `clear` typed out as a visible command on the fresh prompt.
+  //   4. The `clear` step wipes the scrollback (the "page change" moment).
+  //   5. `sed '1,/^---$/d' <slug>.md` types out and prints the post body.
   const openPostFromClick = (slug: string) => {
     if (slugParamRef.current !== slug) onNavigateToSlug(slug);
     const key = openKey(audienceRef.current, slug);
     openedRef.current.delete(key);
-    flush();
-    enqueue([{ kind: "clear" }]);
+    interrupt();
+    enqueue([
+      { kind: "delay", ms: 220 },
+      { kind: "type-command", text: "clear", wpm: BLOG_WPM },
+      { kind: "clear" },
+    ]);
     enqueueOpen(slug, audienceRef.current);
   };
 
@@ -406,15 +411,17 @@ export function useTerminalBlogSession(
       return;
     }
     // Back to index (× tab, browser back, or history pop). Clear the post
-    // body, then re-render the listing for the current audience. Each intro
-    // phase (cd / ls / grep) is only re-animated if it hasn't already run in
-    // this session — phases the reader already watched are re-emitted
-    // instantly, so a back-nav resumes from the first unfinished phase
-    // instead of retyping everything.
+    // body, then re-render the listing for the current audience. `clear` is
+    // typed out as a visible command first — the screen wipe is a real bash
+    // step, not a magical instant transition — then each intro phase
+    // (cd / ls / grep) re-animates only if it hasn't already run in this
+    // session. Phases the reader already watched are re-emitted instantly,
+    // so a back-nav resumes from the first unfinished phase instead of
+    // retyping everything.
     if (prev === undefined) return;
     const a = audienceRef.current;
     const visible = postsForAudience(posts, a);
-    enqueue([{ kind: "clear" }]);
+    enqueue([{ kind: "type-command", text: "clear", wpm: BLOG_WPM }, { kind: "clear" }]);
     if (!cdedRef.current.has(a)) enqueueCd(a);
     enqueueListing(a, visible, !lsedRef.current.has(a));
     enqueueSummaries(a, visible, !grepedRef.current.has(a));

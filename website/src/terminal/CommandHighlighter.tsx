@@ -98,7 +98,12 @@ export function highlightCommand(text: string, active = false): ReactNode {
       end++;
     }
     const token = text.slice(i, end);
-    const isCommand = tokenStart && !token.startsWith("-") && !/^\d/.test(token);
+    // `^C` and friends are the shell echoing a control character the user
+    // pressed (Ctrl-C/Ctrl-D/…), not a verb being invoked — keep them in the
+    // regular foreground colour so the interrupt doesn't look like a greened
+    // "valid command" badge.
+    const isCtrlEcho = /^\^[A-Z]$/.test(token);
+    const isCommand = tokenStart && !isCtrlEcho && !token.startsWith("-") && !/^\d/.test(token);
     const stillTyping = active && end === text.length;
     const className = isCommand && !stillTyping ? "text-accent" : "text-fg-bright";
     parts.push(
