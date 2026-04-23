@@ -1,11 +1,15 @@
 import { Fragment, type ReactNode } from "react";
 
-// Syntax-highlighter for an already-typed shell command, mirroring the set of
-// roles that zsh-syntax-highlighting + oh-my-zsh paint by default: the command
-// word in green, flags in orange, pipes in magenta, paths in cyan, and quoted
-// strings in yellow. Anything that doesn't match a rule falls back to the
-// foreground colour so the user still sees it.
-export function highlightCommand(text: string): ReactNode {
+// Syntax-highlighter for a shell command line. The first word of each simple
+// command (start of line, or immediately after a pipe) turns green once it has
+// been fully typed, mirroring how zsh-syntax-highlighting flips an "unknown
+// command" to a "valid command" the moment the reader finishes the word.
+// Everything else — flags, quoted strings, paths, pipes, plain arguments —
+// stays in the bright foreground colour, so the eye lands on the verb of each
+// command rather than a rainbow of argument syntax. When `active` is true the
+// caller is still typing the trailing token, so we keep the in-progress
+// command word white until a boundary (space / pipe) lands after it.
+export function highlightCommand(text: string, active = false): ReactNode {
   const parts: ReactNode[] = [];
   let i = 0;
   let key = 0;
@@ -14,7 +18,7 @@ export function highlightCommand(text: string): ReactNode {
   while (i < text.length) {
     if (text[i] === "|") {
       parts.push(
-        <span key={key++} className="text-pipe mx-1">
+        <span key={key++} className="text-fg-bright mx-1">
           |
         </span>,
       );
@@ -39,21 +43,7 @@ export function highlightCommand(text: string): ReactNode {
       }
       if (end < text.length) end++;
       parts.push(
-        <span key={key++} className="text-meta">
-          {text.slice(i, end)}
-        </span>,
-      );
-      i = end;
-      tokenStart = false;
-      continue;
-    }
-
-    if (text[i] === "-" && tokenStart && i + 1 < text.length) {
-      let end = i + 1;
-      if (text[end] === "-") end++;
-      while (end < text.length && !/\s/.test(text[end]) && text[end] !== "|") end++;
-      parts.push(
-        <span key={key++} className="text-flag">
+        <span key={key++} className="text-fg-bright">
           {text.slice(i, end)}
         </span>,
       );
@@ -73,27 +63,14 @@ export function highlightCommand(text: string): ReactNode {
       end++;
     }
     const token = text.slice(i, end);
-
-    if (tokenStart && !token.startsWith("-") && !/^\d/.test(token)) {
-      parts.push(
-        <span key={key++} className="text-accent">
-          {token}
-        </span>,
-      );
-    } else if (token.includes("/") || /\.[a-z0-9]+$/i.test(token)) {
-      parts.push(
-        <span key={key++} className="text-path">
-          {token}
-        </span>,
-      );
-    } else {
-      parts.push(
-        <span key={key++} className="text-fg">
-          {token}
-        </span>,
-      );
-    }
-
+    const isCommand = tokenStart && !token.startsWith("-") && !/^\d/.test(token);
+    const stillTyping = active && end === text.length;
+    const className = isCommand && !stillTyping ? "text-accent" : "text-fg-bright";
+    parts.push(
+      <span key={key++} className={className}>
+        {token}
+      </span>,
+    );
     i = end;
     tokenStart = false;
   }
