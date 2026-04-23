@@ -21,11 +21,20 @@ export const AUTHOR = {
   url: "https://niclaslindstedt.se",
   github: "https://github.com/niclaslindstedt",
   linkedin: "https://www.linkedin.com/in/niclaslindstedt/",
+  dockerhub: "https://hub.docker.com/u/niclaslindstedt",
+  pypi: "https://pypi.org/user/niclaslindstedt/",
+  cratesio: "https://crates.io/users/niclaslindstedt",
 } as const;
 
 // External identities tied to AUTHOR — emitted as `sameAs` in the homepage
 // Person JSON-LD so Google's Knowledge Graph can link the site to the author.
-export const AUTHOR_SAME_AS: readonly string[] = [AUTHOR.github, AUTHOR.linkedin];
+export const AUTHOR_SAME_AS: readonly string[] = [
+  AUTHOR.github,
+  AUTHOR.linkedin,
+  AUTHOR.dockerhub,
+  AUTHOR.pypi,
+  AUTHOR.cratesio,
+];
 
 export const DEFAULT_OG_IMAGE = "/og-default.png";
 export const OG_IMAGE_WIDTH = 1200;
