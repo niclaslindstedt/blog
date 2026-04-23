@@ -39,6 +39,11 @@ export type Step =
       tabStops?: TabStop[];
     }
   | { kind: "print"; text: string; color?: LineColor; markdown?: boolean }
+  // Commits a command line instantly, without the typing animation. Used when
+  // a previously-typed command is being re-rendered on session re-entry (e.g.
+  // back-to-index after viewing a post) so the reader isn't forced to watch
+  // the same command animate twice.
+  | { kind: "print-command"; text: string }
   | {
       kind: "type";
       text: string;

@@ -311,6 +311,14 @@ export function useTerminalAnimation(
           });
           schedule(TIMING.betweenStepMs);
           return;
+        case "print-command":
+          commit({
+            kind: "command",
+            text: next.text,
+            prompt: promptForRef.current(stateRef.current.cwd),
+          });
+          schedule(TIMING.betweenStepMs);
+          return;
         case "blank":
           commit({ kind: "blank" });
           schedule(TIMING.betweenStepMs);
