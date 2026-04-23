@@ -78,15 +78,16 @@ export interface AnchorSignal {
 export interface UseTerminalAnimation {
   lines: LineData[];
   enqueue: (steps: Step[]) => void;
-  // Ctrl-C equivalent: drops any pending steps and any in-flight typing, and
-  // commits a `^C` line so the reader sees a visible interrupt instead of a
-  // silent jump. If a command was mid-type, `^C` is appended to whatever the
-  // reader had seen typed so far; otherwise a bare prompt + `^C` is committed.
-  // Committed scrollback is otherwise left alone — callers typically follow
-  // up with a brief `delay` and then a `clear` before enqueuing the next
-  // sequence, matching how a bash user would press ^C and then type a new
-  // command on the fresh prompt.
-  interrupt: () => void;
+  // Ctrl-C equivalent: drops any pending steps and any in-flight typing, so a
+  // fresh sequence can be enqueued without waiting behind a long queue. When
+  // a command was actually mid-type, the partial command commits as its own
+  // line and a standalone `^C` drops underneath (matching how bash echoes
+  // the control char on its own row). When nothing was actively typing —
+  // only pending commits in the queue — we drop them silently; emitting
+  // `^C` at an idle prompt would look like the reader aborted nothing.
+  // Returns `true` if something was actually interrupted (so the caller can
+  // e.g. add a beat before the next command), `false` otherwise.
+  interrupt: () => boolean;
   idle: boolean;
   hasSession: (id: string) => boolean;
   anchor: AnchorSignal | null;
@@ -169,30 +170,28 @@ export function useTerminalAnimation(
     setIdle(false);
   }, []);
 
-  const interrupt = useCallback(() => {
+  const interrupt = useCallback((): boolean => {
+    const wasTyping = stateRef.current.active !== null;
     queueRef.current = [];
     update((s) => {
-      // Commit whatever was mid-typing as a finalised line (so the reader
-      // still sees the partial command they aborted), then drop a standalone
-      // `^C` line underneath — matching how bash echoes the control char on
-      // its own row rather than pasting it after the prompt.
-      const rest: LineData[] = [];
-      if (s.active !== null) {
-        rest.push(
-          s.active.kind === "command"
-            ? { kind: "command", text: s.active.shown, prompt: s.active.prompt }
-            : {
-                kind: "output",
-                text: s.active.shown,
-                color: s.active.color,
-                markdown: s.active.markdown,
-              },
-        );
-      }
-      rest.push({ kind: "output", text: "^C" });
-      return { ...s, committed: [...s.committed, ...rest], active: null };
+      if (s.active === null) return s;
+      const partial: LineData =
+        s.active.kind === "command"
+          ? { kind: "command", text: s.active.shown, prompt: s.active.prompt }
+          : {
+              kind: "output",
+              text: s.active.shown,
+              color: s.active.color,
+              markdown: s.active.markdown,
+            };
+      return {
+        ...s,
+        committed: [...s.committed, partial, { kind: "output", text: "^C" }],
+        active: null,
+      };
     });
     setIdle(true);
+    return wasTyping;
   }, [update]);
 
   const hasSession = useCallback(
