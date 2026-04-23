@@ -8,17 +8,20 @@ import { fallbackHref, withViewParam } from "./postFilters.ts";
 
 export function FallbackShell({ children }: { children: ReactNode }) {
   const { audience, setAudience } = useAudience();
-  const { theme, setTerminalClosed } = usePreferences();
+  const { theme, setTerminalClosed, setTerminalMinimized } = usePreferences();
   const navigate = useNavigate();
   const location = useLocation();
 
   // Reopen the terminal: clear the persisted close flag and strip `view=blog`
   // from the URL in a single navigation so the user lands back in the
-  // terminal at the same path. /tags/<tag>/ has no terminal analogue, so
-  // that case redirects to `/` — otherwise the click would appear to do
-  // nothing because the tag route always renders the fallback.
+  // terminal at the same path. Also clear any stale minimize flag so the
+  // reopen lands on the full widget rather than the bottom bar. /tags/<tag>/
+  // has no terminal analogue, so that case redirects to `/` — otherwise the
+  // click would appear to do nothing because the tag route always renders
+  // the fallback.
   const openTerminal = () => {
     setTerminalClosed(false);
+    setTerminalMinimized(false);
     const pathname = location.pathname.startsWith("/tags/") ? "/" : location.pathname;
     navigate({ pathname, search: withViewParam(location.search, null) });
   };
