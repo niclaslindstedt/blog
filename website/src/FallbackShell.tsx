@@ -56,7 +56,7 @@ export function FallbackShell({ children }: { children: ReactNode }) {
                     aria-pressed={isActive}
                     className={`inline-flex cursor-pointer items-center border-0 px-3 whitespace-nowrap transition-colors ${
                       isActive
-                        ? "bg-term-titlebar text-fg-bright"
+                        ? "bg-term-titlebar font-semibold text-accent"
                         : "bg-transparent text-dim hover:text-fg"
                     }`}
                   >
