@@ -29,15 +29,23 @@ export function FallbackShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen w-full bg-page-bg text-fg">
       <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-8 break-words">
-        <header className="mb-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-term-border pb-5">
+        <header className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-term-border pb-4">
           <Link
             to={fallbackHref("/")}
-            className="text-base font-bold whitespace-nowrap tracking-wide text-fg-bright hover:text-accent"
+            className="group inline-flex items-baseline gap-2 whitespace-nowrap"
           >
-            niclaslindstedt
+            <span aria-hidden="true" className="font-bold text-accent">
+              $
+            </span>
+            <span className="text-base font-bold tracking-wide text-fg-bright group-hover:text-accent">
+              niclaslindstedt
+            </span>
           </Link>
-          <div className="ml-auto flex items-center gap-3">
-            <nav aria-label="Audience" className="flex items-center gap-1 text-sm">
+          <div className="ml-auto flex items-center gap-2">
+            <nav
+              aria-label="Audience"
+              className="flex h-8 items-stretch overflow-hidden rounded border border-term-border text-sm"
+            >
               {AUDIENCES.map((a) => {
                 const isActive = a === audience;
                 return (
@@ -46,10 +54,10 @@ export function FallbackShell({ children }: { children: ReactNode }) {
                     type="button"
                     onClick={() => setAudience(a)}
                     aria-pressed={isActive}
-                    className={`cursor-pointer rounded bg-transparent px-2 py-1 whitespace-nowrap transition-colors ${
+                    className={`inline-flex cursor-pointer items-center border-0 px-3 whitespace-nowrap transition-colors ${
                       isActive
-                        ? "text-fg-bright underline decoration-dotted underline-offset-4"
-                        : "text-dim hover:text-fg"
+                        ? "bg-term-titlebar text-fg-bright"
+                        : "bg-transparent text-dim hover:text-fg"
                     }`}
                   >
                     {a}

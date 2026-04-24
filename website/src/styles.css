@@ -102,21 +102,24 @@ body {
 /* Scoped light palette for the fallback (prose) view, mirroring the One Light
    colour scheme so the terminal-like syntax roles still read the same way
    against a bright background. Rebinding the variables on this class cascades
-   through every Tailwind utility that resolves `var(--color-…)` at runtime. */
+   through every Tailwind utility that resolves `var(--color-…)` at runtime.
+   Backgrounds are slightly off-white (not pure #fff) and accent colours are
+   pulled a notch toward their darker One Light variants — pure One Light on a
+   pure white surface reads as "highlighter pen" rather than "syntax". */
 .theme-light {
-  --color-page-bg: #fafafa;
-  --color-term-bg: #ffffff;
-  --color-term-titlebar: #ececec;
-  --color-term-border: #d9d9d6;
-  --color-fg: #383a42;
-  --color-fg-bright: #1b1b1b;
-  --color-dim: #737680;
-  --color-accent: #50a14f;
-  --color-meta: #c18401;
-  --color-link: #4078f2;
-  --color-pipe: #a626a4;
-  --color-flag: #d75f00;
-  --color-path: #0184bc;
+  --color-page-bg: #eef0f2;
+  --color-term-bg: #f8f9fa;
+  --color-term-titlebar: #e4e7eb;
+  --color-term-border: #ccd0d6;
+  --color-fg: #2f323a;
+  --color-fg-bright: #15171c;
+  --color-dim: #5e6270;
+  --color-accent: #3f8c3e;
+  --color-meta: #9c6a00;
+  --color-link: #2960c2;
+  --color-pipe: #872187;
+  --color-flag: #ad4c00;
+  --color-path: #0a6e92;
   background: var(--color-page-bg);
   color: var(--color-fg);
 }
