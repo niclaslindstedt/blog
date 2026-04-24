@@ -383,7 +383,7 @@ export function Terminal({
   const wrapperStyle: CSSProperties = minimized
     ? {
         left: 0,
-        top: Math.max(0, viewport.h - titlebarHeight),
+        bottom: 0,
         width: viewport.w,
         height: titlebarHeight,
         transition,
