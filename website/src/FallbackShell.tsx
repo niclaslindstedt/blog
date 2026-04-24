@@ -64,20 +64,32 @@ export function FallbackShell({ children }: { children: ReactNode }) {
               })}
             </nav>
             <ThemeToggle />
+            <button
+              type="button"
+              onClick={openTerminal}
+              aria-label="Open terminal"
+              className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded border border-term-border bg-transparent text-fg hover:text-fg-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <path d="M7 10l3 2-3 2" />
+                <line x1="13" y1="15" x2="17" y2="15" />
+              </svg>
+            </button>
           </div>
         </header>
 
         <main className="flex-1">{children}</main>
-
-        <footer className="mt-16 border-t border-term-border pt-5 text-sm text-dim">
-          <button
-            type="button"
-            onClick={openTerminal}
-            className="cursor-pointer bg-transparent p-0 text-dim underline decoration-dotted hover:text-fg"
-          >
-            Open terminal
-          </button>
-        </footer>
       </div>
     </div>
   );
