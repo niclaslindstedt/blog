@@ -8,7 +8,7 @@ import { fallbackHref, withViewParam } from "./postFilters.ts";
 
 export function FallbackShell({ children }: { children: ReactNode }) {
   const { audience, setAudience } = useAudience();
-  const { theme, setTerminalClosed, setTerminalMinimized } = usePreferences();
+  const { setTerminalClosed, setTerminalMinimized } = usePreferences();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -27,13 +27,7 @@ export function FallbackShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div
-      className={
-        theme === "light"
-          ? "theme-light min-h-screen w-full bg-page-bg text-fg"
-          : "min-h-screen w-full bg-page-bg text-fg"
-      }
-    >
+    <div className="min-h-screen w-full bg-page-bg text-fg">
       <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-8 break-words">
         <header className="mb-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-term-border pb-5">
           <Link

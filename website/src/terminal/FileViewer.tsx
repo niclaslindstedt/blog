@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Highlight, themes, type Language } from "prism-react-renderer";
 import type { GithubFile } from "./github.ts";
 import { guessLanguage, parseLineRange } from "./github.ts";
+import { usePreferences } from "../PreferencesContext.tsx";
 
 type LoadState =
   | { status: "loading" }
@@ -9,6 +10,7 @@ type LoadState =
   | { status: "loaded"; content: string };
 
 export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () => void }) {
+  const { theme } = usePreferences();
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const range = useMemo(() => parseLineRange(file.fragment), [file.fragment]);
   const firstRangeRef = useRef<HTMLDivElement | null>(null);
@@ -120,7 +122,7 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
           <Highlight
             code={state.content.replace(/\n$/, "")}
             language={lang as Language}
-            theme={themes.vsDark}
+            theme={theme === "light" ? themes.oneLight : themes.vsDark}
           >
             {({ className, style, tokens, getLineProps, getTokenProps }) => (
               <pre
