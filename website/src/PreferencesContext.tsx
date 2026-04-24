@@ -97,6 +97,15 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
+  // Apply the light palette globally via a class on <html> so both the
+  // terminal widget and the fallback prose view rebind the same CSS
+  // variables. Scoping the class to FallbackShell alone left the terminal
+  // stuck in the dark palette.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.classList.toggle("theme-light", theme === "light");
+  }, [theme]);
+
   const value = useMemo(
     () => ({
       terminalClosed,
