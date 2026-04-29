@@ -13,7 +13,13 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { audience, setAudience } = useAudience();
-  const { setTerminalClosed, terminalMinimized, setTerminalMinimized } = usePreferences();
+  const {
+    setTerminalClosed,
+    terminalMinimized,
+    setTerminalMinimized,
+    closeHintDismissed,
+    dismissCloseHint,
+  } = usePreferences();
 
   const onNavigateToSlug = useCallback((slug: string) => navigate(`/posts/${slug}`), [navigate]);
 
@@ -34,6 +40,9 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
     // Any pending minimize is superseded by a full close; otherwise reopening
     // the terminal would land on a minimized bar instead of the full widget.
     setTerminalMinimized(false);
+    // Touch users never fire onMouseEnter, so dismiss the first-visit hint here
+    // too — by the time they've tapped the red dot they've found the feature.
+    dismissCloseHint();
     navigate(
       {
         pathname: location.pathname,
@@ -41,7 +50,14 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
       },
       { replace: true },
     );
-  }, [setTerminalClosed, setTerminalMinimized, navigate, location.pathname, location.search]);
+  }, [
+    setTerminalClosed,
+    setTerminalMinimized,
+    dismissCloseHint,
+    navigate,
+    location.pathname,
+    location.search,
+  ]);
 
   // Yellow dot parks the terminal as a bar at the bottom of the viewport. The
   // widget stays mounted so scrollback, typing animation, and session state
@@ -75,6 +91,8 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         onClose={closeTerminal}
         onMinimize={minimizeTerminal}
         onRestore={restoreTerminal}
+        showCloseHint={!closeHintDismissed}
+        onDismissCloseHint={dismissCloseHint}
       />
     </ViOpenerContext.Provider>
   );

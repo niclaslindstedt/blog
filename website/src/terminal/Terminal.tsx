@@ -141,6 +141,8 @@ export function Terminal({
   onClose,
   onMinimize,
   onRestore,
+  showCloseHint = false,
+  onDismissCloseHint,
 }: {
   user?: string;
   title?: string;
@@ -159,6 +161,12 @@ export function Terminal({
   onClose?: () => void;
   onMinimize?: () => void;
   onRestore?: () => void;
+  // First-visit callout pointing at the red traffic-light button. The host app
+  // owns the "have I dismissed this?" state (so the choice persists in
+  // localStorage); the widget just renders the tooltip and reports back when
+  // the reader interacts with the button it points to.
+  showCloseHint?: boolean;
+  onDismissCloseHint?: () => void;
 }) {
   const computedTitle = title ?? `${user} — ${cwd}`;
   const small = useSmallViewport();
@@ -437,11 +445,12 @@ export function Terminal({
         onClick={onTitlebarClick}
         style={{ touchAction: fullscreen || minimized ? undefined : "none" }}
       >
-        <div className="flex gap-1.5" data-no-drag>
+        <div className="relative flex gap-1.5" data-no-drag>
           <button
             type="button"
             aria-label="Close terminal"
             onClick={onClose}
+            onMouseEnter={onDismissCloseHint}
             className="h-3 w-3 cursor-pointer rounded-full border-0 bg-red p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg"
           />
           <button
@@ -459,6 +468,20 @@ export function Terminal({
             disabled={small || minimized}
             className="h-3 w-3 cursor-pointer rounded-full border-0 bg-green p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg disabled:cursor-default disabled:opacity-60"
           />
+          {showCloseHint && !minimized && (
+            <div
+              role="tooltip"
+              className="animate-close-hint absolute top-full left-0 z-20 mt-3 flex flex-col items-start"
+            >
+              <span
+                aria-hidden="true"
+                className="ml-[2px] -mb-[5px] h-2 w-2 rotate-45 border-t border-l border-red bg-term-titlebar"
+              />
+              <span className="rounded-md border border-red bg-term-titlebar px-2.5 py-1 font-ui text-[12px] whitespace-nowrap text-fg shadow-lg">
+                Close terminal for regular blog view
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex-1 text-center font-ui text-[13px] tracking-wide break-words text-dim">
           {computedTitle}
