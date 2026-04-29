@@ -475,9 +475,9 @@ export function Terminal({
             >
               <span
                 aria-hidden="true"
-                className="ml-[2px] -mb-[5px] h-2 w-2 rotate-45 border-t border-l border-red bg-term-titlebar"
+                className="ml-[2px] -mb-[5px] h-2 w-2 rotate-45 border-t border-l border-link bg-term-titlebar"
               />
-              <span className="rounded-md border border-red bg-term-titlebar px-2.5 py-1 font-ui text-[12px] whitespace-nowrap text-fg shadow-lg">
+              <span className="rounded-md border border-link bg-term-titlebar px-2.5 py-1 font-ui text-[12px] whitespace-nowrap text-fg shadow-lg">
                 Close terminal for regular blog view
               </span>
             </div>
