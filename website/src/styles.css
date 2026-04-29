@@ -84,6 +84,29 @@ body {
   animation: blink-cursor 1s step-end infinite;
 }
 
+/* First-visit callout that points at the red close button. The translateY
+   bounce keeps the arrow visually attached to the dot above it, drawing the
+   eye without flashing or sliding distractingly across the page. */
+@keyframes close-hint-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-close-hint {
+  animation: close-hint-bounce 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-close-hint {
+    animation: none;
+  }
+}
+
 .resize-handle-grip {
   background-image: linear-gradient(
     135deg,

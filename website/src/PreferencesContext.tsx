@@ -5,6 +5,10 @@ import { useSearchParams } from "react-router-dom";
 const CLOSED_KEY = "blog:terminal-closed";
 const MINIMIZED_KEY = "blog:terminal-minimized";
 const THEME_KEY = "blog:theme";
+// Set once the reader has seen (or dismissed) the first-visit hint that points
+// at the red traffic-light button. Absence of this key is what makes a visitor
+// "first-time" for the purpose of showing the callout.
+const CLOSE_HINT_KEY = "blog:terminal-close-hint-dismissed";
 
 export type Theme = "light" | "dark";
 export type View = "terminal" | "blog";
@@ -17,6 +21,8 @@ interface PreferencesContextValue {
   theme: Theme;
   setTheme: (t: Theme) => void;
   toggleTheme: () => void;
+  closeHintDismissed: boolean;
+  dismissCloseHint: () => void;
 }
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null);
@@ -39,6 +45,15 @@ function readMinimized(): boolean {
   }
 }
 
+function readCloseHintDismissed(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(CLOSE_HINT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 function readTheme(): Theme {
   if (typeof window === "undefined") return "dark";
   try {
@@ -53,6 +68,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [terminalClosed, setClosedState] = useState<boolean>(() => readClosed());
   const [terminalMinimized, setMinimizedState] = useState<boolean>(() => readMinimized());
   const [theme, setThemeState] = useState<Theme>(() => readTheme());
+  const [closeHintDismissed, setCloseHintDismissedState] = useState<boolean>(() =>
+    readCloseHintDismissed(),
+  );
 
   const setTerminalClosed = useCallback((next: boolean) => {
     setClosedState(next);
@@ -87,11 +105,21 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setTheme(theme === "light" ? "dark" : "light");
   }, [theme, setTheme]);
 
+  const dismissCloseHint = useCallback(() => {
+    setCloseHintDismissedState(true);
+    try {
+      window.localStorage.setItem(CLOSE_HINT_KEY, "1");
+    } catch {
+      // localStorage unavailable — ignore.
+    }
+  }, []);
+
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === CLOSED_KEY) setClosedState(e.newValue === "1");
       else if (e.key === MINIMIZED_KEY) setMinimizedState(e.newValue === "1");
       else if (e.key === THEME_KEY) setThemeState(e.newValue === "light" ? "light" : "dark");
+      else if (e.key === CLOSE_HINT_KEY) setCloseHintDismissedState(e.newValue === "1");
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
@@ -115,6 +143,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       theme,
       setTheme,
       toggleTheme,
+      closeHintDismissed,
+      dismissCloseHint,
     }),
     [
       terminalClosed,
@@ -124,6 +154,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       theme,
       setTheme,
       toggleTheme,
+      closeHintDismissed,
+      dismissCloseHint,
     ],
   );
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
