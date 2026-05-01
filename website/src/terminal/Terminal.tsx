@@ -469,18 +469,25 @@ export function Terminal({
             className="h-3 w-3 cursor-pointer rounded-full border-0 bg-green p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg disabled:cursor-default disabled:opacity-60"
           />
           {showCloseHint && !minimized && (
-            <div
-              role="tooltip"
-              className="animate-close-hint absolute top-full left-0 z-20 mt-3 flex flex-col items-start"
+            <button
+              type="button"
+              aria-label="Dismiss tip: close terminal for regular blog view"
+              onClick={onDismissCloseHint}
+              className="animate-close-hint font-ui absolute top-full left-0 z-20 mt-3 cursor-pointer rounded-md border border-link bg-term-titlebar px-2.5 py-1 text-[12px] whitespace-nowrap text-fg shadow-lg"
             >
-              <span
+              <svg
                 aria-hidden="true"
-                className="ml-[2px] -mb-[5px] h-2 w-2 rotate-45 border-t border-l border-link bg-term-titlebar"
-              />
-              <span className="rounded-md border border-link bg-term-titlebar px-2.5 py-1 font-ui text-[12px] whitespace-nowrap text-fg shadow-lg">
-                Close terminal for regular blog view
-              </span>
-            </div>
+                width="14"
+                height="7"
+                viewBox="0 0 14 7"
+                preserveAspectRatio="none"
+                className="absolute -top-[7px] left-3"
+                style={{ fill: "var(--color-term-titlebar)", stroke: "var(--color-link)" }}
+              >
+                <path d="M0.5,7 L7,0.5 L13.5,7" strokeWidth="1" strokeLinejoin="miter" />
+              </svg>
+              Close terminal for regular blog view
+            </button>
           )}
         </div>
         <div className="flex-1 text-center font-ui text-[13px] tracking-wide break-words text-dim">
