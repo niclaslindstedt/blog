@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import type { Post } from "./types.ts";
+import { AUDIENCES, type Audience, type Post } from "./types.ts";
 import { Terminal, ViOpenerContext } from "./terminal/index.ts";
 import { AudienceTabs } from "./AudienceTabs.tsx";
 import { useAudience } from "./AudienceContext.tsx";
@@ -12,7 +12,8 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   const { slug: slugParam } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { audience, setAudience } = useAudience();
+  const { audience, setAudience, closedAudiences, closeAudience, resetClosedAudiences } =
+    useAudience();
   const {
     setTerminalClosed,
     terminalMinimized,
@@ -65,12 +66,40 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
   const minimizeTerminal = useCallback(() => setTerminalMinimized(true), [setTerminalMinimized]);
   const restoreTerminal = useCallback(() => setTerminalMinimized(false), [setTerminalMinimized]);
 
-  // On a post page, the tab × returns to the index instead of swapping
-  // audience — the reader is closing this post, not asking for the same
-  // post in the other voice.
-  const closeTabToIndex = useCallback(() => {
-    navigate({ pathname: "/", search: location.search });
-  }, [navigate, location.search]);
+  // The tab × hides that audience for the rest of the session. Closing the
+  // last open tab tears down the terminal entirely and lands the reader on
+  // the prose fallback — same end state as the red traffic-light button.
+  // Closing the active (but not last) tab focuses the remaining one; if the
+  // reader is on a post page we also bounce back to the index, since the
+  // remaining audience may not have this post and a missing-post screen is
+  // a worse landing than the listing.
+  const handleCloseTab = useCallback(
+    (id: Audience) => {
+      const remaining = AUDIENCES.filter((a) => a !== id && !closedAudiences.includes(a));
+      if (remaining.length === 0) {
+        resetClosedAudiences();
+        closeTerminal();
+        return;
+      }
+      closeAudience(id);
+      if (id === audience) {
+        const next = remaining[0]!;
+        setAudience(next);
+        if (slugParam) navigate({ pathname: "/", search: location.search });
+      }
+    },
+    [
+      closedAudiences,
+      resetClosedAudiences,
+      closeTerminal,
+      closeAudience,
+      audience,
+      setAudience,
+      slugParam,
+      navigate,
+      location.search,
+    ],
+  );
 
   return (
     <ViOpenerContext.Provider value={openInVi}>
@@ -83,8 +112,9 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         tabs={
           <AudienceTabs
             audience={audience}
+            closedAudiences={closedAudiences}
             onSwitch={setAudience}
-            onClose={slugParam ? closeTabToIndex : undefined}
+            onCloseTab={handleCloseTab}
           />
         }
         minimized={terminalMinimized}
