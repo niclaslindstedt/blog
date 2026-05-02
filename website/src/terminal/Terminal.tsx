@@ -143,6 +143,7 @@ export function Terminal({
   onRestore,
   showCloseHint = false,
   onDismissCloseHint,
+  onSkipTyping,
 }: {
   user?: string;
   title?: string;
@@ -167,6 +168,12 @@ export function Terminal({
   // the reader interacts with the button it points to.
   showCloseHint?: boolean;
   onDismissCloseHint?: () => void;
+  // Fired when the reader clicks inside the scrollback while typing is in
+  // flight. The host typically wires this to the animation engine's flush so
+  // a click fast-forwards the rest of the sequence instead of waiting it out.
+  // Clicks on interactive children (buttons, links) and clicks that complete
+  // a text selection are ignored.
+  onSkipTyping?: () => void;
 }) {
   const computedTitle = title ?? `${user} — ${cwd}`;
   const small = useSmallViewport();
@@ -436,6 +443,22 @@ export function Terminal({
         }
       : undefined;
 
+  // Click anywhere in the scrollback to fast-forward the in-flight animation.
+  // We skip when the click landed on an interactive child (buttons, links) so
+  // the reader can still open posts or follow markdown links, and when the
+  // click completes a text selection so a drag-to-select doesn't accidentally
+  // collapse the rest of the sequence onto the screen.
+  const onBodyClick = onSkipTyping
+    ? (e: ReactMouseEvent<HTMLDivElement>) => {
+        if (idle) return;
+        const target = e.target as HTMLElement;
+        if (target.closest("button, a")) return;
+        const selection = typeof window !== "undefined" ? window.getSelection() : null;
+        if (selection && selection.toString().length > 0) return;
+        onSkipTyping();
+      }
+    : undefined;
+
   return (
     <div className={wrapperClass} style={wrapperStyle}>
       <div
@@ -530,6 +553,7 @@ export function Terminal({
       <div
         ref={bodyRef}
         onScroll={onBodyScroll}
+        onClick={onBodyClick}
         className="flex-1 overflow-auto px-3 pt-2 pb-4 text-fg sm:px-4 sm:pt-3"
         aria-hidden={minimized ? true : undefined}
       >
