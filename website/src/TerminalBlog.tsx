@@ -24,7 +24,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
 
   const onNavigateToSlug = useCallback((slug: string) => navigate(`/posts/${slug}`), [navigate]);
 
-  const { lines, idle, anchor, cwd, prompt, openInVi } = useTerminalBlogSession({
+  const { lines, idle, anchor, cwd, prompt, openInVi, skipTyping } = useTerminalBlogSession({
     posts,
     audience,
     slugParam,
@@ -123,6 +123,7 @@ export function TerminalBlog({ posts }: { posts: Post[] }) {
         onRestore={restoreTerminal}
         showCloseHint={!closeHintDismissed}
         onDismissCloseHint={dismissCloseHint}
+        onSkipTyping={skipTyping}
       />
     </ViOpenerContext.Provider>
   );

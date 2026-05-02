@@ -88,6 +88,13 @@ export interface UseTerminalAnimation {
   // Returns `true` if something was actually interrupted (so the caller can
   // e.g. add a beat before the next command), `false` otherwise.
   interrupt: () => boolean;
+  // Fast-forward: commit any in-flight typing at full length and drain every
+  // queued step, applying its end-state synchronously (typed lines commit as
+  // full text, `clear`/`cd`/`effect` run, `delay` is dropped). Used by the
+  // body click-to-skip — a reader who clicks inside the terminal while it's
+  // animating wants to see the whole sequence at once instead of waiting it
+  // out. Returns `true` if anything was actually skipped.
+  flush: () => boolean;
   idle: boolean;
   hasSession: (id: string) => boolean;
   anchor: AnchorSignal | null;
@@ -192,6 +199,88 @@ export function useTerminalAnimation(
     });
     setIdle(true);
     return wasTyping;
+  }, [update]);
+
+  const flush = useCallback((): boolean => {
+    const hadActive = stateRef.current.active !== null;
+    const hadQueue = queueRef.current.length > 0;
+    if (!hadActive && !hadQueue) return false;
+    const queue = queueRef.current;
+    queueRef.current = [];
+    update((s) => {
+      let committed = s.committed;
+      let cwd = s.cwd;
+      if (s.active) {
+        const a = s.active;
+        committed = [
+          ...committed,
+          a.kind === "command"
+            ? { kind: "command", text: a.full, prompt: a.prompt }
+            : { kind: "output", text: a.full, color: a.color, markdown: a.markdown },
+        ];
+      }
+      for (const step of queue) {
+        switch (step.kind) {
+          case "type-command":
+          case "print-command":
+            committed = [
+              ...committed,
+              { kind: "command", text: step.text, prompt: promptForRef.current(cwd) },
+            ];
+            break;
+          case "type":
+          case "print":
+            committed = [
+              ...committed,
+              {
+                kind: "output",
+                text: step.text,
+                color: step.color,
+                markdown: step.markdown,
+              },
+            ];
+            break;
+          case "blank":
+            committed = [...committed, { kind: "blank" }];
+            break;
+          case "clear":
+            committed = [];
+            break;
+          case "cd":
+            cwd = step.to;
+            break;
+          case "clickable":
+            committed = [
+              ...committed,
+              {
+                kind: "clickable",
+                label: step.label,
+                onClick: step.onClick,
+                color: step.color,
+                prefix: step.prefix,
+              },
+            ];
+            break;
+          case "action":
+            committed = [
+              ...committed,
+              { kind: "action", label: step.label, onClick: step.onClick },
+            ];
+            break;
+          case "tag-row":
+            committed = [...committed, { kind: "tag-row", tags: step.tags, onClick: step.onClick }];
+            break;
+          case "effect":
+            step.run();
+            break;
+          case "delay":
+            break;
+        }
+      }
+      return { ...s, committed, active: null, cwd };
+    });
+    setIdle(true);
+    return true;
   }, [update]);
 
   const hasSession = useCallback(
@@ -423,5 +512,15 @@ export function useTerminalAnimation(
       ]
     : committed;
 
-  return { lines, enqueue, interrupt, idle, hasSession, anchor, cwd, prompt: promptFor(cwd) };
+  return {
+    lines,
+    enqueue,
+    interrupt,
+    flush,
+    idle,
+    hasSession,
+    anchor,
+    cwd,
+    prompt: promptFor(cwd),
+  };
 }

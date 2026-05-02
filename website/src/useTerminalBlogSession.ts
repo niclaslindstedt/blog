@@ -91,6 +91,10 @@ export interface UseTerminalBlogSession {
   // `curl ... | vi -` at the current prompt. Passed into the kernel's
   // ViOpenerContext so markdown links trigger this behaviour.
   openInVi: (file: GithubFile) => void;
+  // Fast-forwards any in-flight typing and queued steps. Wired to the
+  // terminal body's click handler so a reader can tap the scrollback to
+  // skip the animation instead of waiting it out.
+  skipTyping: () => void;
 }
 
 // Blog-specific orchestration on top of the terminal kernel. Owns the session
@@ -103,7 +107,8 @@ export function useTerminalBlogSession(
   config: UseTerminalBlogSessionConfig,
 ): UseTerminalBlogSession {
   const { posts, audience, slugParam, setAudience, onNavigateToSlug } = config;
-  const { lines, enqueue, interrupt, idle, anchor, cwd, prompt } = useTerminalAnimation(audience);
+  const { lines, enqueue, interrupt, flush, idle, anchor, cwd, prompt } =
+    useTerminalAnimation(audience);
   const openFile = useFileViewer();
 
   const startedRef = useRef(false);
@@ -434,5 +439,9 @@ export function useTerminalBlogSession(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slugParam]);
 
-  return { lines, idle, anchor, cwd, prompt, openInVi };
+  const skipTyping = useCallback(() => {
+    flush();
+  }, [flush]);
+
+  return { lines, idle, anchor, cwd, prompt, openInVi, skipTyping };
 }
