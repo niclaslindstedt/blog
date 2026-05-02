@@ -7,7 +7,7 @@ import { ThemeToggle } from "./ThemeToggle.tsx";
 import { fallbackHref, withViewParam } from "./postFilters.ts";
 
 export function FallbackShell({ children }: { children: ReactNode }) {
-  const { audience, setAudience } = useAudience();
+  const { audience, setAudience, resetClosedAudiences } = useAudience();
   const { setTerminalClosed, setTerminalMinimized } = usePreferences();
   const navigate = useNavigate();
   const location = useLocation();
@@ -22,6 +22,9 @@ export function FallbackShell({ children }: { children: ReactNode }) {
   const openTerminal = () => {
     setTerminalClosed(false);
     setTerminalMinimized(false);
+    // If the reader closed individual tabs before dismissing the terminal,
+    // restore them — reopening the widget should land on a clean two-tab row.
+    resetClosedAudiences();
     const pathname = location.pathname.startsWith("/tags/") ? "/" : location.pathname;
     navigate({ pathname, search: withViewParam(location.search, null) });
   };

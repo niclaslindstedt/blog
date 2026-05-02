@@ -5,27 +5,16 @@ const TAB_ITEMS: readonly TabItem<Audience>[] = AUDIENCES.map((a) => ({ id: a, l
 
 export function AudienceTabs({
   audience,
+  closedAudiences,
   onSwitch,
-  onClose,
+  onCloseTab,
 }: {
   audience: Audience;
+  closedAudiences: readonly Audience[];
   onSwitch: (next: Audience) => void;
-  /** Override the default close behavior (e.g. navigate away instead of swapping audience). */
-  onClose?: () => void;
+  onCloseTab: (id: Audience) => void;
 }) {
-  // "Close" in a fixed two-audience model means focusing the other view —
-  // matches iTerm2's close-current → next-tab-takes-focus semantics. Hosts
-  // can override this (e.g. a post page closes the tab by returning to the
-  // index, since swapping audience on a missing post would just land on
-  // another missing post).
-  const handleClose = (id: Audience) => {
-    if (onClose) {
-      onClose();
-      return;
-    }
-    const other = AUDIENCES.find((a) => a !== id);
-    if (other) onSwitch(other);
-  };
+  const visibleTabs = TAB_ITEMS.filter((t) => !closedAudiences.includes(t.id));
 
   // Wrapper carries data-no-drag so the Terminal titlebar drag handler
   // ignores clicks into the tab row. The generic Tabs component stays
@@ -33,10 +22,10 @@ export function AudienceTabs({
   return (
     <div data-no-drag>
       <Tabs
-        tabs={TAB_ITEMS}
+        tabs={visibleTabs}
         active={audience}
         onSelect={onSwitch}
-        onClose={handleClose}
+        onClose={onCloseTab}
         ariaLabel="Audience"
       />
     </div>
