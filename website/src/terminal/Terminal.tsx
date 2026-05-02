@@ -445,29 +445,58 @@ export function Terminal({
         onClick={onTitlebarClick}
         style={{ touchAction: fullscreen || minimized ? undefined : "none" }}
       >
-        <div className="relative flex gap-1.5" data-no-drag>
+        <div className="group relative flex gap-1.5" data-no-drag>
           <button
             type="button"
             aria-label="Close terminal"
             onClick={onClose}
             onMouseEnter={onDismissCloseHint}
-            className="h-3 w-3 cursor-pointer rounded-full border-0 bg-red p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg"
-          />
+            className="relative flex h-3 w-3 cursor-pointer items-center justify-center rounded-full border-0 bg-red p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 10 10"
+              className="h-[7px] w-[7px] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+              style={{ stroke: "rgba(0,0,0,0.6)", strokeWidth: 1.4, strokeLinecap: "round" }}
+            >
+              <line x1="2.5" y1="2.5" x2="7.5" y2="7.5" />
+              <line x1="7.5" y1="2.5" x2="2.5" y2="7.5" />
+            </svg>
+          </button>
           <button
             type="button"
             aria-label={minimized ? "Restore terminal" : "Minimize terminal"}
             aria-pressed={minimized}
             onClick={minimized ? onRestore : onMinimize}
-            className="h-3 w-3 cursor-pointer rounded-full border-0 bg-yellow p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg"
-          />
+            className="relative flex h-3 w-3 cursor-pointer items-center justify-center rounded-full border-0 bg-yellow p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 10 10"
+              className="h-[7px] w-[7px] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+              style={{ stroke: "rgba(0,0,0,0.6)", strokeWidth: 1.4, strokeLinecap: "round" }}
+            >
+              <line x1="2" y1="5" x2="8" y2="5" />
+            </svg>
+          </button>
           <button
             type="button"
             aria-label={zoomed ? "Restore terminal size" : "Zoom terminal"}
             aria-pressed={zoomed}
             onClick={toggleZoom}
             disabled={small || minimized}
-            className="h-3 w-3 cursor-pointer rounded-full border-0 bg-green p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg disabled:cursor-default disabled:opacity-60"
-          />
+            className="relative flex h-3 w-3 cursor-pointer items-center justify-center rounded-full border-0 bg-green p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg disabled:cursor-default disabled:opacity-60"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 10 10"
+              className="h-[7px] w-[7px] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+              style={{ fill: "rgba(0,0,0,0.6)" }}
+            >
+              <path d="M2 3.2 L2 7 L5.8 7 Z" />
+              <path d="M8 6.8 L8 3 L4.2 3 Z" />
+            </svg>
+          </button>
           {showCloseHint && !minimized && (
             <button
               type="button"
