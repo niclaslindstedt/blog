@@ -44,6 +44,30 @@ The two versions of the same slug may diverge on `title`, `date`, and
 `edited_at`; the list view prefers the `technical` version's title when both
 exist.
 
+## Post body
+
+The body is GitHub-flavored Markdown. Two non-standard conveniences are
+applied at render time:
+
+- **Images.** Standard `![alt text](https://example.com/image.png)` works.
+  Images render as block-level, full column-width, with `loading="lazy"` and
+  the alt text becoming the accessible label. SVGs, PNGs, JPGs, and WebPs
+  all work.
+- **YouTube videos.** A paragraph that contains nothing but a YouTube URL
+  (either bare or as a markdown link) is replaced with a 16:9 responsive
+  iframe pointing at `youtube-nocookie.com`. All of the canonical URL
+  shapes are recognised:
+
+  ```
+  https://www.youtube.com/watch?v=dQw4w9WgXcQ
+  https://youtu.be/dQw4w9WgXcQ
+  https://www.youtube.com/embed/dQw4w9WgXcQ
+  https://www.youtube.com/shorts/dQw4w9WgXcQ
+  ```
+
+  Inline YouTube links (mid-sentence) keep their normal hyperlink
+  behaviour — only standalone-paragraph URLs become embeds.
+
 ## Reader audience
 
 The frontend remembers the reader's choice in `localStorage` under the key
