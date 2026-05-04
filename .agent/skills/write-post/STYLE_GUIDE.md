@@ -108,6 +108,34 @@ the in-app vi simulator with the file prism-highlighted, jumping to the
 line range if one was specified. Plain GitHub blob links in body prose
 behave the same way.
 
+## Media embeds
+
+Posts can embed images and YouTube videos in the body. Reach for these
+sparingly — the blog is prose-first, and an embed only earns its place when
+a paragraph can't carry the same point.
+
+- **Images.** Standard markdown: `![alt text](https://example.com/image.png)`.
+  The renderer styles them block-level, full column-width, with
+  `loading="lazy"`. Alt text is the accessible label — describe the image as
+  you would to a screen reader, not as a caption. Prefer stable hosts
+  (GitHub raw URLs, official project assets) over places that may rot.
+- **YouTube videos.** Put the URL on a paragraph by itself (bare URL or
+  inside a markdown link, doesn't matter) and it becomes a 16:9 responsive
+  `youtube-nocookie.com` iframe at render time. Inline, mid-sentence YouTube
+  links stay as plain hyperlinks — only standalone-paragraph URLs become
+  embeds. Recognised URL shapes:
+
+  ```
+  https://www.youtube.com/watch?v=<id>
+  https://youtu.be/<id>
+  https://www.youtube.com/embed/<id>
+  https://www.youtube.com/shorts/<id>
+  https://www.youtube.com/live/<id>
+  ```
+
+The mechanism is documented in [`docs/configuration.md`](../../../docs/configuration.md)
+under "Post body". The wiring lives in `website/src/terminal/remarkMediaEmbeds.ts`.
+
 ## Summary
 
 Every post carries a `summary:` line in frontmatter — a single-sentence lede the list view shows as the clickable preview. Keep it on one physical line (no newlines, no block scalars). Write it in the same voice as the body for that audience: the technical and non-technical versions of the same post may have different summaries, each pitched to its reader.
