@@ -2,6 +2,7 @@ import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { parseGithubFileUrl } from "./github.ts";
+import { remarkMediaEmbeds } from "./remarkMediaEmbeds.ts";
 import { useViOpener } from "./ViOpenerContext.tsx";
 
 export type MarkdownVariant = "terminal" | "prose";
@@ -53,6 +54,16 @@ const terminalComponents: Components = {
   ol: ({ children }) => <ol className="mb-[1lh] ml-5 list-decimal">{children}</ol>,
   li: ({ children }) => <li>{children}</li>,
   a: AnchorOverride,
+  img: ({ src, alt, title }) =>
+    src ? (
+      <img
+        className="markdown-image border border-dim"
+        src={src}
+        alt={alt ?? ""}
+        title={title}
+        loading="lazy"
+      />
+    ) : null,
   code: ({ children, className }) => (
     <code className={`text-meta ${className ?? ""}`}>{children}</code>
   ),
@@ -99,6 +110,16 @@ const proseComponents: Components = {
   ol: ({ children }) => <ol className="my-4 ml-6 list-decimal">{children}</ol>,
   li: ({ children }) => <li className="mb-2 leading-relaxed">{children}</li>,
   a: AnchorOverride,
+  img: ({ src, alt, title }) =>
+    src ? (
+      <img
+        className="markdown-image rounded"
+        src={src}
+        alt={alt ?? ""}
+        title={title}
+        loading="lazy"
+      />
+    ) : null,
   code: ({ children, className }) => (
     <code className={`rounded bg-term-titlebar px-1 py-0.5 text-meta ${className ?? ""}`}>
       {children}
@@ -140,7 +161,7 @@ export function MarkdownBody({
   return (
     <div className="text-fg-bright">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkMediaEmbeds]}
         rehypePlugins={[rehypeRaw]}
         components={components}
       >
