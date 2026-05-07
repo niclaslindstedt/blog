@@ -24,6 +24,9 @@
   --color-meta: #e5c07b;
   /* External links — classic terminal blue. */
   --color-link: #61afef;
+  /* Inline code background — distinct enough from page/term backgrounds to
+     register as its own surface against the dark palette. */
+  --color-code-bg: #3a3f4b;
   /* `|` between piped commands. */
   --color-pipe: #c678dd;
   /* `-f` / `--flag` arguments. */
@@ -171,6 +174,7 @@ body {
   --color-accent: #3f8c3e;
   --color-meta: #9c6a00;
   --color-link: #2960c2;
+  --color-code-bg: #e4e7eb;
   --color-pipe: #872187;
   --color-flag: #ad4c00;
   --color-path: #0a6e92;
