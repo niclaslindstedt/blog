@@ -58,4 +58,4 @@ The timeline page does something a flat CV can't: it shows how things relate to 
 
 ## Search
 
-A search modal sits one keystroke away on every page. Type a few letters and matches show up grouped by category — projects, jobs, skills, degrees. The ranker is hand-written; no third-party search library. Each searchable record carries a few hidden aliases so common abbreviations like `k8s`, `TS`, and `react` resolve to the right entry without cluttering the visible copy.
+A search modal sits one keystroke away on the main résumé page. Type a few letters and matches show up grouped by category — projects, jobs, skills, degrees. The ranker is hand-written; no third-party search library. Each searchable record carries a few hidden aliases so common abbreviations like `k8s`, `TS`, and `react` resolve to the right entry without cluttering the visible copy.
