@@ -10,11 +10,13 @@ tags: cv, typescript, react, vite, resume
 
 ## The data, and why an agent can edit it
 
-The CV data is spread across several JSON files in `src/data/cv/` — `projects.json`, `experience.json`, `companies.json`, `skills.json`, and so on — deep-merged at build time into a single assembled object. Every consumer — the Vite plugin, the print pipeline, the validator, the `/resume.json` generator — works from that same assembled object, so the shape is identical in every context.
+The CV data lives across a handful of JSON files — one per category, like `projects.json`, `experience.json`, `companies.json`, `skills.json`. They get merged at build time into one assembled object, and everything else reads from that: the React app, the PDF pipeline, the validator, the `/resume.json` generator. One shape, one source.
 
-`validate-cv.mjs`<sup>[1](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/scripts/validate-cv.mjs)</sup> runs the assembled object through AJV against `schemas/cv.schema.json`. Anything that breaks the schema fails the build before TypeScript ever sees it.
+A small validator<sup>[1](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/scripts/validate-cv.mjs)</sup> runs the assembled object through the JSON Schema in `schemas/cv.schema.json` before anything ships. Anything that breaks the schema fails the build.
 
-That's why a coding agent can update it. The schema is the contract; the validator tells the agent whether an edit is well-formed before anything ships. To bootstrap the data I pasted in an old CV and let the agent turn it into the structured shape — from there it's just normal editing. Updating Word PDFs has always been a pain and working with Word files through an agent is not optimal — it never looks as good as I want it to. The CV project has been iterated on until it just feels right.
+That's why a coding agent can update it. The schema is the contract; the validator tells the agent whether an edit is well-formed before it lands. To bootstrap the data I pasted in an old CV and let the agent turn it into the structured shape — from there it's just normal editing. Updating Word PDFs has always been a pain and working with Word files through an agent is not optimal — it never looks as good as I want it to. The CV project has been iterated on until it just feels right.
+
+An `update-cv` skill in the repo<sup>[4](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/.agent/skills/update-cv/SKILL.md)</sup> codifies the editing rules so the agent doesn't have to guess. It picks the right file, runs the validator before declaring done, and — because most user-facing strings are `{ "en": ..., "sv": ... }` pairs — writes the Swedish version alongside the English whenever I add or revise a description. Both end up at the same level of polish; the Swedish copy isn't a translation pass tacked on after the fact.
 
 ## Local overrides
 
@@ -24,17 +26,21 @@ One layer doesn't ship publicly. `cv.local.json` is gitignored and deep-merged o
 
 The React site is the obvious one. Less obvious: the same assembled CV drives every other artifact.
 
-- **Bilingual PDF (EN/SV).** `generate-print-html.mjs` server-side renders a separate `<PrintView />` to `dist/print-en.html` and `dist/print-sv.html`. `generate-pdf.mjs`<sup>[2](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/scripts/generate-pdf.mjs)</sup> serves `dist/` over a tiny localhost HTTP server, opens each print HTML in headless Chromium with Puppeteer, and exports `cv-en.pdf` / `cv-sv.pdf`. The PDF generator never boots the SPA — no hydration, no `<details>` to expand, no font race conditions. Output is byte-stable run to run, and `pdf-lib` stamps Title, Author, Subject, and Keywords on the way out.
-- **OG share image.** `generate-og-image.mjs` renders a 1200×630 PNG via [satori](https://github.com/vercel/satori) into `public/og-image.png` during prebuild.
-- **`/resume.json` (with `/cv.json` alias).** `generate-resume-json.mjs` writes the fully assembled CV to `dist/resume.json` so agents can fetch the structured source instead of scraping HTML. `dist/cv.json` is a byte-identical alias for the path LLMs commonly guess. Discoverable via `robots.txt`, `sitemap.xml`, and a `<link rel="alternate" type="application/json">` in `<head>`.
-- **`/llms.txt`.** `generate-llms-txt.mjs`<sup>[3](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/scripts/generate-llms-txt.mjs)</sup> writes a small markdown index following the [llmstxt.org](https://llmstxt.org/) convention, with the experience and side-project sections baked inline so an agent that only fetches this one file can still answer "which jobs are listed there".
-- **Sitemap.** `generate-sitemap.mjs` emits `dist/sitemap.xml` listing `/`, `/timeline`, `/resume.json`, `/cv.json`, and `/llms.txt`.
-- **Standalone `/timeline`.** `generate-timeline-html.mjs` copies `dist/index.html` to `dist/timeline.html` with the `<head>` retargeted (canonical URL, title, description, OG/Twitter) so direct hits to `/timeline` resolve to a 200 response on GitHub Pages instead of falling through to `404.html`. The SPA still owns rendering.
-- **Search index.** `generate-search-index.mjs` builds `src/data/search-index.json` from the CV plus hidden `aliases` on individual records, ranked by a hand-written scorer in `src/utils/search.ts`.
+- **A bilingual PDF, English and Swedish.** A simpler print-only layout gets rendered to static HTML, then opened in a headless browser and saved as a PDF<sup>[2](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/scripts/generate-pdf.mjs)</sup>. The PDF doesn't go through the React app at all, so what comes out is identical every time. PDF metadata (Title, Author, Subject, Keywords) gets stamped on the way out so the file shows up correctly in document readers and search results.
 
-Two small Vite plugins in `vite.config.ts` hold the pipeline together. `cv-assembly` resolves the JSON placeholders during dev and build, so the React app imports a single fully-resolved object via `src/data/cv.ts`. `cvMetaHtmlPlugin` injects the SEO `<head>` block at build time — Open Graph and Twitter card meta, the canonical URL, and JSON-LD for `Person` and `WebSite` derived from `cv.meta`, `cv.links`, `cv.skills`, and `cv.education`.
+- **A social share image** — the 1200×630 banner that appears as the preview when someone pastes the URL into Slack, LinkedIn, Twitter, or iMessage. Generated from the same CV via [satori](https://github.com/vercel/satori). Without one, social previews either fall back to a tiny favicon or skip the preview entirely. With one, the link looks like a polished card with my name, title, and tagline.
 
-The build chain is `tsc -b → vite build → generate:print-html → generate:pdf → generate:resume-json → generate:llms-txt → generate:timeline-html → generate:sitemap`, with prebuild hooks for the timeline data, GitHub activity, per-project commit stats, print JSON, search index, and OG image. The data fetchers degrade gracefully when their tokens are missing — the GitHub commit track and per-project stats simply drop out instead of failing the build.
+- **SEO scaffolding.** A page nobody can find is a page that doesn't exist. The site's `<head>` carries Open Graph and Twitter card meta tags, a canonical URL, a meta description, and JSON-LD structured data describing me as a `Person` and the site as a `WebSite` — all derived from the same CV data, all injected at build time. That's what Google reads when it decides what to show in search results, and what LinkedIn or Slack reads when generating a link preview. The homepage is also pre-rendered to static HTML so crawlers and JS-disabled clients see the actual résumé instead of an empty page.
+
+- **A machine-readable `/resume.json`.** The whole CV as a single JSON file, served straight from the site root. Agents can fetch the structured source instead of scraping HTML. `/cv.json` is a byte-identical alias for the path LLMs commonly guess. Both are discoverable via `robots.txt`, `sitemap.xml`, and `<link rel="alternate">` tags in the `<head>`.
+
+- **An `/llms.txt` index**<sup>[3](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/scripts/generate-llms-txt.mjs)</sup> following the [llmstxt.org](https://llmstxt.org/) convention. A small markdown file pointing agents at `/resume.json`, with the experience and side-project sections baked inline so an agent that only fetches this one file can still answer "which jobs are listed there".
+
+- **A standalone `/timeline` page** saved as its own HTML file. The interactive timeline still renders inside the React app on visit; the static file means a direct hit on `niclaslindstedt.se/timeline` returns a 200 on GitHub Pages instead of bouncing through a 404, and crawlers get something indexable.
+
+Two small build-time helpers tie the pipeline together. One merges the JSON parts into the single assembled object the rest of the build reads from. The other injects the SEO `<head>` block into the HTML at build time, derived from the same CV data.
+
+The build then runs the generators in sequence — type-check, bundle, then the PDF, `/resume.json`, `/llms.txt`, the timeline page, the sitemap — with a few pre-build steps for the timeline data, GitHub activity, and per-project commit stats. The data fetchers degrade gracefully: if a GitHub token isn't configured, the per-project commit stats simply drop out instead of failing the build.
 
 ## Progressive disclosure
 
@@ -43,3 +49,7 @@ The web CV exposes a lot, but it doesn't shove it at you. Top level: the summary
 ## The timeline
 
 The timeline page does something a flat CV can't: it shows how things relate to each other in time. Overlapping engagements, parallel side projects, gaps and clusters — all visible at a glance. It's a separate page (`/timeline`), but it reads from the same `experience.json` and `projects.json` that everything else does.
+
+## Search
+
+A search modal sits one keystroke away on every page. Type a few letters and matches show up grouped by category — projects, jobs, skills, degrees. The ranker is hand-written; no third-party search library. Each searchable record carries a few hidden aliases so common abbreviations like `k8s`, `TS`, and `react` resolve to the right entry without cluttering the visible copy.
