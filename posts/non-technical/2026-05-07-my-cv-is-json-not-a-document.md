@@ -1,12 +1,12 @@
 ---
-title: I write my CV in one file
+title: My CV is data, not a document
 date: 2026-05-07T13:06:01Z
-edited_at: 2026-05-07T13:06:01Z
-summary: One file holds the whole thing; a website, a PDF in two languages, and a version AI assistants can read all come out the other end.
+edited_at: 2026-05-07T13:50:39Z
+summary: Structured data, not a document; a website, a PDF in two languages, and a version AI assistants can read all come out the other end.
 tags: cv, resume, agent-editable
 ---
 
-[My CV](https://niclaslindstedt.se) is one file. It's structured — every field has a name, every entry has a shape — which means I can write it once and a website, a downloadable PDF in English and Swedish, and a machine-readable version aimed at AI assistants all come out the other end.
+[My CV](https://niclaslindstedt.se) is structured data, not a document. Every field has a name, every entry has a shape — which means I can write it once and a website, a downloadable PDF in English and Swedish, and a machine-readable version aimed at AI assistants all come out the other end.
 
 ## The thing I actually got out of it
 

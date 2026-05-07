@@ -1,7 +1,7 @@
 ---
-title: My CV is one JSON file
+title: My CV is JSON, not a document
 date: 2026-05-07T13:06:01Z
-edited_at: 2026-05-07T13:06:01Z
+edited_at: 2026-05-07T13:50:39Z
 summary: One schema-validated JSON object reprojected into a React site, two PDFs, an OG image, a sitemap, a search index, and an /llms.txt for agents.
 tags: cv, typescript, react, vite, resume
 ---
@@ -41,8 +41,6 @@ The React site is the obvious one. Less obvious: the same assembled CV drives ev
 - **A machine-readable `/resume.json`.** The whole CV as a single JSON file, served straight from the site root. Agents can fetch the structured source instead of scraping HTML. `/cv.json` is a byte-identical alias for the path LLMs commonly guess. Both are discoverable via `robots.txt`, `sitemap.xml`, and `<link rel="alternate">` tags in the `<head>`.
 
 - **An `/llms.txt` index**<sup>[5](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/scripts/generate-llms-txt.mjs)</sup> following the [llmstxt.org](https://llmstxt.org/) convention. A small markdown file pointing agents at `/resume.json`, with the experience and side-project sections baked inline so an agent that only fetches this one file can still answer "which jobs are listed there".
-
-- **A standalone `/timeline` page** saved as its own HTML file. The interactive timeline still renders inside the React app on visit; the static file means a direct hit on `niclaslindstedt.se/timeline` returns a 200 on GitHub Pages instead of bouncing through a 404, and crawlers get something indexable.
 
 Two small build-time helpers tie the pipeline together. One merges the JSON parts into the single assembled object the rest of the build reads from. The other injects the SEO `<head>` block into the HTML at build time, derived from the same CV data.
 
