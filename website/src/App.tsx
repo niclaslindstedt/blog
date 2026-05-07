@@ -7,7 +7,12 @@ import { FallbackBlog } from "./FallbackBlog.tsx";
 import { FallbackPost } from "./FallbackPost.tsx";
 import { TagRoute } from "./TagRoute.tsx";
 import { TagsIndex } from "./TagsIndex.tsx";
-import { FileViewer, FileViewerContext, type GithubFile } from "./terminal/index.ts";
+import {
+  FileViewer,
+  FileViewerContext,
+  ViOpenerContext,
+  type GithubFile,
+} from "./terminal/index.ts";
 import { AudienceProvider } from "./AudienceContext.tsx";
 import { PreferencesProvider, useActiveView, usePreferences } from "./PreferencesContext.tsx";
 import { usePageTitle } from "./seo/usePageTitle.ts";
@@ -54,15 +59,23 @@ export default function App() {
     <AudienceProvider>
       <PreferencesProvider>
         <FileViewerContext.Provider value={openFile}>
-          <main className="relative min-h-screen w-full overflow-hidden">
-            <Routes>
-              <Route path="/" element={<BlogRoute />} />
-              <Route path="/posts/:slug" element={<BlogRoute />} />
-              <Route path="/tags" element={<TagsIndex posts={posts} />} />
-              <Route path="/tags/:tag" element={<TagRoute posts={posts} />} />
-            </Routes>
-          </main>
-          {viewerFile && <FileViewer file={viewerFile} onClose={closeFile} />}
+          {/* Default ViOpener for views without a terminal (prose / fallback):
+              just pop the file viewer modal — there's no prompt to animate
+              `curl ... | vi -` into. TerminalBlog overrides this with the
+              animated version when the terminal is mounted. Without this
+              default provider, sup links in the prose view would fall back
+              to the no-op default and silently swallow clicks. */}
+          <ViOpenerContext.Provider value={openFile}>
+            <main className="relative min-h-screen w-full overflow-hidden">
+              <Routes>
+                <Route path="/" element={<BlogRoute />} />
+                <Route path="/posts/:slug" element={<BlogRoute />} />
+                <Route path="/tags" element={<TagsIndex posts={posts} />} />
+                <Route path="/tags/:tag" element={<TagRoute posts={posts} />} />
+              </Routes>
+            </main>
+            {viewerFile && <FileViewer file={viewerFile} onClose={closeFile} />}
+          </ViOpenerContext.Provider>
         </FileViewerContext.Provider>
       </PreferencesProvider>
     </AudienceProvider>
