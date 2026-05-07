@@ -14,6 +14,10 @@ export interface PostVersion {
   edited_at: string;
   summary: string;
   tags: string[];
+  // Optional, search-only synonym list. Not displayed; only fed into the
+  // build-time search index. May be long (concepts + alternative phrasings
+  // a reader might use) but should stay on a single comma-separated line.
+  keywords: string[];
   body: string;
   wordCount: number;
   readingTimeMinutes: number;

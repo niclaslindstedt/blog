@@ -4,6 +4,7 @@ date: 2026-05-07T13:06:01Z
 edited_at: 2026-05-07T13:50:39Z
 summary: Structured data, not a document; a website, a PDF in two languages, and a version AI assistants can read all come out the other end.
 tags: cv, resume, agent-editable
+keywords: cv, resume, curriculum vitae, résumé, online cv, online resume, structured cv, ai-editable, ai assistant, swedish, english, bilingual, downloadable resume, pdf resume, search modal, search bar, og image, link preview, slack preview, linkedin preview, twitter preview, imessage preview, search engine, sitemap, llms.txt, resume.json, github activity, side projects, jobs, education, skills, languages, timeline, public vs private, niclaslindstedt.se, k8s, ts
 ---
 
 [My CV](https://niclaslindstedt.se) is structured data, not a document. Every field has a name, every entry has a shape — which means I can write it once and a website, a downloadable PDF in English and Swedish, an image that shows up when someone shares the link on Slack or LinkedIn, and a version aimed at AI assistants all come out the other end.

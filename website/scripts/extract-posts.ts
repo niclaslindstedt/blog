@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { AUDIENCES, type Audience, type Post, type PostVersion } from "../src/types.ts";
+import { stripMarkdown } from "../src/search.ts";
 
 const POSTS_DIR = path.resolve("..", "posts");
 const OUT_DIR = path.join("src", "generated");
@@ -47,18 +48,10 @@ function parseTags(raw: string | undefined): string[] {
 }
 
 // Count visible words in the markdown body for JSON-LD `wordCount` and a
-// cheap reading-time estimate. We strip code fences, HTML/markdown syntax,
-// and inline code before counting so the number reflects prose length, not
-// footnote markup or code samples.
+// cheap reading-time estimate. The same `stripMarkdown` helper is reused by
+// the search index builder so the indexed text matches the counted prose.
 function countWords(body: string): number {
-  const stripped = body
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/`[^`]*`/g, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/[#>*_~-]+/g, " ");
-  const words = stripped.trim().split(/\s+/).filter(Boolean);
+  const words = stripMarkdown(body).trim().split(/\s+/).filter(Boolean);
   return words.length;
 }
 
@@ -68,6 +61,7 @@ function loadVersion(file: string): PostVersion {
   const { title, date, summary } = fields;
   const edited_at = fields.edited_at ?? date;
   const tags = parseTags(fields.tags);
+  const keywords = parseTags(fields.keywords);
   if (!title) die(`${file}: frontmatter missing required 'title'`);
   if (!date) die(`${file}: frontmatter missing required 'date'`);
   if (!summary) die(`${file}: frontmatter missing required 'summary'`);
@@ -79,7 +73,17 @@ function loadVersion(file: string): PostVersion {
     );
   const wordCount = countWords(body);
   const readingTimeMinutes = Math.max(1, Math.round(wordCount / 225));
-  return { title, date, edited_at, summary, tags, body, wordCount, readingTimeMinutes };
+  return {
+    title,
+    date,
+    edited_at,
+    summary,
+    tags,
+    keywords,
+    body,
+    wordCount,
+    readingTimeMinutes,
+  };
 }
 
 function main(): void {

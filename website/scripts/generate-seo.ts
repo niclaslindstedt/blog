@@ -116,13 +116,25 @@ function renderHome(shell: string): string {
 
 function renderPost(shell: string, post: Post): string {
   const v = pickPrimaryVersion(post);
+  // Per-post keywords: tags first (search anchors), then the post's
+  // hand-authored synonym list (so crawlers see the full surface area
+  // even though the React app handles the rendered prose), then a few
+  // site-wide defaults. Deduped while preserving first-seen order.
+  const seen = new Set<string>();
+  const keywords: string[] = [];
+  for (const k of [...v.tags, ...v.keywords, ...DEFAULT_KEYWORDS.slice(0, 3)]) {
+    const lower = k.toLowerCase();
+    if (seen.has(lower)) continue;
+    seen.add(lower);
+    keywords.push(k);
+  }
   const head = renderHead({
     title: `${v.title} — ${SITE_NAME}`,
     description: v.summary,
     canonicalPath: `/posts/${post.slug}/`,
     ogType: "article",
     ogImagePath: postOgImagePath(post.slug),
-    keywords: [...v.tags, ...DEFAULT_KEYWORDS.slice(0, 3)],
+    keywords,
     article: {
       publishedTime: v.date,
       modifiedTime: v.edited_at,

@@ -4,6 +4,7 @@ date: 2026-05-07T13:06:01Z
 edited_at: 2026-05-07T13:50:39Z
 summary: One schema-validated JSON object reprojected into a React site, two PDFs, an OG image, a sitemap, a search index, and an /llms.txt for agents.
 tags: cv, typescript, react, vite, resume
+keywords: cv, resume, curriculum vitae, résumé, online cv, json, json schema, ajv, schema validation, react, vite, typescript, tsx, pdf, bilingual, swedish, english, two languages, og image, open graph, satori, resvg, schema.org, json-ld, structured data, ssr, prerender, prerendered, search index, in-page search, /llms.txt, llms.txt, /resume.json, sitemap, machine-readable cv, agent-readable, github commits api, contribution count, niclaslindstedt.se, side projects, timeline, github pages, build pipeline, public vs private, make local
 ---
 
 [cv](https://github.com/niclaslindstedt/cv) is my personal site and résumé, live at [niclaslindstedt.se](https://niclaslindstedt.se). The interesting bit isn't the React app — it's that the CV is a single JSON object, schema-validated at build time, and re-projected into every visible artifact: the rendered site, a bilingual PDF, an OG share image, a sitemap, an in-page search index, and a couple of agent-facing files at `/resume.json` and `/llms.txt`.
