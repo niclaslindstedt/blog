@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAudience } from "./AudienceContext.tsx";
 import {
@@ -104,15 +104,36 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
     };
   }, [open]);
 
-  // Reset query and focus on every open. The previous query is intentionally
-  // not preserved — searches are cheap and starting fresh is more predictable.
+  // Reset query on every open. Previous query is intentionally not preserved —
+  // searches are cheap and starting fresh is more predictable.
   useEffect(() => {
     if (!open) return;
     setQuery("");
     setFocusedIndex(0);
-    // Defer focus until after the input mounts.
-    const id = window.requestAnimationFrame(() => inputRef.current?.focus());
-    return () => window.cancelAnimationFrame(id);
+  }, [open]);
+
+  // Focus the input synchronously after mount via useLayoutEffect so the
+  // call lands inside the click that opened the modal — iOS Safari only
+  // honours programmatic focus (and shows the keyboard) when it stays in
+  // the user-gesture chain. The `autoFocus` prop on the input below is the
+  // backup for browsers where the layout-effect call still misses the
+  // gesture (some pre-render cases).
+  useLayoutEffect(() => {
+    if (!open) return;
+    inputRef.current?.focus();
+  }, [open]);
+
+  // Lock background scroll while open so mobile readers can't scroll the
+  // page behind the modal. Restores the previous overflow value on close
+  // (we read what was there instead of hard-coding "" so we cooperate with
+  // any other scroll-lock that may already be in effect).
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [open]);
 
   const queryTokens = useMemo(() => tokenize(query), [query]);
@@ -222,9 +243,13 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search posts…"
             aria-label="Search query"
-            className="flex-1 border-0 bg-transparent text-sm text-fg outline-none placeholder:text-dim"
+            // text-base = 16px, the threshold below which iOS Safari zooms
+            // in on focus. Keep the visual size constant by overriding back
+            // down to the smaller terminal-y size on `sm:` and up.
+            className="flex-1 border-0 bg-transparent text-base text-fg outline-none placeholder:text-dim sm:text-sm"
             spellCheck={false}
             autoComplete="off"
+            autoFocus
           />
           <button
             type="button"
