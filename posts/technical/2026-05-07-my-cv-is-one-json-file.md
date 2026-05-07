@@ -50,7 +50,7 @@ The build then runs the generators in sequence — type-check, bundle, then the 
 
 ## Progressive disclosure
 
-The web CV exposes a lot, but it doesn't shove it at you. Top level: the summary, the focus areas, the projects, the jobs, the skills, the degrees, the languages — each as a card. Click a project and you get the full description, the stack, the commit history. Click an education entry and you get the program structure, the courses, the credit transfers. The course lists for an entire degree are right there if you want them, but they're behind a click — don't click programs if you don't want course lists. The front page stays scannable; the depth is there for the readers who actually want it. The PDF respects the same idea by collapsing the deep stuff entirely.
+The web CV exposes a lot, but it doesn't shove it at you. Top level: the summary, the focus areas, the projects, the jobs, the skills, the degrees, the languages — each as a card. Click a project and you get the full description, the stack, the skills used, and external links. Click an education entry and you get the program structure, the courses, the credit transfers. The course lists for an entire degree are right there if you want them, but they're behind a click — don't click programs if you don't want course lists. The front page stays scannable; the depth is there for the readers who actually want it. The PDF respects the same idea by collapsing the deep stuff entirely.
 
 ## The timeline
 
