@@ -135,12 +135,7 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
                   const inRange =
                     range !== null && lineNumber >= range.start && lineNumber <= range.end;
                   const isFirstInRange = range !== null && lineNumber === range.start;
-                  // White-space mode lives on the outer line block (not on a
-                  // nested flex item) so unwrap reaches every token uniformly.
-                  // The flex variant left markdown-table rows wrapping in
-                  // Safari even with whitespace-pre on the inner span.
-                  const wrapClass = wrap ? "whitespace-pre-wrap break-words" : "whitespace-pre";
-                  const rowClass = `pl-10 -indent-10${inRange ? " bg-accent/15" : ""} ${wrapClass}`;
+                  const rowClass = `flex${inRange ? " bg-accent/15" : ""}`;
                   return (
                     <div
                       key={i}
@@ -149,21 +144,26 @@ export function FileViewer({ file, onClose }: { file: GithubFile; onClose: () =>
                       className={rowClass}
                     >
                       <span
-                        className={`mr-2 inline-block w-8 select-none text-right ${inRange ? "text-accent" : "text-dim"}`}
+                        className={`mr-2 w-8 shrink-0 select-none text-right ${inRange ? "text-accent" : "text-dim"}`}
                       >
                         {lineNumber}
                       </span>
-                      {line.map((token, ti) => {
-                        const { key: _tk, ...trest } = getTokenProps({ token });
-                        return <span key={ti} {...trest} />;
-                      })}
+                      <span
+                        className={`flex-1 ${wrap ? "whitespace-pre-wrap break-words" : "whitespace-pre"}`}
+                      >
+                        {line.map((token, ti) => {
+                          const { key: _tk, ...trest } = getTokenProps({ token });
+                          return <span key={ti} {...trest} />;
+                        })}
+                      </span>
                     </div>
                   );
                 })}
                 {/* vim-style tildes for empty space below EOF */}
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={`tilde-${i}`} className="pl-10 -indent-10 text-dim">
-                    <span className="mr-2 inline-block w-8 text-right">~</span>
+                  <div key={`tilde-${i}`} className="flex text-dim">
+                    <span className="mr-2 w-8 shrink-0 text-right">~</span>
+                    <span />
                   </div>
                 ))}
               </pre>
