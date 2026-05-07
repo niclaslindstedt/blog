@@ -68,6 +68,14 @@ export function FallbackShell({ children }: { children: ReactNode }) {
                 );
               })}
             </nav>
+            <Link
+              to={fallbackHref("/tags")}
+              aria-label="Browse all tags"
+              title="Browse all tags"
+              className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded border border-term-border bg-transparent font-mono text-base leading-none text-fg hover:text-fg-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg"
+            >
+              <span aria-hidden="true">#</span>
+            </Link>
             <ThemeToggle />
             <button
               type="button"
