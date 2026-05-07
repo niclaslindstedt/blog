@@ -163,6 +163,25 @@ body {
   margin: 1lh auto;
 }
 
+/* Footnote-style superscript links render as a single small glyph, which is
+   nearly impossible to tap on a phone. Extend the hit area with an invisible
+   ::before so the visual glyph stays small while the touch target meets the
+   ~44px minimum, without shifting surrounding text. */
+sup a,
+sup button {
+  position: relative;
+  /* Stop adjacent sup links overlapping each other's expanded targets when
+     they sit back-to-back (e.g. `text<sup>1</sup><sup>2</sup>`). */
+  z-index: 1;
+}
+
+sup a::before,
+sup button::before {
+  content: "";
+  position: absolute;
+  inset: -0.75em -0.5em;
+}
+
 .theme-light {
   --color-page-bg: #eef0f2;
   --color-term-bg: #f8f9fa;
