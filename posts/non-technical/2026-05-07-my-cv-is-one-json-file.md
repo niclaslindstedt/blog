@@ -12,7 +12,7 @@ tags: cv, resume, agent-editable
 
 Updating Word PDFs has always been a pain. Working with Word files through an AI assistant is not great either — it never looks as good as I want it to. The CV project has been iterated on until it just feels right.
 
-Because the data is structured, and because every change is checked against a fixed shape before anything ships, an AI assistant can edit it without breaking it. The way I usually update it: paste an old version of the CV into the assistant, let it merge in whatever's missing, then I review, push back on descriptions, ask for tweaks, and iterate until the website and the PDF both look the way I want them to.
+Because the data is structured, and because every change is checked against a fixed shape before anything ships, an AI assistant can edit it without breaking it. To get started, I pasted in an old version of my CV and let the assistant turn it into the structured form — from there it's just normal editing. Ask for a change, review what came back, push back if it isn't right.
 
 ## What you can actually use
 
