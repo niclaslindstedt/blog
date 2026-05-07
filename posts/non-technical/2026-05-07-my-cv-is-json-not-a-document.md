@@ -30,3 +30,7 @@ The website shows the basics up front and hides the deep stuff one click away. A
 ## The timeline
 
 The timeline page shows the same content, just laid out in time. Overlapping jobs, parallel side projects, gaps and clusters — all of it visible at a glance. It's the part a normal CV can't show without becoming a wall of text.
+
+## What's actually new
+
+Most of the parts here aren't new. What I haven't seen elsewhere: setting it up so an AI assistant can keep the CV current without breaking it, and treating AI assistants as a real audience for the site rather than an afterthought.

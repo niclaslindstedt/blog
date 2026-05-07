@@ -61,3 +61,7 @@ That covers the site. The same assembled CV also drives:
 Two small build-time helpers tie the pipeline together. One merges the JSON parts into the single assembled object the rest of the build reads from. The other injects the SEO `<head>` block into the HTML at build time, derived from the same CV data.
 
 The build then runs the generators in sequence — type-check, bundle, then the PDF, `/resume.json`, `/llms.txt`, the timeline page, the sitemap — with a few pre-build steps for the timeline data, GitHub activity, and per-project commit stats. The data fetchers degrade gracefully: if a GitHub token isn't configured, the per-project commit stats simply drop out instead of failing the build.
+
+## What's actually new
+
+Most of the building blocks are old — schemas, SSR, headless-Chromium PDFs. What I haven't seen elsewhere is treating the schema as a guardrail an agent can edit against, and treating the LLM as a first-class consumer at the same level as the browser. Together those push the work out of "writing a CV" and into something I hand to an agent and review like code.
