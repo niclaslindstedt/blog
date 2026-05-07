@@ -132,6 +132,16 @@ body {
    Backgrounds are slightly off-white (not pure #fff) and accent colours are
    pulled a notch toward their darker One Light variants — pure One Light on a
    pure white surface reads as "highlighter pen" rather than "syntax". */
+/* Prism markdown's grammar uses token type names (`table`, `table-data`,
+   `table-header`, `table-line`, `code`, `block`, …) that collide with
+   Tailwind's display utilities of the same name. Without this reset, every
+   token in a markdown-table row inherits `display: table` from `.table` and
+   each `|`/cell stacks onto its own visual line. Empty tokens still get the
+   `display: inline-block` that prism-react-renderer sets via inline style. */
+.prism-code .token {
+  display: inline;
+}
+
 /* Inline media embeds emitted by remarkMediaEmbeds. The wrapper enforces a
    16:9 aspect ratio so the iframe scales with the post's measure without
    layout shift; the iframe fills it absolutely. Markdown images render as
