@@ -34,10 +34,15 @@ export function FallbackShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen w-full bg-page-bg text-fg">
       <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-8 break-words">
-        <header className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-term-border pb-4">
+        {/* Three children with explicit `order`: on mobile the icons group
+            sits next to the title and the audience tabs wrap to a second
+            row (full-width to force the wrap); on `sm:` and up everything
+            sits on one line in the original visual order
+            title · audience · icons. */}
+        <header className="mb-8 flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-term-border pb-4">
           <Link
             to={fallbackHref("/")}
-            className="group inline-flex items-baseline gap-2 whitespace-nowrap"
+            className="order-1 group inline-flex items-baseline gap-2 whitespace-nowrap"
           >
             <span aria-hidden="true" className="font-bold text-accent">
               $
@@ -46,30 +51,30 @@ export function FallbackShell({ children }: { children: ReactNode }) {
               niclaslindstedt
             </span>
           </Link>
-          <div className="ml-auto flex items-center gap-2">
-            <nav
-              aria-label="Audience"
-              className="flex h-8 items-stretch overflow-hidden rounded border border-term-border text-sm"
-            >
-              {AUDIENCES.map((a) => {
-                const isActive = a === audience;
-                return (
-                  <button
-                    key={a}
-                    type="button"
-                    onClick={() => setAudience(a)}
-                    aria-pressed={isActive}
-                    className={`inline-flex cursor-pointer items-center border-0 px-3 whitespace-nowrap transition-colors ${
-                      isActive
-                        ? "bg-term-titlebar font-semibold text-accent"
-                        : "bg-transparent text-dim hover:text-fg"
-                    }`}
-                  >
-                    {a}
-                  </button>
-                );
-              })}
-            </nav>
+          <nav
+            aria-label="Audience"
+            className="order-3 flex h-8 w-full items-stretch overflow-hidden rounded border border-term-border text-sm sm:order-2 sm:ml-auto sm:w-auto"
+          >
+            {AUDIENCES.map((a) => {
+              const isActive = a === audience;
+              return (
+                <button
+                  key={a}
+                  type="button"
+                  onClick={() => setAudience(a)}
+                  aria-pressed={isActive}
+                  className={`inline-flex flex-1 cursor-pointer items-center justify-center border-0 px-3 whitespace-nowrap transition-colors sm:flex-none ${
+                    isActive
+                      ? "bg-term-titlebar font-semibold text-accent"
+                      : "bg-transparent text-dim hover:text-fg"
+                  }`}
+                >
+                  {a}
+                </button>
+              );
+            })}
+          </nav>
+          <div className="order-2 ml-auto flex items-center gap-2 sm:order-3 sm:ml-0">
             <Link
               to={fallbackHref("/tags")}
               aria-label="Browse all tags"
