@@ -4,11 +4,13 @@ import { AUDIENCES } from "./types.ts";
 import { useAudience } from "./AudienceContext.tsx";
 import { usePreferences } from "./PreferencesContext.tsx";
 import { ThemeToggle } from "./ThemeToggle.tsx";
+import { useSearchOpener } from "./SearchOpenerContext.tsx";
 import { fallbackHref, withViewParam } from "./postFilters.ts";
 
 export function FallbackShell({ children }: { children: ReactNode }) {
   const { audience, setAudience, resetClosedAudiences } = useAudience();
   const { setTerminalClosed, setTerminalMinimized } = usePreferences();
+  const openSearch = useSearchOpener();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -76,6 +78,28 @@ export function FallbackShell({ children }: { children: ReactNode }) {
             >
               <span aria-hidden="true">#</span>
             </Link>
+            <button
+              type="button"
+              onClick={openSearch}
+              aria-label="Search posts"
+              title="Search posts (Cmd-K)"
+              className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded border border-term-border bg-transparent text-fg hover:text-fg-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </button>
             <ThemeToggle />
             <button
               type="button"

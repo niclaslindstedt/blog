@@ -126,6 +126,7 @@ Collect from the user before starting. If the required fields are missing, the a
 | Date                   | no       | Defaults to the current UTC timestamp in ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`)                                                                                                                                                           |
 | Summary                | yes      | One-sentence lede, one line (no newlines), independent per audience version. Becomes the `summary` frontmatter field and doubles as the clickable preview in the terminal list view. Write it in the same voice as the body.         |
 | Tags                   | no       | Subject tags. Include the project slug from `project-index/INDEX.md` when the post is about one specific project, plus a few topic tags (language, theme). Optional but strongly encouraged — this is how future runs find the post. |
+| Keywords               | no       | Search-only synonym list. Never asked of the user — the agent extrapolates from the body (see "Authoring keywords" below). Per audience.                                                                                             |
 | Technical body         | one of   | Actual prose for technical readers. A topic description does not count.                                                                                                                                                              |
 | Non-technical body     | one of   | Actual prose for non-technical readers. A topic description does not count.                                                                                                                                                          |
 | Adapt across audiences | no       | If only one body is supplied, whether to generate the other one                                                                                                                                                                      |
@@ -174,6 +175,7 @@ The final `slug` (used as the filename and URL path) is
    edited_at: <iso-utc-datetime>
    summary: <one-line lede>
    tags: <slug>, <topic>, <topic>
+   keywords: <synonym>, <alternative phrasing>, <related concept>, ...
    ---
 
    <body>
@@ -185,7 +187,42 @@ The final `slug` (used as the filename and URL path) is
 
    `tags` is a single line, comma-separated, lowercase, hyphenated — e.g. `tags: juris, python, release-notes`. Omit the line only when the post has no meaningful subject tags (rare). When the post is about a project in the index, the first tag is the project slug so `find-posts-by-tag.sh <slug>` locates the post on the next run. Keep the list short (≤ 6).
 
+   `keywords` is a single line, comma-separated, lowercase. See "Authoring keywords" below for what to put in it. Audience-specific.
+
 8. Report each file path, the slug, which audiences were produced (and which were skipped and why), and a short list of every change that went beyond mechanical formatting (added links, adapted for audience, rephrased for tone, etc.), so the user can veto any of it.
+
+## Authoring keywords
+
+`keywords` is a search-only frontmatter field. It never renders on the
+page. Its sole job is to feed the build-time search index so a reader who
+types a synonym, an abbreviation, or a plain-language phrasing can still
+find the post.
+
+Generate it yourself, per audience version, by reading the body and
+extrapolating:
+
+- **Concepts mentioned in the body** — every named project, library,
+  language, file path, command, or domain term.
+- **Synonyms and alternative phrasings** — `cv`, `resume`, `curriculum
+vitae`, `résumé` for the same idea; `ai assistant`, `coding ai`,
+  `claude` for adjacent terms.
+- **Common abbreviations and expansions** — `k8s` ↔ `kubernetes`, `ts`
+  ↔ `typescript`, `og image` ↔ `open graph image`.
+- **Plain-language equivalents** for the technical version, and
+  **technical equivalents** for the non-technical version, so each
+  audience's keywords lean toward the vocabulary that audience would
+  actually type.
+
+Keep it on a single comma-separated line, lowercase, no quotes, no
+line breaks. Aim for ≤ 30 terms in normal cases — long enough to cover
+the post's surface area without making the diff unreadable. The parser
+accepts longer lists if the post's surface area genuinely warrants it.
+
+Realistic example (technical version of a CV post):
+
+```yaml
+keywords: cv, resume, curriculum vitae, résumé, json, json schema, schema validation, react, vite, typescript, pdf, bilingual, swedish, english, og image, open graph, satori, schema.org, json-ld, structured data, ssr, prerender, search index, llms.txt, resume.json, sitemap, machine-readable cv, agent-readable
+```
 
 ## Checklist
 
@@ -197,6 +234,7 @@ The final `slug` (used as the filename and URL path) is
 - [ ] Slug is unique under both `posts/technical/` and `posts/non-technical/`
 - [ ] Each produced file has frontmatter with `title`, `date`, `edited_at`, `summary` — all present; the two timestamps are ISO 8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required); `summary` is a single line
 - [ ] `tags:` present on one line, lowercase, comma-separated; first tag is the project slug when the post is about a project in the index
+- [ ] `keywords:` present on one line, lowercase, comma-separated; covers concepts + synonyms + abbreviations the audience might search for (see "Authoring keywords")
 - [ ] `date` is identical across audience versions of the same slug
 - [ ] Body contains no top-level `# ` heading (the title comes from frontmatter)
 - [ ] Files saved under `posts/technical/` and/or `posts/non-technical/` — never directly under `posts/`

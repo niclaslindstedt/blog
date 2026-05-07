@@ -74,6 +74,7 @@ Same rule as `/write-post`: the user writes, the agent lays out.
    - Preserve `title`, `date`, and `summary` unless the user explicitly requested a change. If the edit materially changes what the post is about, update `summary` to match — keep it on a single line.
    - Set `edited_at` to the current UTC timestamp in ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required). Get it with `date -u +%Y-%m-%dT%H:%M:%SZ` or equivalent; never use a local-timezone value.
    - Do not touch `edited_at` in files you didn't edit.
+   - Preserve `keywords` verbatim unless the edit materially changes what the post covers. When it does, refresh keywords using the "Authoring keywords" guidance in `../write-post/SKILL.md` so the search index keeps matching the prose. If the post had no `keywords` line yet, add one.
 7. Write each updated file back to the same path (no rename, no audience swap).
 8. Report a brief summary of what changed, per audience — separating "what the user asked for" from "mechanical fixes I also made", and calling out any drift between audiences the user may want to reconcile.
 
@@ -87,6 +88,7 @@ Same rule as `/write-post`: the user writes, the agent lays out.
 - [ ] `title`, `date`, and `summary` preserved unless explicitly changed (and if the edit changes what the post is about, `summary` updated to match, still on a single line)
 - [ ] `edited_at` set to the current UTC timestamp (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required) in every file actually edited; untouched in files you did not edit
 - [ ] `tags:` preserved verbatim unless the user asked to change them; if the post is about a known project but has no tags, add the project slug as the first tag
+- [ ] `keywords:` preserved verbatim unless the edit materially changes what the post covers; refreshed (or added if missing) using `../write-post/SKILL.md` § "Authoring keywords" when the post's surface area changes
 - [ ] Cross-audience drift flagged when an edit to one version creates inconsistency with the other
 
 ## Verification

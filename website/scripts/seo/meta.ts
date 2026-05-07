@@ -214,7 +214,7 @@ export function postJsonLd(post: Post): object {
     dateModified: v.edited_at,
     inLanguage: SITE_LANGUAGE,
     wordCount: v.wordCount,
-    keywords: v.tags.join(", "),
+    keywords: [...new Set([...v.tags, ...v.keywords])].join(", "),
     articleSection: v.tags,
     author: {
       "@type": "Person",
