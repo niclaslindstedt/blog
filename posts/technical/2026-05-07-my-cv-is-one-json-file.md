@@ -22,6 +22,12 @@ An `update-cv` skill in the repo<sup>[4](https://github.com/niclaslindstedt/cv/b
 
 One layer doesn't ship publicly. `cv.local.json` is gitignored and deep-merged on top of the assembled CV when `CV_LOCAL=1` is set — full contact details, longer descriptions, anything I don't want indexed on the open web. `make local` runs the build with the override active and produces a separate set of PDFs under a different filename. That's the version I actually send when I apply for a job; the public site stays scrubbed.
 
+## Side-project commit stats
+
+Not all the CV data is hand-written. Per-project commit stats — total commits, first and last commit dates, year-by-year activity — get pulled from the GitHub GraphQL API at build time<sup>[5](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/scripts/generate-project-stats.mjs)</sup>. For open-source projects, only my own commits count toward the totals, not those of every contributor. The numbers show up on each project card and are inlined into `/resume.json` so an agent fetching the JSON gets the activity data without an extra API roundtrip.
+
+Token-less builds (a fresh clone, an external contributor's PR, an ad-hoc local PDF) fall back to a cached copy on a separate `data-cache` git branch that a scheduled workflow refreshes. The CV doesn't blow up because GitHub returned a 401.
+
 ## The surfaces
 
 The React site is the obvious one. Less obvious: the same assembled CV drives every other artifact.
