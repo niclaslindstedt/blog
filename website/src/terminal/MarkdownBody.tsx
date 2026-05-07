@@ -18,7 +18,7 @@ function AnchorOverride({ href, children }: { href?: string; children?: React.Re
           e.preventDefault();
           open(parsed);
         }}
-        className="cursor-pointer bg-transparent p-0 font-[inherit] text-fg underline decoration-dim decoration-dotted hover:text-fg-bright hover:decoration-fg-bright focus-visible:text-fg-bright focus-visible:decoration-fg-bright focus-visible:outline-none"
+        className="cursor-pointer bg-transparent p-0 font-[inherit] text-link underline hover:text-fg-bright focus-visible:text-fg-bright focus-visible:outline-none"
         title={`vi ${parsed.owner}/${parsed.repo}:${parsed.path}`}
       >
         {children}
@@ -30,7 +30,7 @@ function AnchorOverride({ href, children }: { href?: string; children?: React.Re
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="text-fg underline decoration-dim decoration-dotted visited:text-fg visited:decoration-dim hover:text-fg-bright hover:decoration-fg-bright"
+      className="text-link underline visited:text-link hover:text-fg-bright"
     >
       {children}
     </a>
@@ -121,7 +121,7 @@ const proseComponents: Components = {
       />
     ) : null,
   code: ({ children, className }) => (
-    <code className={`rounded bg-term-titlebar px-1 py-0.5 text-meta ${className ?? ""}`}>
+    <code className={`rounded bg-code-bg px-1 py-0.5 text-meta ${className ?? ""}`}>
       {children}
     </code>
   ),
