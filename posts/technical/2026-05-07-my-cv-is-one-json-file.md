@@ -16,7 +16,7 @@ A small validator<sup>[1](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53
 
 That's why a coding agent can update it. The schema is the contract; the validator tells the agent whether an edit is well-formed before it lands. To bootstrap the data I pasted in an old CV and let the agent turn it into the structured shape — from there it's just normal editing. Updating Word PDFs has always been a pain and working with Word files through an agent is not optimal — it never looks as good as I want it to. The CV project has been iterated on until it just feels right.
 
-An `update-cv` skill in the repo<sup>[4](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/.agent/skills/update-cv/SKILL.md)</sup> codifies the editing rules so the agent doesn't have to guess. It picks the right file, runs the validator before declaring done, and — because most user-facing strings are `{ "en": ..., "sv": ... }` pairs — writes the Swedish version alongside the English whenever I add or revise a description. Both end up at the same level of polish; the Swedish copy isn't a translation pass tacked on after the fact.
+An `update-cv` skill in the repo<sup>[2](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/.agent/skills/update-cv/SKILL.md)</sup> codifies the editing rules so the agent doesn't have to guess. It picks the right file, runs the validator before declaring done, and — because most user-facing strings are `{ "en": ..., "sv": ... }` pairs — writes the Swedish version alongside the English whenever I add or revise a description. Both end up at the same level of polish; the Swedish copy isn't a translation pass tacked on after the fact.
 
 ## Local overrides
 
@@ -24,7 +24,7 @@ One layer doesn't ship publicly. `cv.local.json` is gitignored and deep-merged o
 
 ## Side-project commit stats
 
-Not all the CV data is hand-written. Per-project commit stats — total commits, first and last commit dates, year-by-year activity — get pulled from the GitHub GraphQL API at build time<sup>[5](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/scripts/generate-project-stats.mjs)</sup>. For open-source projects, only my own commits count toward the totals, not those of every contributor. The numbers show up on each project card and are inlined into `/resume.json` so an agent fetching the JSON gets the activity data without an extra API roundtrip.
+Not all the CV data is hand-written. Per-project commit stats — total commits, first and last commit dates, year-by-year activity — get pulled from the GitHub GraphQL API at build time<sup>[3](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/scripts/generate-project-stats.mjs)</sup>. For open-source projects, only my own commits count toward the totals, not those of every contributor. The numbers show up on each project card and are inlined into `/resume.json` so an agent fetching the JSON gets the activity data without an extra API roundtrip.
 
 Token-less builds (a fresh clone, an external contributor's PR, an ad-hoc local PDF) fall back to a cached copy on a separate `data-cache` git branch that a scheduled workflow refreshes. The CV doesn't blow up because GitHub returned a 401.
 
@@ -32,7 +32,7 @@ Token-less builds (a fresh clone, an external contributor's PR, an ad-hoc local 
 
 The React site is the obvious one. Less obvious: the same assembled CV drives every other artifact.
 
-- **A bilingual PDF, English and Swedish.** A simpler print-only layout gets rendered to static HTML, then opened in a headless browser and saved as a PDF<sup>[2](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/scripts/generate-pdf.mjs)</sup>. The PDF doesn't go through the React app at all, so what comes out is identical every time. PDF metadata (Title, Author, Subject, Keywords) gets stamped on the way out so the file shows up correctly in document readers and search results.
+- **A bilingual PDF, English and Swedish.** A simpler print-only layout gets rendered to static HTML, then opened in a headless browser and saved as a PDF<sup>[4](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/scripts/generate-pdf.mjs)</sup>. The PDF doesn't go through the React app at all, so what comes out is identical every time. PDF metadata (Title, Author, Subject, Keywords) gets stamped on the way out so the file shows up correctly in document readers and search results.
 
 - **A social share image** — the 1200×630 banner that appears as the preview when someone pastes the URL into Slack, LinkedIn, Twitter, or iMessage. Generated from the same CV via [satori](https://github.com/vercel/satori). Without one, social previews either fall back to a tiny favicon or skip the preview entirely. With one, the link looks like a polished card with my name, title, and tagline.
 
@@ -40,7 +40,7 @@ The React site is the obvious one. Less obvious: the same assembled CV drives ev
 
 - **A machine-readable `/resume.json`.** The whole CV as a single JSON file, served straight from the site root. Agents can fetch the structured source instead of scraping HTML. `/cv.json` is a byte-identical alias for the path LLMs commonly guess. Both are discoverable via `robots.txt`, `sitemap.xml`, and `<link rel="alternate">` tags in the `<head>`.
 
-- **An `/llms.txt` index**<sup>[3](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/scripts/generate-llms-txt.mjs)</sup> following the [llmstxt.org](https://llmstxt.org/) convention. A small markdown file pointing agents at `/resume.json`, with the experience and side-project sections baked inline so an agent that only fetches this one file can still answer "which jobs are listed there".
+- **An `/llms.txt` index**<sup>[5](https://github.com/niclaslindstedt/cv/blob/7e1f94a4a53fa0c1c37aeb21024fc16bf8a570b3/scripts/generate-llms-txt.mjs)</sup> following the [llmstxt.org](https://llmstxt.org/) convention. A small markdown file pointing agents at `/resume.json`, with the experience and side-project sections baked inline so an agent that only fetches this one file can still answer "which jobs are listed there".
 
 - **A standalone `/timeline` page** saved as its own HTML file. The interactive timeline still renders inside the React app on visit; the static file means a direct hit on `niclaslindstedt.se/timeline` returns a 200 on GitHub Pages instead of bouncing through a 404, and crawlers get something indexable.
 
