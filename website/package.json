@@ -6,6 +6,7 @@
     "extract": "tsx scripts/extract-posts.ts && tsx scripts/build-search-index.ts",
     "dev": "npm run extract && vite",
     "build": "npm run extract && tsc -p tsconfig.json --noEmit && vite build && tsx scripts/generate-seo.ts",
+    "check:seo": "tsx scripts/check-seo.ts",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
