@@ -8,8 +8,9 @@
 //   - dist/sitemap.xml
 //   - dist/robots.txt
 //   - dist/llms.txt                            (machine-readable index for AI crawlers)
-//   - dist/feed.xml                            (RSS 2.0, summary-level)
-//   - dist/feed.atom                           (Atom 1.0, summary-level)
+//   - dist/feed.xml                            (RSS 2.0 with full <content:encoded>)
+//   - dist/feed.atom                           (Atom 1.0 with full <content type="html">)
+//   - dist/feed.json                           (JSON Feed 1.1)
 //
 // Each per-route HTML also has its <div id="root"> pre-populated with the
 // prose-fallback render of that route via react-dom/server. That gives
@@ -27,6 +28,7 @@ import {
   AUTHOR,
   DEFAULT_KEYWORDS,
   FEED_POST_LIMIT,
+  JSON_FEED_PATH,
   RSS_PATH,
   SITEMAP_PATH,
   SITE_DESCRIPTION,
@@ -47,6 +49,7 @@ import {
   postBreadcrumbJsonLd,
   postJsonLd,
   renderHead,
+  tagBreadcrumbJsonLd,
   tagJsonLd,
   tagsIndexBreadcrumbJsonLd,
   tagsIndexJsonLd,
@@ -54,6 +57,7 @@ import {
 import {
   renderAboutBody,
   renderHomeBody,
+  renderMarkdownToHtml,
   renderNotFoundBody,
   renderPostBody,
   renderTagBody,
@@ -188,7 +192,7 @@ function renderTag(shell: string, tag: string, tagPosts: Post[]): string {
     canonicalPath: `/tags/${encodeURIComponent(tag)}/`,
     ogType: "website",
     keywords: [tag, ...DEFAULT_KEYWORDS],
-    jsonLd: tagJsonLd(tag, tagPosts),
+    jsonLd: [tagJsonLd(tag, tagPosts), tagBreadcrumbJsonLd(tag)],
   });
   return injectBody(injectHead(shell, head), renderTagBody(posts, tag));
 }
@@ -214,7 +218,10 @@ function renderAbout(shell: string): string {
     title: `About — ${SITE_NAME}`,
     description: `About Niclas Lindstedt, who writes ${SITE_NAME}: AI, agents, and open source.`,
     canonicalPath: `/about/`,
-    ogType: "website",
+    // `og:type=profile` (not "website") so Facebook / LinkedIn render the
+    // about page as a person profile card with the author's name as the
+    // primary entity. ProfilePage JSON-LD complements this on Google's side.
+    ogType: "profile",
     keywords: ["about", "Niclas Lindstedt", ...DEFAULT_KEYWORDS.slice(0, 5)],
     jsonLd: [...aboutJsonLd(), aboutBreadcrumbJsonLd()],
   });
@@ -341,37 +348,58 @@ function rfc822(iso: string): string {
   return new Date(iso).toUTCString();
 }
 
-// Per-post data needed by both RSS and Atom, pre-escaped once. A single source
-// of truth for "which posts are in the feed, and what do they look like" means
-// a fix to escaping, date formatting, or URL shape lands in both feeds at once.
+// Per-post data needed by RSS, Atom, and JSON Feed, pre-rendered once. A
+// single source of truth for "which posts are in the feed, and what do they
+// look like" means a fix to escaping, date formatting, or URL shape lands in
+// every feed at once. `bodyHtml` is the full post body rendered to plain
+// HTML (no React component overrides) for full-content feed consumers; the
+// XML-escaped variants are for RSS/Atom, the raw variants are for JSON Feed.
 interface FeedItem {
   title: string;
+  rawTitle: string;
   url: string;
+  rawUrl: string;
   summary: string;
+  rawSummary: string;
   authorName: string;
   authorUrl: string;
   publishedRfc822: string;
   publishedIso: string;
   updatedIso: string;
   categories: string[];
+  rawCategories: string[];
+  bodyHtml: string;
 }
 
 function feedItems(): FeedItem[] {
   return posts.slice(0, FEED_POST_LIMIT).map((p) => {
     const v = pickPrimaryVersion(p);
     const url = absoluteUrl(`/posts/${p.slug}/`);
+    const bodyHtml = renderMarkdownToHtml(v.body);
     return {
       title: escapeXml(v.title),
+      rawTitle: v.title,
       url: escapeXml(url),
+      rawUrl: url,
       summary: escapeXml(v.summary),
+      rawSummary: v.summary,
       authorName: escapeXml(AUTHOR.name),
       authorUrl: escapeXml(AUTHOR.url),
       publishedRfc822: escapeXml(rfc822(v.date)),
       publishedIso: escapeXml(v.date),
       updatedIso: escapeXml(v.edited_at),
       categories: v.tags.map((t) => escapeXml(t)),
+      rawCategories: [...v.tags],
+      bodyHtml,
     };
   });
+}
+
+// Wrap a chunk of HTML in CDATA for RSS `<content:encoded>` / Atom
+// `<content type="html">`. CDATA terminates on the literal `]]>`, so split
+// any such occurrence across two CDATA sections.
+function cdata(html: string): string {
+  return `<![CDATA[${html.replace(/]]>/g, "]]]]><![CDATA[>")}]]>`;
 }
 
 function feedUpdatedIso(items: FeedItem[]): string {
@@ -386,6 +414,12 @@ function renderRss(): string {
   const items = feedItems();
   const lastBuild = escapeXml(rfc822(feedUpdatedIso(items)));
 
+  // Full-content feed: `<description>` keeps the summary lede (feed readers
+  // that don't render the full body still get a useful preview), while
+  // `<content:encoded>` carries the post body as HTML wrapped in CDATA.
+  // The `content:` namespace declaration on the <rss> root is what makes
+  // this RFC-valid; readers that ignore the namespace fall back to
+  // <description> automatically.
   const body = items
     .map((it) =>
       [
@@ -395,6 +429,7 @@ function renderRss(): string {
         `      <guid isPermaLink="true">${it.url}</guid>`,
         `      <pubDate>${it.publishedRfc822}</pubDate>`,
         `      <description>${it.summary}</description>`,
+        `      <content:encoded>${cdata(it.bodyHtml)}</content:encoded>`,
         ...it.categories.map((c) => `      <category>${c}</category>`),
         `      <dc:creator>${it.authorName}</dc:creator>`,
         "    </item>",
@@ -403,7 +438,7 @@ function renderRss(): string {
     .join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>${escapeXml(SITE_NAME)}</title>
     <link>${escapeXml(SITE_URL + "/")}</link>
@@ -424,6 +459,10 @@ function renderAtom(): string {
   const items = feedItems();
   const updated = escapeXml(feedUpdatedIso(items));
 
+  // Atom carries full content via `<content type="html">` with the body
+  // CDATA-wrapped, alongside the summary lede. Same dual-channel pattern
+  // as RSS: readers that prefer summaries take `<summary>`, readers that
+  // render full posts take `<content>`.
   const body = items
     .map((it) =>
       [
@@ -435,6 +474,7 @@ function renderAtom(): string {
         `    <updated>${it.updatedIso}</updated>`,
         `    <author><name>${it.authorName}</name><uri>${it.authorUrl}</uri></author>`,
         `    <summary type="text">${it.summary}</summary>`,
+        `    <content type="html">${cdata(it.bodyHtml)}</content>`,
         ...it.categories.map((c) => `    <category term="${c}" />`),
         "  </entry>",
       ].join("\n"),
@@ -454,6 +494,37 @@ function renderAtom(): string {
 ${body}
 </feed>
 `;
+}
+
+// -- JSON Feed 1.1 ----------------------------------------------------------
+
+// JSON Feed (https://www.jsonfeed.org/version/1.1/) is the modern feed
+// format readers increasingly prefer — strict JSON beats hand-formatted XML
+// for parser robustness, and full-content delivery via `content_html` is
+// first-class instead of bolted on via a content-module extension.
+function renderJsonFeed(): string {
+  const items = feedItems();
+  const data = {
+    version: "https://jsonfeed.org/version/1.1",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    home_page_url: `${SITE_URL}/`,
+    feed_url: absoluteUrl(JSON_FEED_PATH),
+    language: SITE_LANGUAGE,
+    authors: [{ name: AUTHOR.name, url: AUTHOR.url }],
+    items: items.map((it) => ({
+      id: it.rawUrl,
+      url: it.rawUrl,
+      title: it.rawTitle,
+      summary: it.rawSummary,
+      content_html: it.bodyHtml,
+      date_published: it.publishedIso,
+      date_modified: it.updatedIso,
+      tags: it.rawCategories,
+      authors: [{ name: AUTHOR.name, url: AUTHOR.url }],
+    })),
+  };
+  return JSON.stringify(data, null, 2) + "\n";
 }
 
 // -- Main -------------------------------------------------------------------
@@ -495,9 +566,10 @@ async function main(): Promise<void> {
   writeFile("llms.txt", renderLlmsTxt());
   writeFile("feed.xml", renderRss());
   writeFile("feed.atom", renderAtom());
+  writeFile("feed.json", renderJsonFeed());
 
   process.stderr.write(
-    `generate-seo: wrote homepage + about + ${posts.length} post page(s) + ${tags.size} tag page(s) + tags index + ${posts.length} OG image(s), sitemap, robots, llms.txt, RSS + Atom feeds\n`,
+    `generate-seo: wrote homepage + about + ${posts.length} post page(s) + ${tags.size} tag page(s) + tags index + ${posts.length} OG image(s), sitemap, robots, llms.txt, RSS + Atom + JSON feeds\n`,
   );
 }
 

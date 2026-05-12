@@ -10,6 +10,7 @@ import {
   FEED_POST_LIMIT,
   OG_IMAGE_HEIGHT,
   OG_IMAGE_WIDTH,
+  ORGANIZATION,
   SITE_DESCRIPTION,
   SITE_LANGUAGE,
   SITE_NAME,
@@ -18,6 +19,45 @@ import {
   absoluteUrl,
   postOgImagePath,
 } from "../../src/seo/siteConfig.ts";
+
+// Centralised Person + publisher entity builders. They read the optional
+// AUTHOR / ORGANIZATION slots in siteConfig and emit fields only when the
+// values are non-empty, so the JSON-LD stays clean today and automatically
+// upgrades the moment the author drops a headshot URL or logo URL into the
+// config. The Person uses the canonical `${SITE_URL}/#author` @id so Google
+// dedupes the entity across every page that references it.
+function authorPersonJsonLd(): Record<string, unknown> {
+  const person: Record<string, unknown> = {
+    "@type": "Person",
+    "@id": `${SITE_URL}/#author`,
+    name: AUTHOR.name,
+    url: AUTHOR.url,
+    sameAs: [...AUTHOR_SAME_AS],
+  };
+  if (AUTHOR.image) person.image = AUTHOR.image;
+  if (AUTHOR.description) person.description = AUTHOR.description;
+  if (AUTHOR.jobTitle) person.jobTitle = AUTHOR.jobTitle;
+  return person;
+}
+
+function publisherJsonLd(): Record<string, unknown> {
+  // Prefer an Organization publisher with a logo (Google's stated
+  // recommendation for Article rich results) when ORGANIZATION.name and
+  // ORGANIZATION.logo are both populated; otherwise fall back to the author
+  // Person, which is the appropriate publisher for an indie blog.
+  if (ORGANIZATION.name && ORGANIZATION.logo) {
+    return {
+      "@type": "Organization",
+      name: ORGANIZATION.name,
+      url: ORGANIZATION.url,
+      logo: {
+        "@type": "ImageObject",
+        url: ORGANIZATION.logo,
+      },
+    };
+  }
+  return authorPersonJsonLd();
+}
 import type { Post, PostVersion } from "../../src/types.ts";
 
 export function escapeHtml(s: string): string {
@@ -66,7 +106,7 @@ export interface HeadMeta {
   title: string;
   description: string;
   canonicalPath: string;
-  ogType: "website" | "article";
+  ogType: "website" | "article" | "profile";
   ogImagePath?: string;
   keywords?: string[];
   article?: {
@@ -114,6 +154,7 @@ export function renderHead(meta: HeadMeta): string {
     metaTag({ name: "robots", content: meta.robots ?? "index,follow,max-image-preview:large" }),
   );
 
+  const imageAlt = `${SITE_NAME} — ${SITE_TAGLINE}`;
   lines.push(metaTag({ property: "og:site_name", content: SITE_NAME }));
   lines.push(metaTag({ property: "og:locale", content: "en_US" }));
   lines.push(metaTag({ property: "og:type", content: meta.ogType }));
@@ -123,7 +164,7 @@ export function renderHead(meta: HeadMeta): string {
   lines.push(metaTag({ property: "og:image", content: image }));
   lines.push(metaTag({ property: "og:image:width", content: OG_IMAGE_WIDTH }));
   lines.push(metaTag({ property: "og:image:height", content: OG_IMAGE_HEIGHT }));
-  lines.push(metaTag({ property: "og:image:alt", content: `${SITE_NAME} — ${SITE_TAGLINE}` }));
+  lines.push(metaTag({ property: "og:image:alt", content: imageAlt }));
 
   if (meta.article) {
     lines.push(
@@ -136,10 +177,26 @@ export function renderHead(meta: HeadMeta): string {
     }
   }
 
+  // og:type=profile expects the author's first/last name as separate fields
+  // so Facebook / LinkedIn render the page as a person card rather than a
+  // generic website card. Splits AUTHOR.name on whitespace — works for the
+  // current "Niclas Lindstedt" and any reasonable bi-/tri-partite name.
+  if (meta.ogType === "profile") {
+    const parts = AUTHOR.name.split(/\s+/);
+    const first = parts.shift() ?? AUTHOR.name;
+    const last = parts.join(" ");
+    lines.push(metaTag({ property: "profile:first_name", content: first }));
+    if (last) lines.push(metaTag({ property: "profile:last_name", content: last }));
+  }
+
   lines.push(metaTag({ name: "twitter:card", content: "summary_large_image" }));
   lines.push(metaTag({ name: "twitter:title", content: title }));
   lines.push(metaTag({ name: "twitter:description", content: desc }));
   lines.push(metaTag({ name: "twitter:image", content: image }));
+  // twitter:image:alt mirrors og:image:alt — Twitter cards have their own
+  // alt attribute that doesn't fall back to the OG one, so a screen-reader
+  // user on Twitter sees "Image" otherwise.
+  lines.push(metaTag({ name: "twitter:image:alt", content: imageAlt }));
 
   // Feed/sitemap discovery links are emitted once by the shell in
   // website/index.html — they're site-wide constants, so re-emitting them per
@@ -159,11 +216,7 @@ export function renderHead(meta: HeadMeta): string {
 export function homeJsonLd(posts: Post[]): object[] {
   const person = {
     "@context": "https://schema.org",
-    "@type": "Person",
-    "@id": `${SITE_URL}/#author`,
-    name: AUTHOR.name,
-    url: AUTHOR.url,
-    sameAs: [...AUTHOR_SAME_AS],
+    ...authorPersonJsonLd(),
   };
   // No `potentialAction` SearchAction here: the in-page search modal is
   // keyboard-driven (Cmd-K) and has no URL representation, so advertising a
@@ -218,15 +271,9 @@ export function postJsonLd(post: Post): object {
     height: OG_IMAGE_HEIGHT,
   };
   // Author reuses the canonical Person @id the homepage exposes, so Google
-  // dedupes the entity across pages, and carries `sameAs` so the Knowledge
-  // Graph can link the author to every external profile we know about.
-  const author = {
-    "@type": "Person",
-    "@id": `${SITE_URL}/#author`,
-    name: AUTHOR.name,
-    url: AUTHOR.url,
-    sameAs: [...AUTHOR_SAME_AS],
-  };
+  // dedupes the entity across pages. `publisher` prefers the configured
+  // Organization (with logo) when both name+logo are set in siteConfig,
+  // otherwise falls back to the author Person — see publisherJsonLd().
   return {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -241,8 +288,8 @@ export function postJsonLd(post: Post): object {
     wordCount: v.wordCount,
     keywords: [...new Set([...v.tags, ...v.keywords])].join(", "),
     articleSection: v.tags,
-    author,
-    publisher: author,
+    author: authorPersonJsonLd(),
+    publisher: publisherJsonLd(),
     image,
   };
 }
@@ -322,11 +369,7 @@ export function aboutJsonLd(): object[] {
   };
   const person = {
     "@context": "https://schema.org",
-    "@type": "Person",
-    "@id": `${SITE_URL}/#author`,
-    name: AUTHOR.name,
-    url: AUTHOR.url,
-    sameAs: [...AUTHOR_SAME_AS],
+    ...authorPersonJsonLd(),
   };
   return [profile, person];
 }
@@ -338,6 +381,27 @@ export function aboutBreadcrumbJsonLd(): object {
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
       { "@type": "ListItem", position: 2, name: "About", item: `${SITE_URL}/about/` },
+    ],
+  };
+}
+
+// Breadcrumb for an individual tag page: Home › Tags › #<tag>. Post pages
+// already get a Home › #<tag> › Title trail, but tag pages had no breadcrumb
+// of their own — so Google had no structured `back to tags` signal to render
+// in tag-page SERP entries.
+export function tagBreadcrumbJsonLd(tag: string): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+      { "@type": "ListItem", position: 2, name: "Tags", item: `${SITE_URL}/tags/` },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: `#${tag}`,
+        item: absoluteUrl(`/tags/${encodeURIComponent(tag)}/`),
+      },
     ],
   };
 }

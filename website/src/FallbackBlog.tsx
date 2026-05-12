@@ -34,13 +34,21 @@ export function FallbackBlog({ posts, tag: tagProp }: { posts: Post[]; tag?: str
           and assistive tech. */}
       <h1 className="sr-only">{tag ? `Posts tagged #${tag}` : "Posts"}</h1>
       {tag && (
-        <div className="mb-8 flex items-center gap-2 text-sm text-dim">
-          <span>
-            Filtering by tag <span className="text-fg-bright">#{tag}</span>
-          </span>
-          <Link to={fallbackHref("/")} className="underline decoration-dotted hover:text-fg">
-            clear
-          </Link>
+        <div className="mb-8 flex flex-col gap-2">
+          {/* One-line intro sentence so Google doesn't see the tag page as
+              thin content (the only other body text is the filter chip and
+              the post entries). Deterministic, no per-tag copy required. */}
+          <p className="text-sm text-fg">
+            Every post on this blog tagged <span className="text-fg-bright">#{tag}</span>.
+          </p>
+          <div className="flex items-center gap-2 text-sm text-dim">
+            <span>
+              Filtering by tag <span className="text-fg-bright">#{tag}</span>
+            </span>
+            <Link to={fallbackHref("/")} className="underline decoration-dotted hover:text-fg">
+              clear
+            </Link>
+          </div>
         </div>
       )}
 

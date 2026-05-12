@@ -24,6 +24,41 @@ export const AUTHOR = {
   dockerhub: "https://hub.docker.com/u/niclaslindstedt",
   pypi: "https://pypi.org/user/niclaslindstedt/",
   cratesio: "https://crates.io/users/niclaslindstedt",
+
+  // -- Optional Knowledge-Graph richness slots --
+  //
+  // Empty strings here are skipped by the JSON-LD builders so the schema
+  // stays clean. Fill them in to upgrade the author entity Google sees:
+  //
+  // `image`       Absolute URL to a square headshot. Surfaces in Google's
+  //               author-byline card on article rich results, and in the
+  //               Knowledge Graph entry for the author.
+  // `description` One- or two-sentence bio. Shown in some Knowledge-Graph
+  //               surfaces and on the about page's ProfilePage entity.
+  // `jobTitle`    Short title, e.g. "Software engineer". Surfaces in
+  //               Knowledge Graph and on LinkedIn-style profile cards.
+  //
+  // Wired through `homePersonJsonLd()` and `postJsonLd()` in
+  // scripts/seo/meta.ts — both functions emit the field only when the value
+  // is non-empty, so dropping a real URL/string in here is the entire fix
+  // for that line item.
+  image: "",
+  description: "",
+  jobTitle: "",
+} as const;
+
+// -- Optional publisher Organization --
+//
+// Google's article-rich-results docs prefer `publisher` to be an
+// Organization with a logo ImageObject (>=112×112) over a bare Person.
+// When `name` and `logo` are both filled in, `postJsonLd()` emits the
+// publisher as an Organization; otherwise it falls back to the author
+// Person — which is acceptable for an indie blog but lower-priority for
+// the article-card surfaces. Both values are absolute strings.
+export const ORGANIZATION = {
+  name: "",
+  url: SITE_URL,
+  logo: "",
 } as const;
 
 // External identities tied to AUTHOR — emitted as `sameAs` in the homepage
@@ -66,6 +101,7 @@ export const DEFAULT_KEYWORDS: readonly string[] = [
 // generator's output paths can't drift.
 export const RSS_PATH = "/feed.xml";
 export const ATOM_PATH = "/feed.atom";
+export const JSON_FEED_PATH = "/feed.json";
 export const SITEMAP_PATH = "/sitemap.xml";
 
 // Number of posts to include in the RSS/Atom feed and in the homepage JSON-LD.
