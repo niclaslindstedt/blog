@@ -74,6 +74,10 @@ export interface HeadMeta {
     tags: string[];
   };
   jsonLd?: object | object[];
+  // Override for the <meta name="robots"> directive. Defaults to the site-wide
+  // "index,follow,max-image-preview:large". Set to "noindex,follow" on the
+  // 404 page so Google doesn't index the SPA shell when a URL doesn't match.
+  robots?: string;
 }
 
 function metaTag(attrs: Record<string, string | number | undefined>): string {
@@ -105,7 +109,9 @@ export function renderHead(meta: HeadMeta): string {
   if (keywords) lines.push(metaTag({ name: "keywords", content: keywords }));
   lines.push(linkTag({ rel: "canonical", href: canonical }));
   lines.push(metaTag({ name: "author", content: AUTHOR.name }));
-  lines.push(metaTag({ name: "robots", content: "index,follow,max-image-preview:large" }));
+  lines.push(
+    metaTag({ name: "robots", content: meta.robots ?? "index,follow,max-image-preview:large" }),
+  );
 
   lines.push(metaTag({ property: "og:site_name", content: SITE_NAME }));
   lines.push(metaTag({ property: "og:locale", content: "en_US" }));
@@ -158,6 +164,9 @@ export function homeJsonLd(posts: Post[]): object[] {
     url: AUTHOR.url,
     sameAs: [...AUTHOR_SAME_AS],
   };
+  // No `potentialAction` SearchAction here: the in-page search modal is
+  // keyboard-driven (Cmd-K) and has no URL representation, so advertising a
+  // search endpoint to Google would point it at a URL the SPA doesn't route.
   const website = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -167,11 +176,6 @@ export function homeJsonLd(posts: Post[]): object[] {
     description: SITE_DESCRIPTION,
     inLanguage: SITE_LANGUAGE,
     publisher: { "@id": `${SITE_URL}/#author` },
-    potentialAction: {
-      "@type": "SearchAction",
-      target: `${SITE_URL}/?tag={search_term_string}`,
-      "query-input": "required name=search_term_string",
-    },
   };
   const blog = {
     "@context": "https://schema.org",
