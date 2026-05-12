@@ -1,6 +1,7 @@
 # blog
 
 [![ci](https://github.com/niclaslindstedt/blog/actions/workflows/ci.yml/badge.svg)](https://github.com/niclaslindstedt/blog/actions/workflows/ci.yml)
+[![seo](https://github.com/niclaslindstedt/blog/actions/workflows/seo.yml/badge.svg)](https://github.com/niclaslindstedt/blog/actions/workflows/seo.yml)
 [![pages](https://github.com/niclaslindstedt/blog/actions/workflows/pages.yml/badge.svg)](https://github.com/niclaslindstedt/blog/actions/workflows/pages.yml)
 [![license](https://img.shields.io/badge/license-All%20rights%20reserved-red)](LICENSE)
 
