@@ -62,6 +62,7 @@ const terminalComponents: Components = {
         alt={alt ?? ""}
         title={title}
         loading="lazy"
+        decoding="async"
       />
     ) : null,
   code: ({ children, className }) => (

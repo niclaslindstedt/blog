@@ -38,6 +38,8 @@ import {
 } from "../src/seo/siteConfig.ts";
 import { renderOgImage } from "./seo/ogImage.ts";
 import {
+  aboutBreadcrumbJsonLd,
+  aboutJsonLd,
   escapeXml,
   homeJsonLd,
   pickPrimaryVersion,
@@ -49,6 +51,7 @@ import {
   tagsIndexJsonLd,
 } from "./seo/meta.ts";
 import {
+  renderAboutBody,
   renderHomeBody,
   renderNotFoundBody,
   renderPostBody,
@@ -172,9 +175,15 @@ function renderPost(shell: string, post: Post): string {
 // -- Per-tag ----------------------------------------------------------------
 
 function renderTag(shell: string, tag: string, tagPosts: Post[]): string {
+  // Tag description stays under the 160-char Google truncation threshold —
+  // earlier copy concatenated the full SITE_DESCRIPTION and always blew past.
+  const count = tagPosts.length;
+  const description =
+    `${count} post${count === 1 ? "" : "s"} on ${SITE_NAME} tagged #${tag} — ` +
+    `notes on AI, agents, and open source.`;
   const head = renderHead({
     title: `Posts tagged #${tag} — ${SITE_NAME}`,
-    description: `${SITE_NAME} posts tagged #${tag}. ${SITE_DESCRIPTION}`,
+    description,
     canonicalPath: `/tags/${encodeURIComponent(tag)}/`,
     ogType: "website",
     keywords: [tag, ...DEFAULT_KEYWORDS],
@@ -195,6 +204,20 @@ function renderTagsIndex(shell: string, tagCounts: { tag: string; count: number 
     jsonLd: [tagsIndexJsonLd(tagCounts), tagsIndexBreadcrumbJsonLd()],
   });
   return injectBody(injectHead(shell, head), renderTagsIndexBody(posts));
+}
+
+// -- About ------------------------------------------------------------------
+
+function renderAbout(shell: string): string {
+  const head = renderHead({
+    title: `About — ${SITE_NAME}`,
+    description: `About Niclas Lindstedt, who writes ${SITE_NAME}: AI, agents, and open source.`,
+    canonicalPath: `/about/`,
+    ogType: "website",
+    keywords: ["about", "Niclas Lindstedt", ...DEFAULT_KEYWORDS.slice(0, 5)],
+    jsonLd: [...aboutJsonLd(), aboutBreadcrumbJsonLd()],
+  });
+  return injectBody(injectHead(shell, head), renderAboutBody());
 }
 
 // -- 404 --------------------------------------------------------------------
@@ -225,6 +248,13 @@ function renderSitemap(): string {
     lastmod: posts.length ? maxEditedAt(posts) : new Date().toISOString(),
     changefreq: "weekly",
     priority: "1.0",
+  });
+
+  urls.push({
+    loc: absoluteUrl("/about/"),
+    lastmod: posts.length ? maxEditedAt(posts) : new Date().toISOString(),
+    changefreq: "yearly",
+    priority: "0.7",
   });
 
   for (const p of posts) {
@@ -402,6 +432,7 @@ async function main(): Promise<void> {
   const home = renderHome(shell);
   writeFile("index.html", home);
   writeFile("404.html", renderNotFound(shell));
+  writeFile(path.join("about", "index.html"), renderAbout(shell));
 
   for (const post of posts) {
     writeFile(path.join("posts", post.slug, "index.html"), renderPost(shell, post));
@@ -432,7 +463,7 @@ async function main(): Promise<void> {
   writeFile("feed.atom", renderAtom());
 
   process.stderr.write(
-    `generate-seo: wrote homepage + ${posts.length} post page(s) + ${tags.size} tag page(s) + tags index + ${posts.length} OG image(s), sitemap, robots, RSS + Atom feeds\n`,
+    `generate-seo: wrote homepage + about + ${posts.length} post page(s) + ${tags.size} tag page(s) + tags index + ${posts.length} OG image(s), sitemap, robots, RSS + Atom feeds\n`,
   );
 }
 

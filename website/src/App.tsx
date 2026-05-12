@@ -11,6 +11,7 @@ import { SearchOpenerContext } from "./SearchOpenerContext.tsx";
 import { usePageTitle } from "./seo/usePageTitle.ts";
 import { useAnalytics } from "./seo/useAnalytics.ts";
 import { SITE_NAME, SITE_TAGLINE } from "./seo/siteConfig.ts";
+import { useIsHydrated } from "./useIsHydrated.ts";
 
 // Lazy boundaries: the SSR prerender ships the prose-fallback HTML inside
 // <div id="root">, so the first paint is already painted by the time React
@@ -31,6 +32,10 @@ const FileViewer = lazy(() =>
 );
 const TagsIndex = lazy(() => import("./TagsIndex.tsx").then((m) => ({ default: m.TagsIndex })));
 const TagRoute = lazy(() => import("./TagRoute.tsx").then((m) => ({ default: m.TagRoute })));
+const AboutPage = lazy(() => import("./AboutPage.tsx").then((m) => ({ default: m.AboutPage })));
+const NotFoundPage = lazy(() =>
+  import("./NotFoundPage.tsx").then((m) => ({ default: m.NotFoundPage })),
+);
 
 const posts = postsData as Post[];
 
@@ -44,21 +49,26 @@ function HomeTitle() {
 // unmounting it, so `TerminalBlog`'s session state (cwd, scrollback, pending
 // animation) survives when the reader clicks a post filename.
 function BlogRoute() {
+  const hydrated = useIsHydrated();
   const view = useActiveView();
   const { terminalMinimized } = usePreferences();
   const { slug } = useParams<{ slug: string }>();
   const isHome = slug === undefined;
-  // When the terminal is minimized we still show the prose view behind the
-  // bar so the reader isn't staring at a blank page — the minimized widget
-  // is a fixed-position bar at the bottom and the fallback content flows
-  // normally underneath.
-  const showFallback = view === "blog" || (view === "terminal" && terminalMinimized);
+  // Until the client takes over from SSR, render exactly what the prerender
+  // emitted: the prose fallback. After hydration completes (useIsHydrated
+  // flips to true) we switch to whatever the reader's persisted view is.
+  // Before this gate, the SSR shipped prose but `useActiveView()` defaults
+  // to "terminal", so the first client render would have torn the SSR'd
+  // HTML down as a hydration mismatch.
+  const effectiveView = hydrated ? view : "blog";
+  const showFallback =
+    effectiveView === "blog" || (effectiveView === "terminal" && terminalMinimized);
   const fallbackProse = isHome ? <FallbackBlog posts={posts} /> : <FallbackPost posts={posts} />;
   return (
     <>
       {isHome && <HomeTitle />}
       {showFallback && fallbackProse}
-      {view === "terminal" && (
+      {effectiveView === "terminal" && (
         // Suspense fallback is the same prose view, so while the terminal
         // chunk fetches the reader keeps seeing the SSR'd post — no blank
         // flash between createRoot() wiping #root and the terminal mounting.
@@ -127,6 +137,26 @@ export default function App() {
                     element={
                       <Suspense fallback={null}>
                         <TagRoute posts={posts} />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/about"
+                    element={
+                      <Suspense fallback={null}>
+                        <AboutPage />
+                      </Suspense>
+                    }
+                  />
+                  {/* Catchall: when GitHub Pages serves /404.html and the
+                      React app boots on an unknown URL, this route's
+                      rendered DOM must match the SSR'd NotFoundBody so
+                      `hydrateRoot` doesn't tear it down. */}
+                  <Route
+                    path="*"
+                    element={
+                      <Suspense fallback={null}>
+                        <NotFoundPage />
                       </Suspense>
                     }
                   />
