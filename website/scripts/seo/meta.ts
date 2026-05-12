@@ -16,6 +16,7 @@ import {
   SITE_TAGLINE,
   SITE_URL,
   absoluteUrl,
+  postOgImagePath,
 } from "../../src/seo/siteConfig.ts";
 import type { Post, PostVersion } from "../../src/types.ts";
 
@@ -230,7 +231,7 @@ export function postJsonLd(post: Post): object {
       name: AUTHOR.name,
       url: AUTHOR.url,
     },
-    image: absoluteUrl(DEFAULT_OG_IMAGE),
+    image: absoluteUrl(postOgImagePath(post.slug)),
   };
 }
 

@@ -69,8 +69,21 @@ function NotFoundBody() {
 // FallbackPost can't find the post for its :slug — the prerendered HTML
 // silently degrades to "Post not found", which is exactly what Search Console
 // was indexing before we noticed.
+// Strip the in-app `?view=blog` sticky-fallback query string from every href
+// in the SSR'd output. The runtime React-router Link components carry it so
+// in-app navigation persists the prose view, but in the prerendered HTML
+// those duplicate URLs (`/posts/foo` vs `/posts/foo?view=blog`) just waste
+// crawl budget — the canonical handles the dedup, but only after Googlebot
+// has fetched both. After hydration React replaces the markup and the
+// runtime hrefs come back, so the strip is purely a crawler-side cleanup.
+function stripFallbackQuery(html: string): string {
+  // `?view=blog"`  → `"` (sole param)
+  // `?view=blog&…` → `?…` (first of several)
+  return html.replace(/\?view=blog"/g, '"').replace(/\?view=blog&/g, "?");
+}
+
 function renderTree(location: string, posts: Post[], notFound?: ReactNode): string {
-  return renderToStaticMarkup(
+  const html = renderToStaticMarkup(
     <SsrProviders location={location}>
       <Routes>
         <Route path="/" element={<FallbackBlog posts={posts} />} />
@@ -81,6 +94,7 @@ function renderTree(location: string, posts: Post[], notFound?: ReactNode): stri
       </Routes>
     </SsrProviders>,
   );
+  return stripFallbackQuery(html);
 }
 
 export function renderHomeBody(posts: Post[]): string {
