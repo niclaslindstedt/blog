@@ -207,6 +207,26 @@ export function homeJsonLd(posts: Post[]): object[] {
 export function postJsonLd(post: Post): object {
   const v = pickPrimaryVersion(post);
   const url = absoluteUrl(`/posts/${post.slug}/`);
+  // `image` as an ImageObject with explicit width/height (rather than a bare
+  // URL string) is what Google's article-rich-results docs recommend — the
+  // dimensions let it size the card without a probe request, and `>=1200px
+  // wide` is required for the larger article surfaces.
+  const image = {
+    "@type": "ImageObject",
+    url: absoluteUrl(postOgImagePath(post.slug)),
+    width: OG_IMAGE_WIDTH,
+    height: OG_IMAGE_HEIGHT,
+  };
+  // Author reuses the canonical Person @id the homepage exposes, so Google
+  // dedupes the entity across pages, and carries `sameAs` so the Knowledge
+  // Graph can link the author to every external profile we know about.
+  const author = {
+    "@type": "Person",
+    "@id": `${SITE_URL}/#author`,
+    name: AUTHOR.name,
+    url: AUTHOR.url,
+    sameAs: [...AUTHOR_SAME_AS],
+  };
   return {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -221,17 +241,9 @@ export function postJsonLd(post: Post): object {
     wordCount: v.wordCount,
     keywords: [...new Set([...v.tags, ...v.keywords])].join(", "),
     articleSection: v.tags,
-    author: {
-      "@type": "Person",
-      name: AUTHOR.name,
-      url: AUTHOR.url,
-    },
-    publisher: {
-      "@type": "Person",
-      name: AUTHOR.name,
-      url: AUTHOR.url,
-    },
-    image: absoluteUrl(postOgImagePath(post.slug)),
+    author,
+    publisher: author,
+    image,
   };
 }
 

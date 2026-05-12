@@ -94,17 +94,20 @@ const terminalComponents: Components = {
 // conventional heading sizes so the text reads like a regular blog rather
 // than a terminal dump.
 //
-// Heading levels are shifted down one (h1→h2, h2→h3, …) so the page stays a
-// single <h1> — the post title rendered by FallbackPost. Search engines and
-// screen readers both prefer one <h1> per document.
+// Heading map preserves markdown levels as-is (md h2 → HTML h2, md h3 → HTML
+// h3, …) so the page outline goes h1 (page title) → h2 (sections) → h3
+// (subsections) with no skipped levels — Lighthouse and screen readers both
+// flag a skip from h1 directly to h3, which is what happened with the old
+// shift-down-by-one mapping because posts conventionally use `##` for their
+// top-level sections. `# H1` in a post body still auto-demotes to an HTML h2
+// so the page never has two h1 elements; the visible styling is the same as
+// before, only the tag changed.
 const proseComponents: Components = {
-  h1: ({ children }) => (
-    <h2 className="mt-10 mb-3 text-xl leading-snug font-bold text-fg-bright">{children}</h2>
-  ),
-  h2: ({ children }) => <h3 className="mt-8 mb-2 text-lg font-bold text-fg-bright">{children}</h3>,
-  h3: ({ children }) => <h4 className="mt-6 mb-2 font-bold text-fg">{children}</h4>,
-  h4: ({ children }) => <h5 className="mt-4 mb-1 font-bold text-fg">{children}</h5>,
-  h5: ({ children }) => <h6 className="mt-4 mb-1 font-bold text-fg">{children}</h6>,
+  h1: ({ children }) => <h2 className="mt-8 mb-2 text-lg font-bold text-fg-bright">{children}</h2>,
+  h2: ({ children }) => <h2 className="mt-8 mb-2 text-lg font-bold text-fg-bright">{children}</h2>,
+  h3: ({ children }) => <h3 className="mt-6 mb-2 font-bold text-fg">{children}</h3>,
+  h4: ({ children }) => <h4 className="mt-4 mb-1 font-bold text-fg">{children}</h4>,
+  h5: ({ children }) => <h5 className="mt-4 mb-1 font-bold text-fg">{children}</h5>,
   h6: ({ children }) => <h6 className="mt-4 mb-1 font-bold text-fg">{children}</h6>,
   p: ({ children }) => <p className="mb-5 leading-relaxed">{children}</p>,
   ul: ({ children }) => <ul className="my-4 ml-6 list-disc">{children}</ul>,

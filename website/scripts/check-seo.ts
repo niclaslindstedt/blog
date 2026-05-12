@@ -82,6 +82,26 @@ function checkHtmlFile(file: string): void {
   if (h1Count === 0) err(rel, "missing <h1>");
   else if (h1Count > 1) warn(rel, `${h1Count} <h1> tags — only one should describe the page topic`);
 
+  // 2b. Heading levels should not skip — h1 → h3 with no intervening h2 is
+  //     a Lighthouse accessibility flag and a mild SEO signal. We check the
+  //     first time each level appears in document order.
+  if (body) {
+    const seen = new Set<number>();
+    for (const m of body.matchAll(/<h([1-6])[\s>]/g)) {
+      seen.add(Number(m[1]));
+    }
+    const levels = [...seen].sort((a, b) => a - b);
+    for (let i = 1; i < levels.length; i++) {
+      if (levels[i] - levels[i - 1] > 1) {
+        warn(
+          rel,
+          `heading levels skip from h${levels[i - 1]} to h${levels[i]} — Lighthouse / a11y flag`,
+        );
+        break;
+      }
+    }
+  }
+
   // 3. <title> and meta description must exist and be non-empty.
   const title = attr(html, /<title>([^<]*)<\/title>/);
   if (!title || !title.trim()) err(rel, "missing or empty <title>");
@@ -142,9 +162,25 @@ function checkHtmlFile(file: string): void {
         item !== null &&
         (item as { "@type"?: unknown })["@type"] === "BlogPosting"
       ) {
-        const image = (item as { image?: unknown }).image;
-        if (typeof image === "string" && ogImage && image !== ogImage) {
-          err(rel, `BlogPosting JSON-LD image \`${image}\` doesn't match og:image \`${ogImage}\``);
+        // `image` is either a bare URL string or an ImageObject `{ url, … }`.
+        // Both shapes are valid; what matters is that the URL points at the
+        // same asset as the og:image meta so social cards and rich results
+        // don't disagree about which picture represents the post.
+        const raw = (item as { image?: unknown }).image;
+        let imageUrl: string | undefined;
+        if (typeof raw === "string") imageUrl = raw;
+        else if (
+          typeof raw === "object" &&
+          raw !== null &&
+          typeof (raw as { url?: unknown }).url === "string"
+        ) {
+          imageUrl = (raw as { url: string }).url;
+        }
+        if (imageUrl && ogImage && imageUrl !== ogImage) {
+          err(
+            rel,
+            `BlogPosting JSON-LD image \`${imageUrl}\` doesn't match og:image \`${ogImage}\``,
+          );
         }
       }
     }
@@ -222,6 +258,21 @@ function checkRobotsTxt(): void {
     err("robots.txt", "`Disallow: /` blocks the entire site from indexing");
 }
 
+// llms.txt is the AI-crawler counterpart of sitemap.xml — minimal, but if
+// the file goes missing readers and agents that look for it (Claude search,
+// Perplexity, etc.) silently see a 404 instead of the post list. Cheap to
+// assert it exists with the expected shape.
+function checkLlmsTxt(): void {
+  const llmsPath = path.join(DIST, "llms.txt");
+  if (!fs.existsSync(llmsPath)) {
+    err("llms.txt", "llms.txt is missing");
+    return;
+  }
+  const llms = fs.readFileSync(llmsPath, "utf8");
+  if (!/^#\s+\S/m.test(llms)) err("llms.txt", "missing top-level `# Site title` heading");
+  if (!/^##\s+Posts/m.test(llms)) warn("llms.txt", "missing `## Posts` section");
+}
+
 function checkBundleBudgets(): void {
   // Critical-path JS budget. Anything in `dist/assets/` that the entry HTML
   // preloads counts as critical; lazy chunks aren't subject to the budget.
@@ -272,6 +323,7 @@ function main(): void {
 
   checkSitemap(htmlFiles);
   checkRobotsTxt();
+  checkLlmsTxt();
   checkBundleBudgets();
 
   const errors = findings.filter((f) => f.level === "error");

@@ -7,6 +7,7 @@
 //   - dist/404.html                            (real not-found page, noindex)
 //   - dist/sitemap.xml
 //   - dist/robots.txt
+//   - dist/llms.txt                            (machine-readable index for AI crawlers)
 //   - dist/feed.xml                            (RSS 2.0, summary-level)
 //   - dist/feed.atom                           (Atom 1.0, summary-level)
 //
@@ -237,6 +238,38 @@ function renderNotFound(shell: string): string {
   return injectBody(injectHead(shell, head), renderNotFoundBody());
 }
 
+// -- llms.txt ---------------------------------------------------------------
+
+// Lightweight, machine-readable site index for AI crawlers (per the
+// llmstxt.org convention). Same role as sitemap.xml for search engines:
+// declare what's here, in a format an LLM can ingest without rendering JS.
+// Kept minimal — title, one-line description, post list with summaries,
+// links to the about page and the author's homepage — so it stays valuable
+// even when an agent has only a token-budget glance to spare.
+function renderLlmsTxt(): string {
+  const lines: string[] = [];
+  lines.push(`# ${SITE_NAME}`);
+  lines.push("");
+  lines.push(`> ${SITE_DESCRIPTION}`);
+  lines.push("");
+  if (posts.length > 0) {
+    lines.push("## Posts");
+    for (const p of posts) {
+      const v = pickPrimaryVersion(p);
+      lines.push(`- [${v.title}](${absoluteUrl(`/posts/${p.slug}/`)}): ${v.summary}`);
+    }
+    lines.push("");
+  }
+  lines.push("## About");
+  lines.push(`- [About](${absoluteUrl("/about/")}): About the author of ${SITE_NAME}.`);
+  lines.push(`- [Author homepage](${AUTHOR.url}): CV, project portfolio, contact details.`);
+  lines.push(
+    `- [Source repository](https://github.com/niclaslindstedt/blog): The blog itself is open source.`,
+  );
+  lines.push("");
+  return lines.join("\n");
+}
+
 // -- Sitemap ----------------------------------------------------------------
 
 function renderSitemap(): string {
@@ -459,11 +492,12 @@ async function main(): Promise<void> {
 
   writeFile("sitemap.xml", renderSitemap());
   writeFile("robots.txt", renderRobots());
+  writeFile("llms.txt", renderLlmsTxt());
   writeFile("feed.xml", renderRss());
   writeFile("feed.atom", renderAtom());
 
   process.stderr.write(
-    `generate-seo: wrote homepage + about + ${posts.length} post page(s) + ${tags.size} tag page(s) + tags index + ${posts.length} OG image(s), sitemap, robots, RSS + Atom feeds\n`,
+    `generate-seo: wrote homepage + about + ${posts.length} post page(s) + ${tags.size} tag page(s) + tags index + ${posts.length} OG image(s), sitemap, robots, llms.txt, RSS + Atom feeds\n`,
   );
 }
 
