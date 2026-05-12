@@ -1,18 +1,22 @@
 // Post-build SEO generator. Runs after `vite build`; takes the single SPA
 // shell (dist/index.html) plus the canonical post data (src/generated/posts.json)
 // and emits:
-//   - dist/index.html                          (homepage, with homepage <head>)
-//   - dist/posts/<slug>/index.html             (per-post, with BlogPosting meta)
-//   - dist/tags/<tag>/index.html               (per-tag, with CollectionPage)
-//   - dist/404.html                            (SPA fallback copy of home)
+//   - dist/index.html                          (homepage, with homepage <head> + prose body)
+//   - dist/posts/<slug>/index.html             (per-post, with BlogPosting meta + post body)
+//   - dist/tags/<tag>/index.html               (per-tag, with CollectionPage + tag listing)
+//   - dist/404.html                            (real not-found page, noindex)
 //   - dist/sitemap.xml
 //   - dist/robots.txt
 //   - dist/feed.xml                            (RSS 2.0, summary-level)
 //   - dist/feed.atom                           (Atom 1.0, summary-level)
 //
-// The generator only touches <head>: the body stays as Vite emitted it, so
-// React hydrates without hitches. Social-card crawlers and search engines get
-// pre-rendered metadata; humans get the SPA they already had.
+// Each per-route HTML also has its <div id="root"> pre-populated with the
+// prose-fallback render of that route via react-dom/server. That gives
+// crawlers a real <h1>, the post body, breadcrumbs, and the internal link
+// graph — without those, Search Console was reporting "Discovered – currently
+// not indexed" for every post because the shipped body was an empty <div>.
+// On the client React's createRoot() replaces this content with the
+// interactive terminal (or keeps the prose view, if the reader prefers it).
 
 import fs from "node:fs";
 import path from "node:path";
@@ -44,6 +48,13 @@ import {
   tagsIndexBreadcrumbJsonLd,
   tagsIndexJsonLd,
 } from "./seo/meta.ts";
+import {
+  renderHomeBody,
+  renderNotFoundBody,
+  renderPostBody,
+  renderTagBody,
+  renderTagsIndexBody,
+} from "./seo/render.tsx";
 
 const DIST = path.resolve("dist");
 const POSTS_JSON = path.resolve("src", "generated", "posts.json");
@@ -67,6 +78,19 @@ function injectHead(shell: string, headFragment: string): string {
   const idx = stripped.indexOf("</head>");
   if (idx === -1) throw new Error("generate-seo: shell has no </head>");
   return stripped.slice(0, idx) + "\n" + headFragment + "\n  " + stripped.slice(idx);
+}
+
+// Drop the SSR-rendered prose into <div id="root">. Vite emits the shell with
+// an empty <div id="root"></div>; we replace it with the same div whose
+// children are the static markup for the current route. Client-side React
+// (createRoot) clears the children on first render and mounts the interactive
+// tree, so this content is purely the initial-paint / no-JS / crawler view.
+function injectBody(shell: string, bodyHtml: string): string {
+  const replaced = shell.replace(/<div id="root"><\/div>/, `<div id="root">${bodyHtml}</div>`);
+  if (replaced === shell) {
+    throw new Error('generate-seo: shell has no empty <div id="root"></div> mount point');
+  }
+  return replaced;
 }
 
 function writeFile(rel: string, body: string | Buffer): void {
@@ -109,7 +133,7 @@ function renderHome(shell: string): string {
     keywords: [...DEFAULT_KEYWORDS, ...topTags],
     jsonLd: homeJsonLd(posts),
   });
-  return injectHead(shell, head);
+  return injectBody(injectHead(shell, head), renderHomeBody(posts));
 }
 
 // -- Per-post ---------------------------------------------------------------
@@ -142,7 +166,7 @@ function renderPost(shell: string, post: Post): string {
     },
     jsonLd: [postJsonLd(post), postBreadcrumbJsonLd(post)],
   });
-  return injectHead(shell, head);
+  return injectBody(injectHead(shell, head), renderPostBody(posts, post.slug));
 }
 
 // -- Per-tag ----------------------------------------------------------------
@@ -156,7 +180,7 @@ function renderTag(shell: string, tag: string, tagPosts: Post[]): string {
     keywords: [tag, ...DEFAULT_KEYWORDS],
     jsonLd: tagJsonLd(tag, tagPosts),
   });
-  return injectHead(shell, head);
+  return injectBody(injectHead(shell, head), renderTagBody(posts, tag));
 }
 
 // -- Tags index -------------------------------------------------------------
@@ -170,7 +194,24 @@ function renderTagsIndex(shell: string, tagCounts: { tag: string; count: number 
     keywords: [...DEFAULT_KEYWORDS, ...tagCounts.slice(0, 10).map((t) => t.tag)],
     jsonLd: [tagsIndexJsonLd(tagCounts), tagsIndexBreadcrumbJsonLd()],
   });
-  return injectHead(shell, head);
+  return injectBody(injectHead(shell, head), renderTagsIndexBody(posts));
+}
+
+// -- 404 --------------------------------------------------------------------
+
+// GitHub Pages serves /404.html when no static file matches, so this is what
+// crawlers see for any URL not in the sitemap. Marked noindex so Google stops
+// reading the SPA shell as a real page (without this, every guessed URL got a
+// 200 + the homepage HTML, which leaks soft-404 signals onto the whole site).
+function renderNotFound(shell: string): string {
+  const head = renderHead({
+    title: `Page not found — ${SITE_NAME}`,
+    description: `The page you're looking for doesn't exist on ${SITE_NAME}.`,
+    canonicalPath: "/",
+    ogType: "website",
+    robots: "noindex,follow",
+  });
+  return injectBody(injectHead(shell, head), renderNotFoundBody());
 }
 
 // -- Sitemap ----------------------------------------------------------------
@@ -360,7 +401,7 @@ async function main(): Promise<void> {
 
   const home = renderHome(shell);
   writeFile("index.html", home);
-  writeFile("404.html", home);
+  writeFile("404.html", renderNotFound(shell));
 
   for (const post of posts) {
     writeFile(path.join("posts", post.slug, "index.html"), renderPost(shell, post));
