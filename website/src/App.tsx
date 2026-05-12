@@ -1,25 +1,36 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Route, Routes, useParams } from "react-router-dom";
 import postsData from "./generated/posts.json";
 import type { Post } from "./types.ts";
-import { TerminalBlog } from "./TerminalBlog.tsx";
 import { FallbackBlog } from "./FallbackBlog.tsx";
 import { FallbackPost } from "./FallbackPost.tsx";
-import { TagRoute } from "./TagRoute.tsx";
-import { TagsIndex } from "./TagsIndex.tsx";
-import {
-  FileViewer,
-  FileViewerContext,
-  ViOpenerContext,
-  type GithubFile,
-} from "./terminal/index.ts";
+import { FileViewerContext, ViOpenerContext, type GithubFile } from "./terminal/index.ts";
 import { AudienceProvider } from "./AudienceContext.tsx";
 import { PreferencesProvider, useActiveView, usePreferences } from "./PreferencesContext.tsx";
-import { SearchModal } from "./SearchModal.tsx";
 import { SearchOpenerContext } from "./SearchOpenerContext.tsx";
 import { usePageTitle } from "./seo/usePageTitle.ts";
 import { useAnalytics } from "./seo/useAnalytics.ts";
 import { SITE_NAME, SITE_TAGLINE } from "./seo/siteConfig.ts";
+
+// Lazy boundaries: the SSR prerender ships the prose-fallback HTML inside
+// <div id="root">, so the first paint is already painted by the time React
+// boots. Everything below sits behind a Suspense; the user keeps seeing the
+// prerendered prose while these chunks fetch and only swaps to the
+// interactive widget once its code arrives. That trims ~250 KB off the main
+// chunk and unblocks LCP — `prism-react-renderer`, the terminal animation
+// state machine, the search index loader, and the file-viewer modal all
+// follow the lazy boundary they're behind.
+const TerminalBlog = lazy(() =>
+  import("./TerminalBlog.tsx").then((m) => ({ default: m.TerminalBlog })),
+);
+const SearchModal = lazy(() =>
+  import("./SearchModal.tsx").then((m) => ({ default: m.SearchModal })),
+);
+const FileViewer = lazy(() =>
+  import("./terminal/FileViewer.tsx").then((m) => ({ default: m.FileViewer })),
+);
+const TagsIndex = lazy(() => import("./TagsIndex.tsx").then((m) => ({ default: m.TagsIndex })));
+const TagRoute = lazy(() => import("./TagRoute.tsx").then((m) => ({ default: m.TagRoute })));
 
 const posts = postsData as Post[];
 
@@ -42,11 +53,19 @@ function BlogRoute() {
   // is a fixed-position bar at the bottom and the fallback content flows
   // normally underneath.
   const showFallback = view === "blog" || (view === "terminal" && terminalMinimized);
+  const fallbackProse = isHome ? <FallbackBlog posts={posts} /> : <FallbackPost posts={posts} />;
   return (
     <>
       {isHome && <HomeTitle />}
-      {showFallback && (isHome ? <FallbackBlog posts={posts} /> : <FallbackPost posts={posts} />)}
-      {view === "terminal" && <TerminalBlog posts={posts} />}
+      {showFallback && fallbackProse}
+      {view === "terminal" && (
+        // Suspense fallback is the same prose view, so while the terminal
+        // chunk fetches the reader keeps seeing the SSR'd post — no blank
+        // flash between createRoot() wiping #root and the terminal mounting.
+        <Suspense fallback={terminalMinimized ? null : fallbackProse}>
+          <TerminalBlog posts={posts} />
+        </Suspense>
+      )}
     </>
   );
 }
@@ -95,12 +114,41 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<BlogRoute />} />
                   <Route path="/posts/:slug" element={<BlogRoute />} />
-                  <Route path="/tags" element={<TagsIndex posts={posts} />} />
-                  <Route path="/tags/:tag" element={<TagRoute posts={posts} />} />
+                  <Route
+                    path="/tags"
+                    element={
+                      <Suspense fallback={null}>
+                        <TagsIndex posts={posts} />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/tags/:tag"
+                    element={
+                      <Suspense fallback={null}>
+                        <TagRoute posts={posts} />
+                      </Suspense>
+                    }
+                  />
                 </Routes>
               </main>
-              {viewerFile && <FileViewer file={viewerFile} onClose={closeFile} />}
-              <SearchModal open={searchOpen} onClose={closeSearch} />
+              {/* Modals are pure overlays: null fallback is fine — the reader
+                  triggered the open and a brief delay before paint is the
+                  natural network cost of fetching the chunk. Gating the
+                  lazy components on `open` (not just letting them return null
+                  internally) keeps the chunk request itself behind the trigger
+                  — otherwise React.lazy() would fetch on first render and
+                  defeat the whole point of the split. */}
+              {viewerFile && (
+                <Suspense fallback={null}>
+                  <FileViewer file={viewerFile} onClose={closeFile} />
+                </Suspense>
+              )}
+              {searchOpen && (
+                <Suspense fallback={null}>
+                  <SearchModal open={searchOpen} onClose={closeSearch} />
+                </Suspense>
+              )}
             </ViOpenerContext.Provider>
           </FileViewerContext.Provider>
         </SearchOpenerContext.Provider>
