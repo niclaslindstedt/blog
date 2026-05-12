@@ -132,6 +132,23 @@ export function FallbackShell({ children }: { children: ReactNode }) {
         </header>
 
         <main className="flex-1">{children}</main>
+
+        {/* Site-wide footer. Lives here (not per-page) so every fallback view
+            picks up the /about link — a single canonical internal pointer
+            keeps the page from being orphaned in the link graph, which is
+            what kept it out of Google's index before. */}
+        <footer className="mt-12 border-t border-term-border pt-4 text-xs text-dim">
+          <Link to={fallbackHref("/about")} className="underline decoration-dotted hover:text-fg">
+            About
+          </Link>
+          {" · "}
+          <a
+            href="https://github.com/niclaslindstedt/blog"
+            className="underline decoration-dotted hover:text-fg"
+          >
+            Source
+          </a>
+        </footer>
       </div>
     </div>
   );

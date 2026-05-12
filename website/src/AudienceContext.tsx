@@ -29,7 +29,10 @@ function readStored(): Audience {
 }
 
 export function AudienceProvider({ children }: { children: ReactNode }) {
-  const [audience, setAudienceState] = useState<Audience>(() => readStored());
+  // Initial state must match what the SSR prerender produced (DEFAULT_AUDIENCE)
+  // so `hydrateRoot` doesn't tear down the server HTML on first render.
+  // localStorage is read in a useEffect below, after hydration completes.
+  const [audience, setAudienceState] = useState<Audience>(DEFAULT_AUDIENCE);
   const [closedAudiences, setClosedAudiences] = useState<readonly Audience[]>([]);
 
   const setAudience = useCallback((next: Audience) => {
@@ -46,6 +49,14 @@ export function AudienceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetClosedAudiences = useCallback(() => setClosedAudiences([]), []);
+
+  // Sync to the reader's persisted choice once the client has taken over.
+  // Runs once on mount; the storage event listener below keeps it in sync
+  // for the rest of the session.
+  useEffect(() => {
+    const stored = readStored();
+    if (stored !== DEFAULT_AUDIENCE) setAudienceState(stored);
+  }, []);
 
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {

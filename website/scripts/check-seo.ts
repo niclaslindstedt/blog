@@ -158,6 +158,31 @@ function checkHtmlFile(file: string): void {
     const leaks = (body.match(/\?view=blog/g) ?? []).length;
     if (leaks > 0) err(rel, `${leaks} \`?view=blog\` leak(s) in <body> — crawl-budget waste`);
   }
+
+  // 9. Every <img> in the SSR'd body must have a non-empty `alt`, plus
+  //    `width`+`height` (CLS) and `loading`+`decoding` (LCP/INP). The site
+  //    has no images today, but the moment a post adds one this check
+  //    catches the typical regressions — empty alt for actual content,
+  //    missing dimensions causing layout shift, no lazy/async hints.
+  if (body) {
+    const imgs = body.match(/<img\b[^>]*>/g) ?? [];
+    for (const img of imgs) {
+      const altMatch = img.match(/\balt="([^"]*)"/);
+      if (!altMatch) err(rel, `<img> without alt attribute: ${img.slice(0, 80)}…`);
+      else if (altMatch[1].trim() === "")
+        warn(
+          rel,
+          `<img> with empty alt — only OK for purely decorative images: ${img.slice(0, 80)}…`,
+        );
+      if (!/\bwidth="/.test(img) || !/\bheight="/.test(img))
+        warn(
+          rel,
+          `<img> missing width/height — Google flags this as a layout-shift risk: ${img.slice(0, 80)}…`,
+        );
+      if (!/\bloading="/.test(img))
+        warn(rel, `<img> without loading attribute: ${img.slice(0, 80)}…`);
+    }
+  }
 }
 
 // -- Repo-wide checks -------------------------------------------------------

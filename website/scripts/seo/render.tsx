@@ -22,6 +22,7 @@ import { FallbackPost } from "../../src/FallbackPost.tsx";
 import { TagRoute } from "../../src/TagRoute.tsx";
 import { TagsIndex } from "../../src/TagsIndex.tsx";
 import { FallbackShell } from "../../src/FallbackShell.tsx";
+import { AboutPage } from "../../src/AboutPage.tsx";
 
 const noopFile = () => {};
 const noopSearch = () => {};
@@ -90,6 +91,7 @@ function renderTree(location: string, posts: Post[], notFound?: ReactNode): stri
         <Route path="/posts/:slug" element={<FallbackPost posts={posts} />} />
         <Route path="/tags" element={<TagsIndex posts={posts} />} />
         <Route path="/tags/:tag" element={<TagRoute posts={posts} />} />
+        <Route path="/about" element={<AboutPage />} />
         {notFound !== undefined && <Route path="*" element={notFound} />}
       </Routes>
     </SsrProviders>,
@@ -111,6 +113,10 @@ export function renderTagBody(posts: Post[], tag: string): string {
 
 export function renderTagsIndexBody(posts: Post[]): string {
   return renderTree("/tags", posts);
+}
+
+export function renderAboutBody(): string {
+  return renderTree("/about", []);
 }
 
 export function renderNotFoundBody(): string {

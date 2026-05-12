@@ -65,12 +65,13 @@ function readTheme(): Theme {
 }
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
-  const [terminalClosed, setClosedState] = useState<boolean>(() => readClosed());
-  const [terminalMinimized, setMinimizedState] = useState<boolean>(() => readMinimized());
-  const [theme, setThemeState] = useState<Theme>(() => readTheme());
-  const [closeHintDismissed, setCloseHintDismissedState] = useState<boolean>(() =>
-    readCloseHintDismissed(),
-  );
+  // Initial state must match the SSR prerender (everything at its default)
+  // so `hydrateRoot` can reuse the server HTML without tearing it down. The
+  // useEffect below syncs to localStorage after hydration completes.
+  const [terminalClosed, setClosedState] = useState<boolean>(false);
+  const [terminalMinimized, setMinimizedState] = useState<boolean>(false);
+  const [theme, setThemeState] = useState<Theme>("dark");
+  const [closeHintDismissed, setCloseHintDismissedState] = useState<boolean>(false);
 
   const setTerminalClosed = useCallback((next: boolean) => {
     setClosedState(next);
@@ -112,6 +113,21 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     } catch {
       // localStorage unavailable — ignore.
     }
+  }, []);
+
+  // Read persisted preferences once the client has taken over from SSR.
+  // Each setter writes through to localStorage, so it's safe to also call
+  // them here without re-emitting writes (no value changes from the
+  // freshly-read default if there was no prior visit).
+  useEffect(() => {
+    const closed = readClosed();
+    if (closed) setClosedState(true);
+    const minimized = readMinimized();
+    if (minimized) setMinimizedState(true);
+    const t = readTheme();
+    if (t !== "dark") setThemeState(t);
+    const hintDismissed = readCloseHintDismissed();
+    if (hintDismissed) setCloseHintDismissedState(true);
   }, []);
 
   useEffect(() => {

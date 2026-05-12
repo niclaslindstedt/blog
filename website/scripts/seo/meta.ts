@@ -292,6 +292,44 @@ export function postBreadcrumbJsonLd(post: Post): object {
 }
 
 // Breadcrumb for the all-tags index page: Home › Tags.
+// /about: ProfilePage wrapping the same Person entity the homepage exposes.
+// Linking via the canonical `#author` @id (rather than inlining a new Person
+// object) means Google's Knowledge Graph treats the homepage Person and the
+// about-page Person as one entity, with the about page as the authoritative
+// profile surface.
+export function aboutJsonLd(): object[] {
+  const profile = {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "@id": `${SITE_URL}/about/#profile`,
+    url: `${SITE_URL}/about/`,
+    name: `About — ${SITE_NAME}`,
+    inLanguage: SITE_LANGUAGE,
+    isPartOf: { "@id": `${SITE_URL}/#website` },
+    mainEntity: { "@id": `${SITE_URL}/#author` },
+  };
+  const person = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "@id": `${SITE_URL}/#author`,
+    name: AUTHOR.name,
+    url: AUTHOR.url,
+    sameAs: [...AUTHOR_SAME_AS],
+  };
+  return [profile, person];
+}
+
+export function aboutBreadcrumbJsonLd(): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+      { "@type": "ListItem", position: 2, name: "About", item: `${SITE_URL}/about/` },
+    ],
+  };
+}
+
 export function tagsIndexBreadcrumbJsonLd(): object {
   return {
     "@context": "https://schema.org",
