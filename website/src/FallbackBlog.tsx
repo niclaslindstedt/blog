@@ -26,6 +26,13 @@ export function FallbackBlog({ posts, tag: tagProp }: { posts: Post[]; tag?: str
 
   return (
     <FallbackShell>
+      {/* Screen-reader-only page heading. The list of post titles below is the
+          actual visible surface, but Google's heuristics weight an explicit
+          <h1> as the page-topic anchor — without one the homepage and tag
+          listings were scoring as untitled. sr-only keeps the minimalist
+          terminal aesthetic while still feeding the topic signal to crawlers
+          and assistive tech. */}
+      <h1 className="sr-only">{tag ? `Posts tagged #${tag}` : "Posts"}</h1>
       {tag && (
         <div className="mb-8 flex items-center gap-2 text-sm text-dim">
           <span>
