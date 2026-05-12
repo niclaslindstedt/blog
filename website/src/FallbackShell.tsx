@@ -134,13 +134,31 @@ export function FallbackShell({ children }: { children: ReactNode }) {
         <main className="flex-1">{children}</main>
 
         {/* Site-wide footer. Lives here (not per-page) so every fallback view
-            picks up the /about link — a single canonical internal pointer
-            keeps the page from being orphaned in the link graph, which is
-            what kept it out of Google's index before. */}
+            picks up the /about and feed links — a single canonical internal
+            pointer keeps /about from being orphaned in the link graph, and
+            surfacing the feeds visibly (not just via <link rel="alternate">)
+            means readers who don't use a feed-detecting browser can still
+            subscribe. */}
         <footer className="mt-12 border-t border-term-border pt-4 text-xs text-dim">
           <Link to={fallbackHref("/about")} className="underline decoration-dotted hover:text-fg">
             About
           </Link>
+          {" · "}
+          <a
+            href="/feed.xml"
+            className="underline decoration-dotted hover:text-fg"
+            title="RSS feed — full post content"
+          >
+            RSS
+          </a>
+          {" · "}
+          <a
+            href="/feed.json"
+            className="underline decoration-dotted hover:text-fg"
+            title="JSON Feed — full post content"
+          >
+            JSON
+          </a>
           {" · "}
           <a
             href="https://github.com/niclaslindstedt/blog"

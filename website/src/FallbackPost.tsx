@@ -98,41 +98,28 @@ export function FallbackPost({ posts }: { posts: Post[] }) {
         <span className="text-fg">{version.title}</span>
       </nav>
 
-      <article itemScope itemType="https://schema.org/BlogPosting">
+      {/* No Microdata (itemScope / itemProp) here: the same BlogPosting fields
+          ride along in the per-post JSON-LD block emitted by the SEO
+          generator. Two parallel encodings of the same metadata is just a
+          drift risk — Google reads the JSON-LD, which is the modern
+          recommended form. */}
+      <article>
         <header className="mb-8">
-          <h1
-            className="mb-3 text-3xl leading-tight font-bold text-fg-bright"
-            itemProp="headline name"
-          >
-            {version.title}
-          </h1>
+          <h1 className="mb-3 text-3xl leading-tight font-bold text-fg-bright">{version.title}</h1>
           <div className="text-sm text-dim">
-            <time dateTime={version.date} itemProp="datePublished">
-              {formatDate(version.date)}
-            </time>
+            <time dateTime={version.date}>{formatDate(version.date)}</time>
             {edited && (
               <>
                 {" · edited "}
-                <time dateTime={version.edited_at} itemProp="dateModified">
-                  {formatDate(version.edited_at)}
-                </time>
+                <time dateTime={version.edited_at}>{formatDate(version.edited_at)}</time>
               </>
             )}
             {" · "}
-            <span itemProp="timeRequired" content={`PT${version.readingTimeMinutes}M`}>
-              {version.readingTimeMinutes} min read
-            </span>
+            <span>{version.readingTimeMinutes} min read</span>
           </div>
-          <meta itemProp="description" content={version.summary} />
-          <meta itemProp="wordCount" content={String(version.wordCount)} />
-          <meta itemProp="inLanguage" content="en" />
-          <span itemProp="author" itemScope itemType="https://schema.org/Person">
-            <meta itemProp="name" content="Niclas Lindstedt" />
-            <meta itemProp="url" content="https://niclaslindstedt.se" />
-          </span>
         </header>
 
-        <div className="text-fg" itemProp="articleBody">
+        <div className="text-fg">
           <MarkdownBody text={version.body} variant="prose" />
         </div>
 
@@ -143,7 +130,6 @@ export function FallbackPost({ posts }: { posts: Post[] }) {
                 key={t}
                 to={`/tags/${encodeURIComponent(t)}/`}
                 className="text-dim underline decoration-dotted hover:text-fg"
-                itemProp="keywords"
               >
                 #{t}
               </Link>

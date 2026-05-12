@@ -13,6 +13,8 @@ import { renderToString } from "react-dom/server";
 import { StaticRouter } from "react-router-dom/server";
 import { Route, Routes } from "react-router-dom";
 import type { ReactNode } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Post } from "../../src/types.ts";
 import { AudienceProvider } from "../../src/AudienceContext.tsx";
 import { PreferencesProvider } from "../../src/PreferencesContext.tsx";
@@ -169,4 +171,15 @@ export function renderAboutBody(): string {
 
 export function renderNotFoundBody(): string {
   return renderTree("/__not_found__", [], <NotFoundBody />);
+}
+
+// Markdown → plain HTML for use in the RSS feed's <content:encoded> block
+// and the JSON Feed's `content_html` field. Renders with vanilla
+// react-markdown + remark-gfm so feed readers get standard tags
+// (<p>, <h2>, <ul>, <pre>, …) without the site's React-specific component
+// overrides (vi-citation buttons, lazy file viewer triggers) — those make
+// no sense outside the live site. Strips the outermost wrapper React emits
+// so callers can drop the result straight into the feed XML/JSON.
+export function renderMarkdownToHtml(text: string): string {
+  return renderToString(<ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>);
 }
