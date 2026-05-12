@@ -1,8 +1,8 @@
 ---
 title: How this blog works
 date: 2026-04-22T05:51:05Z
-edited_at: 2026-04-22T09:14:15Z
-summary: A git-tracked blog where I write the prose and a Claude skill does the scaffolding — pulling my own repos, citing the files it reads, and shipping a non-technical version alongside.
+edited_at: 2026-05-12T14:50:00Z
+summary: A git-tracked blog where I write the prose and a Claude skill pulls my own repos, cites the files, and ships a non-technical version alongside.
 tags: blog, meta, claude-code, spec-driven-development
 keywords: blog, meta-blog, blogging, personal site, github pages, github-pages, react, vite, typescript, tsx, markdown posts, yaml frontmatter, post extractor, build pipeline, claude code, claude skill, agent skill, ai writing, ai-assisted writing, llm authoring, citations, footnotes, oss-spec, spec-driven development, prompts vs cli, two audiences, technical and non-technical, audience versions
 ---

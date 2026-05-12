@@ -1,8 +1,8 @@
 ---
 title: How this blog works
 date: 2026-04-22T05:51:05Z
-edited_at: 2026-04-22T09:14:15Z
-summary: A small corner of the internet where I explain the ideas behind the software I build, with every post drafted alongside an AI that reads the actual code so it can't make things up.
+edited_at: 2026-05-12T14:50:00Z
+summary: A corner of the internet where I explain the software I build, with every post drafted alongside an AI that reads the actual code so it can't make things up.
 tags: blog, meta, claude-code, spec-driven-development
 keywords: blog, ai writing, ai-assisted writing, ai assistant, claude, claude code, github, github pages, free hosting, plain text posts, markdown, footnotes, two versions, technical and non-technical, no jargon version, programmer jargon, spec-driven, oss-spec, tools that don't drift, rules in the tool, my parents, tech demo
 ---
