@@ -8,15 +8,16 @@ export default defineConfig({
   build: {
     // Vite's default modulepreload emits `<link rel="modulepreload">` for
     // every transitive dependency of the entry chunk — including chunks
-    // that are only reached through a `React.lazy()` boundary. For us that
-    // meant `vendor-prism` (~86 KB) was being eagerly fetched on first paint
-    // even though it's only used by the lazy `FileViewer` modal, putting
-    // it right back on the LCP critical path. Filtering it out here keeps
-    // the lazy split honest: the chunk only loads when a reader actually
-    // opens a vi-citation.
+    // that are only reached through a `React.lazy()` boundary. Without
+    // filtering, both `vendor-prism` (lazy via FileViewer) and
+    // `vendor-markdown` (lazy via FallbackPost/FallbackBlog/TerminalBlog)
+    // would be eagerly fetched on first paint, putting ~400 KB of JS back
+    // on the LCP critical path even though no critical-path code touches
+    // those modules. The filter keeps the lazy split honest: each chunk
+    // only loads when a Suspense boundary actually needs it.
     modulePreload: {
       resolveDependencies(_filename, deps) {
-        return deps.filter((d) => !d.includes("vendor-prism"));
+        return deps.filter((d) => !d.includes("vendor-prism") && !d.includes("vendor-markdown"));
       },
     },
     rollupOptions: {

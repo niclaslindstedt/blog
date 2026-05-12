@@ -2,8 +2,6 @@ import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Route, Routes, useParams } from "react-router-dom";
 import postsData from "./generated/posts.json";
 import type { Post } from "./types.ts";
-import { FallbackBlog } from "./FallbackBlog.tsx";
-import { FallbackPost } from "./FallbackPost.tsx";
 import { FileViewerContext, ViOpenerContext, type GithubFile } from "./terminal/index.ts";
 import { AudienceProvider } from "./AudienceContext.tsx";
 import { PreferencesProvider, useActiveView, usePreferences } from "./PreferencesContext.tsx";
@@ -14,13 +12,17 @@ import { SITE_NAME, SITE_TAGLINE } from "./seo/siteConfig.ts";
 import { useIsHydrated } from "./useIsHydrated.ts";
 
 // Lazy boundaries: the SSR prerender ships the prose-fallback HTML inside
-// <div id="root">, so the first paint is already painted by the time React
-// boots. Everything below sits behind a Suspense; the user keeps seeing the
-// prerendered prose while these chunks fetch and only swaps to the
-// interactive widget once its code arrives. That trims ~250 KB off the main
-// chunk and unblocks LCP — `prism-react-renderer`, the terminal animation
-// state machine, the search index loader, and the file-viewer modal all
-// follow the lazy boundary they're behind.
+// <div id="root">, and `hydrateRoot` keeps that HTML in place across every
+// Suspense boundary below until the matching chunk arrives. So the reader
+// sees real content the entire time, and `vendor-markdown` — only reached
+// through FallbackPost/FallbackBlog/TerminalBlog — comes off the critical
+// path completely.
+const FallbackBlog = lazy(() =>
+  import("./FallbackBlog.tsx").then((m) => ({ default: m.FallbackBlog })),
+);
+const FallbackPost = lazy(() =>
+  import("./FallbackPost.tsx").then((m) => ({ default: m.FallbackPost })),
+);
 const TerminalBlog = lazy(() =>
   import("./TerminalBlog.tsx").then((m) => ({ default: m.TerminalBlog })),
 );
@@ -63,15 +65,26 @@ function BlogRoute() {
   const effectiveView = hydrated ? view : "blog";
   const showFallback =
     effectiveView === "blog" || (effectiveView === "terminal" && terminalMinimized);
-  const fallbackProse = isHome ? <FallbackBlog posts={posts} /> : <FallbackPost posts={posts} />;
+  // Both `fallbackProse` and `<TerminalBlog/>` sit behind React.lazy() now
+  // (so `vendor-markdown` is off the critical path), which means each one
+  // needs a Suspense boundary. The boundary's null fallback never actually
+  // shows for the SSR'd routes — hydrateRoot keeps the prerendered HTML
+  // painted across the boundary until the matching chunk loads — but it
+  // still has to be there so React knows where it can pause hydration.
+  const fallbackProse = (
+    <Suspense fallback={null}>
+      {isHome ? <FallbackBlog posts={posts} /> : <FallbackPost posts={posts} />}
+    </Suspense>
+  );
   return (
     <>
       {isHome && <HomeTitle />}
       {showFallback && fallbackProse}
       {effectiveView === "terminal" && (
-        // Suspense fallback is the same prose view, so while the terminal
-        // chunk fetches the reader keeps seeing the SSR'd post — no blank
-        // flash between createRoot() wiping #root and the terminal mounting.
+        // While TerminalBlog's chunk fetches, fall back to the same prose
+        // view — keeps the reader on the SSR'd content (which hydrateRoot
+        // preserves) instead of a blank frame between hydration finishing
+        // and the terminal animating in.
         <Suspense fallback={terminalMinimized ? null : fallbackProse}>
           <TerminalBlog posts={posts} />
         </Suspense>

@@ -8,7 +8,8 @@
 // (or keeps the same prose view if the reader has chosen that), so the SSR
 // output is purely a head-start for the initial paint and for non-JS clients.
 
-import { renderToStaticMarkup } from "react-dom/server";
+import { Suspense } from "react";
+import { renderToString } from "react-dom/server";
 import { StaticRouter } from "react-router-dom/server";
 import { Route, Routes } from "react-router-dom";
 import type { ReactNode } from "react";
@@ -65,34 +66,81 @@ function NotFoundBody() {
   );
 }
 
-// Mirrors the route table in App.tsx so useParams() resolves correctly during
-// SSR. Without going through <Routes>/<Route>, useParams() returns {} and
-// FallbackPost can't find the post for its :slug — the prerendered HTML
-// silently degrades to "Post not found", which is exactly what Search Console
-// was indexing before we noticed.
 // Strip the in-app `?view=blog` sticky-fallback query string from every href
 // in the SSR'd output. The runtime React-router Link components carry it so
 // in-app navigation persists the prose view, but in the prerendered HTML
 // those duplicate URLs (`/posts/foo` vs `/posts/foo?view=blog`) just waste
-// crawl budget — the canonical handles the dedup, but only after Googlebot
-// has fetched both. After hydration React replaces the markup and the
-// runtime hrefs come back, so the strip is purely a crawler-side cleanup.
+// crawl budget — canonical handles the dedup, but only after Googlebot has
+// fetched both. After hydration React replaces the markup and the runtime
+// hrefs come back, so the strip is purely a crawler-side cleanup.
 function stripFallbackQuery(html: string): string {
   // `?view=blog"`  → `"` (sole param)
   // `?view=blog&…` → `?…` (first of several)
   return html.replace(/\?view=blog"/g, '"').replace(/\?view=blog&/g, "?");
 }
 
+// Mirrors the route table in App.tsx so useParams() resolves during SSR and
+// the lazy boundaries the client tree expects exist in the DOM:
+// - We render via <Routes>/<Route> (not just rendering the route element
+//   directly) so useParams() returns the slug/tag for the matched URL —
+//   without that, FallbackPost can't find the post and degrades to "Post
+//   not found", which is what Search Console was indexing before #99.
+// - We use `renderToString` (not `renderToStaticMarkup`) and wrap every
+//   route element in <Suspense> even though every SSR import is eager.
+//   The wrappers cause renderToString to emit `<!--$-->` / `<!--/$-->`
+//   HTML-comment markers at the exact DOM positions where the client tree
+//   has matching Suspense boundaries around the lazy components. Without
+//   matching markers, hydrateRoot can't preserve the SSR'd subtree across
+//   a lazy chunk load — it tears the prerendered prose down to render the
+//   Suspense fallback, which would put the markdown chunk straight back
+//   onto the critical path.
 function renderTree(location: string, posts: Post[], notFound?: ReactNode): string {
-  const html = renderToStaticMarkup(
+  const html = renderToString(
     <SsrProviders location={location}>
       <Routes>
-        <Route path="/" element={<FallbackBlog posts={posts} />} />
-        <Route path="/posts/:slug" element={<FallbackPost posts={posts} />} />
-        <Route path="/tags" element={<TagsIndex posts={posts} />} />
-        <Route path="/tags/:tag" element={<TagRoute posts={posts} />} />
-        <Route path="/about" element={<AboutPage />} />
-        {notFound !== undefined && <Route path="*" element={notFound} />}
+        <Route
+          path="/"
+          element={
+            <Suspense fallback={null}>
+              <FallbackBlog posts={posts} />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/posts/:slug"
+          element={
+            <Suspense fallback={null}>
+              <FallbackPost posts={posts} />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/tags"
+          element={
+            <Suspense fallback={null}>
+              <TagsIndex posts={posts} />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/tags/:tag"
+          element={
+            <Suspense fallback={null}>
+              <TagRoute posts={posts} />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/about"
+          element={
+            <Suspense fallback={null}>
+              <AboutPage />
+            </Suspense>
+          }
+        />
+        {notFound !== undefined && (
+          <Route path="*" element={<Suspense fallback={null}>{notFound}</Suspense>} />
+        )}
       </Routes>
     </SsrProviders>,
   );
