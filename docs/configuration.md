@@ -39,7 +39,16 @@ exactly these fields:
 Timestamps must be ISO 8601 datetimes in UTC — i.e. end with `Z`. Local
 timezones and date-only values (`YYYY-MM-DD`) are rejected by the extractor.
 Example: `2026-04-21T14:30:00Z`. Fractional seconds are allowed but not
-required.
+required. The time portion must be a real wall-clock value (use
+`date -u +%Y-%m-%dT%H:%M:%SZ`, or look it up from `git log` when
+backfilling) — placeholders like `T00:00:00Z` are technically valid but
+defeat the public timestamp shown on the site.
+
+Both timestamps are rendered on the live site as `YYYY-MM-DD HH:mm` (no
+seconds): in the reader's local timezone on the hydrated client, and in
+UTC in the prerendered HTML / no-JS fallback. The full ISO value still
+rides along on the `datetime` attribute of each `<time>` element and in
+the per-post JSON-LD `datePublished` / `dateModified` fields.
 
 The title lives in frontmatter — not as a `#` heading at the top of the body.
 The two versions of the same slug may diverge on `title`, `date`, and

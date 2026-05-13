@@ -10,8 +10,12 @@ Revise a post in-place. Posts have up to two audience-specific versions
 slug may have one or both versions on disk. Keep the slug (filename),
 `title`, and original `date` unchanged in the file(s) you edit unless the
 user explicitly asks otherwise. Always bump `edited_at` to the current UTC
-timestamp on every file you actually touch — this is the signal that the
-post changed.
+timestamp — full `YYYY-MM-DDTHH:MM:SSZ`, with the real hour-minute-second
+from `date -u +%Y-%m-%dT%H:%M:%SZ`, never a placeholder like `T00:00:00Z`
+— on every file you actually touch. Both `date` and `edited_at` are
+rendered on the live site (formatted as `YYYY-MM-DD HH:mm`, local time on
+the client, UTC in the prerendered HTML), so an inaccurate timestamp is
+visible to readers.
 
 ## Read this first
 
@@ -72,7 +76,7 @@ Same rule as `/write-post`: the user writes, the agent lays out.
 5. Relink any project references that are now out of sync with `project-index/INDEX.md`.
 6. Update frontmatter **in every file you edit**:
    - Preserve `title`, `date`, and `summary` unless the user explicitly requested a change. If the edit materially changes what the post is about, update `summary` to match — keep it on a single line.
-   - Set `edited_at` to the current UTC timestamp in ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required). Get it with `date -u +%Y-%m-%dT%H:%M:%SZ` or equivalent; never use a local-timezone value.
+   - Set `edited_at` to the current UTC timestamp in ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required). Get it with `date -u +%Y-%m-%dT%H:%M:%SZ` or equivalent; never use a local-timezone value, never round the time portion to `T00:00:00Z`. The site renders this timestamp publicly (as `YYYY-MM-DD HH:mm`, local on the client and UTC in the prerendered HTML), so the hour and minute have to be true.
    - Do not touch `edited_at` in files you didn't edit.
    - Preserve `keywords` verbatim unless the edit materially changes what the post covers. When it does, refresh keywords using the "Authoring keywords" guidance in `../write-post/SKILL.md` so the search index keeps matching the prose. If the post had no `keywords` line yet, add one.
    - Preserve `mentions` verbatim unless the edit adds, removes, or re-centers an external reference the panel should reflect. When it does, refresh the list using the "Authoring mentions" guidance in `../write-post/SKILL.md` — at most one `highlight` per audience version, no self-references back to this blog. If the post had no `mentions` block yet but now references external projects/sites/products worth lifting out, add one.

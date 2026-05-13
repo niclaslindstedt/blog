@@ -7,21 +7,14 @@ import { fallbackHref } from "./postFilters.ts";
 import { usePageTitle } from "./seo/usePageTitle.ts";
 import { SITE_NAME } from "./seo/siteConfig.ts";
 import { pickRelated } from "./seo/relatedPosts.ts";
-
-function formatDate(iso: string): string {
-  try {
-    const d = new Date(iso);
-    return d.toISOString().slice(0, 10);
-  } catch {
-    return iso;
-  }
-}
+import { useDateFormatter } from "./formatDate.ts";
 
 export function FallbackPost({ posts }: { posts: Post[] }) {
   const { slug } = useParams<{ slug: string }>();
   const { audience, setAudience } = useAudience();
   const post = posts.find((p) => p.slug === slug);
   const version = post && slug ? post.versions[audience] : undefined;
+  const formatDate = useDateFormatter();
   const titleForTab =
     version?.title ?? post?.title ?? (slug ? `Post not found — ${SITE_NAME}` : SITE_NAME);
   usePageTitle(version ? `${titleForTab} — ${SITE_NAME}` : titleForTab);

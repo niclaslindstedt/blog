@@ -163,7 +163,7 @@ The final `slug` (used as the filename and URL path) is
 
 1. Read `STYLE_GUIDE.md` and, if present, `../../project-index/INDEX.md`.
 2. **Gate: is there a body?** Check what the user actually supplied. If there is no prose for either audience — only a topic, a subject, a "write about X" — enter brainstorm mode (see "Default mode: brainstorm" above), present candidate angles, and **stop**. Do not proceed past this step until the user either supplies body text or explicitly authorises drafting from notes.
-3. Compute `now` — the current UTC timestamp in ISO 8601 with a `Z` suffix. Get it with `date -u +%Y-%m-%dT%H:%M:%SZ` or equivalent; never use a local-timezone value. Derive `slug` as `<YYYY-MM-DD>-<stem>` per "Slug derivation" above; never ask the user for it.
+3. Compute `now` — the current UTC timestamp in ISO 8601 with a `Z` suffix. Get it with `date -u +%Y-%m-%dT%H:%M:%SZ` or equivalent; never use a local-timezone value, never round the time portion to `T00:00:00Z`. The site renders this timestamp publicly (as `YYYY-MM-DD HH:mm`, local on the client and UTC in the prerendered HTML), so the hour and minute have to be true. Derive `slug` as `<YYYY-MM-DD>-<stem>` per "Slug derivation" above; never ask the user for it.
 4. If a file already exists at either `posts/technical/<slug>.md` or `posts/non-technical/<slug>.md`, append `-2`, `-3`, … to the stem until the slug is unique. If the post is actually an edit of an existing one, use `/update-post` instead.
 5. Determine which audiences are being written (both, or just one the user asked for / adapted to).
 6. For each audience being produced, lay out the body: fix frontmatter, headings, fenced code blocks, and link any project names that appear in the index. For the non-technical adaptation, apply the guidance in "Writing the non-technical version" above.
@@ -191,7 +191,7 @@ The final `slug` (used as the filename and URL path) is
    <body>
    ```
 
-   `date` and `edited_at` are ISO 8601 UTC datetimes ending in `Z` (e.g. `2026-04-21T14:30:00Z`). On creation, `edited_at` equals `date`. The two versions share `slug` and `date`; `title`, `summary`, and body may differ per audience.
+   `date` and `edited_at` are ISO 8601 UTC datetimes ending in `Z` (e.g. `2026-04-21T14:30:00Z`) — full hour, minute, and second from `date -u`, never a placeholder like `T00:00:00Z`. The site renders both publicly as `YYYY-MM-DD HH:mm` (local time on the client, UTC in the prerendered HTML), so the time portion has to be true. On creation, `edited_at` equals `date`. The two versions share `slug` and `date`; `title`, `summary`, and body may differ per audience.
 
    `summary` is a single physical line — no line breaks, no block scalars. The list view renders it verbatim as the clickable preview; keep it to one sentence and match the voice of the body for that audience.
 

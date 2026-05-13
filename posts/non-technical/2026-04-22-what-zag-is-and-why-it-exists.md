@@ -1,7 +1,7 @@
 ---
 title: What zag is, and why it exists
 date: 2026-04-22T14:52:36Z
-edited_at: 2026-05-13T00:00:00Z
+edited_at: 2026-05-13T13:17:42Z
 summary: A single app that sits in front of every major AI coding assistant, so switching between them is a one-word change.
 tags: zag, meta-agent, cli, rust
 keywords: zag, ai assistants, ai coding assistants, coding ai, ai tools, claude, codex, gemini, copilot, ollama, switch models, swap models, model switching, mac chat app, web chat interface, claude code style, cv review, parallel ai, sandbox, isolation, remote control, home server, work laptop, plain english orchestration, zig, programming language bindings, runs locally, local ai, no cloud, subscription, tools for ai, free assistant, open source
