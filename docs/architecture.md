@@ -91,6 +91,16 @@ Stray markdown files directly under `posts/` are a fatal error. Nothing in
 A `Post` exposes `versions.technical?` and `versions.non-technical?`; the
 frontend picks the version that matches the reader's current audience.
 
+After the full corpus has been parsed, the extractor scores every
+same-audience pair by `5 × shared tags + 1 × shared keywords` and writes
+the top three slugs (score ≥ 3, recency-tied) onto each `PostVersion.related`.
+The threshold is set so a single shared tag is enough on its own, but
+keyword overlap has to stack before two posts with no shared tags count as
+"actually related" — the panel is rendered only when the list is non-empty,
+so the bar is "show nothing rather than show noise". The frontend reads
+the precomputed list straight out of `posts.json`; no similarity math runs
+at render time.
+
 ## Frontend
 
 The React app is statically exported via Vite — no server runtime. The

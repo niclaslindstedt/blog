@@ -231,7 +231,67 @@ function loadVersion(file: string): PostVersion {
     body,
     wordCount,
     readingTimeMinutes,
+    // Filled in by computeRelated() after every post has been parsed —
+    // related-post discovery needs the full corpus, not just this version.
+    related: [],
   };
+}
+
+// Score relatedness between two same-audience post versions. Tag overlap is
+// the strong signal (authors pick tags deliberately and there are few of
+// them); keyword overlap is a long-tail synonym signal that fills the gap
+// when two posts share a topic but were tagged from different angles. A
+// single shared tag (5 pts) crosses the inclusion threshold on its own;
+// shared keywords need to stack (≥3) before a pair without shared tags
+// counts as "actually related" — which is the bar the panel is meant to
+// uphold ("only include actually related posts").
+const TAG_WEIGHT = 5;
+const KEYWORD_WEIGHT = 1;
+const RELATED_THRESHOLD = 3;
+const RELATED_MAX = 3;
+
+function canon(s: string): string {
+  return s.toLowerCase().trim();
+}
+
+function overlap(a: Set<string>, b: Set<string>): number {
+  let n = 0;
+  for (const x of a) if (b.has(x)) n++;
+  return n;
+}
+
+function computeRelated(posts: Post[]): void {
+  for (const audience of AUDIENCES) {
+    type Item = { slug: string; tags: Set<string>; keywords: Set<string>; date: string };
+    const items: Item[] = [];
+    for (const p of posts) {
+      const v = p.versions[audience];
+      if (!v) continue;
+      items.push({
+        slug: p.slug,
+        tags: new Set(v.tags.map(canon)),
+        keywords: new Set(v.keywords.map(canon)),
+        date: v.date,
+      });
+    }
+    for (const a of items) {
+      type Scored = { slug: string; score: number; date: string };
+      const scored: Scored[] = [];
+      for (const b of items) {
+        if (b.slug === a.slug) continue;
+        const score =
+          TAG_WEIGHT * overlap(a.tags, b.tags) + KEYWORD_WEIGHT * overlap(a.keywords, b.keywords);
+        if (score < RELATED_THRESHOLD) continue;
+        scored.push({ slug: b.slug, score, date: b.date });
+      }
+      scored.sort((x, y) => {
+        if (y.score !== x.score) return y.score - x.score;
+        return y.date.localeCompare(x.date);
+      });
+      const v = posts.find((p) => p.slug === a.slug)!.versions[audience]!;
+      v.related = scored.slice(0, RELATED_MAX).map((s) => s.slug);
+    }
+  }
 }
 
 function main(): void {
@@ -281,6 +341,8 @@ function main(): void {
   const posts = [...bySlug.values()].sort((a, b) =>
     a.date < b.date ? 1 : a.date > b.date ? -1 : 0,
   );
+
+  computeRelated(posts);
 
   fs.writeFileSync(OUT_FILE, JSON.stringify(posts, null, 2) + "\n");
   process.stderr.write(

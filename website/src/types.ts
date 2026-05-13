@@ -37,6 +37,11 @@ export interface PostVersion {
   body: string;
   wordCount: number;
   readingTimeMinutes: number;
+  // Slugs of up to three posts in the same audience whose tags and keywords
+  // overlap with this version, sorted by similarity. Computed at build time
+  // by `scripts/extract-posts.ts`. Empty when nothing actually relates —
+  // three arbitrary posts at the bottom of every page is worse than none.
+  related: string[];
 }
 
 export interface Post {
