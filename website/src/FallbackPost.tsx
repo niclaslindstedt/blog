@@ -6,7 +6,7 @@ import { MarkdownBody, MentionsPanel } from "./terminal/index.ts";
 import { fallbackHref } from "./postFilters.ts";
 import { usePageTitle } from "./seo/usePageTitle.ts";
 import { SITE_NAME } from "./seo/siteConfig.ts";
-import { pickRelated } from "./seo/relatedPosts.ts";
+import { relatedPosts } from "./seo/relatedPosts.ts";
 import { useDateFormatter } from "./formatDate.ts";
 
 export function FallbackPost({ posts }: { posts: Post[] }) {
@@ -68,7 +68,7 @@ export function FallbackPost({ posts }: { posts: Post[] }) {
 
   const edited = version.edited_at && version.edited_at !== version.date;
   const primaryTag = version.tags[0];
-  const related = pickRelated(post, audience, posts);
+  const related = relatedPosts(post, audience, posts);
 
   return (
     <FallbackShell>

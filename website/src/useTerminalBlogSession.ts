@@ -258,6 +258,25 @@ export function useTerminalBlogSession(
       });
       steps.push({ kind: "blank" });
     }
+    // Build-time related-reads list. Empty when nothing actually relates —
+    // we skip the synthetic `ls related/` entirely in that case rather than
+    // type a command that returns nothing.
+    if (version.related.length > 0) {
+      steps.push({
+        kind: "type-command",
+        text: "ls related/",
+        wpm: BLOG_WPM,
+      });
+      for (const relatedSlug of version.related) {
+        if (!posts.find((p) => p.slug === relatedSlug)?.versions[a]) continue;
+        steps.push({
+          kind: "clickable",
+          label: `${relatedSlug}.md`,
+          onClick: () => openPostFromClick(relatedSlug),
+        });
+      }
+      steps.push({ kind: "blank" });
+    }
     enqueue(steps);
   };
 
