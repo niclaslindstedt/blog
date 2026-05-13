@@ -29,6 +29,9 @@ export function MentionsPanel({
   return (
     <aside className={wrapperClass} aria-label="External references" data-mentions-panel={variant}>
       <div className="overflow-hidden rounded border border-term-border bg-term-titlebar/40">
+        <div className="border-b border-term-border bg-term-titlebar px-3 py-1 text-xs text-dim">
+          mentions
+        </div>
         <div className="flex flex-wrap gap-2 px-3 py-2.5">
           {mentions.map((m) => (
             <MentionChip key={m.link} mention={m} />

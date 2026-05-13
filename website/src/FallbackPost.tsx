@@ -72,7 +72,7 @@ export function FallbackPost({ posts }: { posts: Post[] }) {
 
   return (
     <FallbackShell>
-      <nav aria-label="Breadcrumb" className="mb-4 text-xs text-dim">
+      <nav aria-label="Breadcrumb" className="-mt-4 mb-4 text-xs text-dim">
         <Link to={fallbackHref("/")} className="underline decoration-dotted hover:text-fg">
           Home
         </Link>
