@@ -119,7 +119,7 @@ export function FallbackPost({ posts }: { posts: Post[] }) {
         </div>
 
         {version.tags.length > 0 && (
-          <footer className="mt-10 flex flex-wrap gap-2 border-t border-term-border pt-5 text-sm">
+          <footer className="-mb-7 mt-10 flex flex-wrap gap-2 border-t border-term-border pt-5 text-sm">
             {version.tags.map((t) => (
               <Link
                 key={t}
