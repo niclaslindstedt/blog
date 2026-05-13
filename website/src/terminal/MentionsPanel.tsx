@@ -30,7 +30,7 @@ export function MentionsPanel({
     <aside className={wrapperClass} aria-label="External references" data-mentions-panel={variant}>
       <div className="rounded border border-term-border bg-term-titlebar/40">
         <div className="rounded-t border-b border-term-border bg-term-titlebar p-2 text-center text-xs text-dim">
-          related
+          links
         </div>
         <div className="flex flex-wrap justify-center gap-2 px-3 py-2.5">
           {mentions.map((m) => (
