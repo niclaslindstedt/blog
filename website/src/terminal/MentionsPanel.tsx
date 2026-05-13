@@ -57,16 +57,23 @@ export function MentionsPanel({
             ))}
           </div>
         )}
+        {/* Tap target ≥44px (WCAG 2.5.5) while the visible chrome stays a thin
+            strip: the outer button sets the 44px hit area and the inner span
+            carries the divider, padding, and hover state. A negative top
+            margin reclaims the chip strip's bottom padding so the extra hit
+            area lives in already-empty space and the card doesn't grow. */}
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
           aria-controls={expanded ? detailsId : undefined}
           aria-label={expanded ? "Hide reference details" : "Show reference details"}
-          className="flex min-h-11 w-full cursor-pointer items-center justify-center border-t border-term-border bg-transparent text-dim transition-colors hover:bg-term-titlebar hover:text-fg-bright focus-visible:bg-term-titlebar focus-visible:text-fg-bright focus-visible:outline-none"
+          className="group -mt-2.5 flex min-h-11 w-full cursor-pointer items-end bg-transparent focus-visible:outline-none"
         >
-          <span aria-hidden="true" className="text-xs leading-none">
-            {expanded ? "▲" : "▼"}
+          <span className="flex w-full items-center justify-center border-t border-term-border py-1 text-dim transition-colors group-hover:bg-term-titlebar group-hover:text-fg-bright group-focus-visible:bg-term-titlebar group-focus-visible:text-fg-bright">
+            <span aria-hidden="true" className="text-xs leading-none">
+              {expanded ? "▲" : "▼"}
+            </span>
           </span>
         </button>
       </div>
