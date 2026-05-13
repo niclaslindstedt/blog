@@ -1,7 +1,7 @@
 ---
 title: What zag is, and why it exists
 date: 2026-04-22T14:52:36Z
-edited_at: 2026-05-13T00:00:00Z
+edited_at: 2026-05-13T13:17:42Z
 summary: A meta-agent CLI that unifies Claude, Codex, Gemini, Copilot, and Ollama so swapping providers is a flag change.
 tags: zag, meta-agent, cli, rust
 keywords: zag, zag-cli, meta-agent, meta agent, agent cli, unified cli, claude, claude code, codex, gemini, copilot, ollama, rust, crates.io, language bindings, typescript, python, c sharp, swift, java, kotlin, fluent builder, ndjson, server-sent events, sse, swiftui, mac chat app, react chat ui, claude code style, cv-review, parallel agents, zig, zig-cli, orchestration, worktree, git worktree, sandbox, docker, microvm, isolation, client server, websocket, https, remote agent, json schema, structured output, session management, mcp, model context protocol, observability, provider downgrade, fallback, plan, review, discover, model aliases, small medium large, auto provider

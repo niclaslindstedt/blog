@@ -1,7 +1,7 @@
 ---
 title: My CV is data, not a document
 date: 2026-05-07T13:06:01Z
-edited_at: 2026-05-13T00:00:00Z
+edited_at: 2026-05-13T13:17:42Z
 summary: Structured data, not a document; a website, a PDF in two languages, and a version AI assistants can read all come out the other end.
 tags: cv, resume, agent-editable
 keywords: cv, resume, curriculum vitae, résumé, online cv, online resume, structured cv, ai-editable, ai assistant, swedish, english, bilingual, downloadable resume, pdf resume, search modal, search bar, og image, link preview, slack preview, linkedin preview, twitter preview, imessage preview, search engine, sitemap, llms.txt, resume.json, github activity, side projects, jobs, education, skills, languages, timeline, public vs private, niclaslindstedt.se, k8s, ts

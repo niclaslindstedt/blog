@@ -3,20 +3,13 @@ import type { Post } from "./types.ts";
 import { useAudience } from "./AudienceContext.tsx";
 import { FallbackShell } from "./FallbackShell.tsx";
 import { fallbackHref, postsForAudience } from "./postFilters.ts";
-
-function formatDate(iso: string): string {
-  try {
-    const d = new Date(iso);
-    return d.toISOString().slice(0, 10);
-  } catch {
-    return iso;
-  }
-}
+import { useDateFormatter } from "./formatDate.ts";
 
 export function FallbackBlog({ posts, tag: tagProp }: { posts: Post[]; tag?: string }) {
   const { audience } = useAudience();
   const [params] = useSearchParams();
   const tag = tagProp ?? params.get("tag");
+  const formatDate = useDateFormatter();
 
   const visible = postsForAudience(posts, audience).filter((p) => {
     if (!tag) return true;
