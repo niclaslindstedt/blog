@@ -134,7 +134,10 @@ export function FallbackPost({ posts }: { posts: Post[] }) {
       </article>
 
       {related.length > 0 && (
-        <aside className="mt-12 border-t border-term-border pt-5" aria-labelledby="related-heading">
+        <aside
+          className="-mb-7 mt-12 border-t border-term-border pt-5"
+          aria-labelledby="related-heading"
+        >
           <h2 id="related-heading" className="mb-3 text-sm font-bold text-dim uppercase">
             Related posts
           </h2>
