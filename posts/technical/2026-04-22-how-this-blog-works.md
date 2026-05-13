@@ -1,10 +1,15 @@
 ---
 title: How this blog works
 date: 2026-04-22T05:51:05Z
-edited_at: 2026-05-12T14:50:00Z
+edited_at: 2026-05-13T00:00:00Z
 summary: A git-tracked blog where I write the prose and a Claude skill pulls my own repos, cites the files, and ships a non-technical version alongside.
 tags: blog, meta, claude-code, spec-driven-development
 keywords: blog, meta-blog, blogging, personal site, github pages, github-pages, react, vite, typescript, tsx, markdown posts, yaml frontmatter, post extractor, build pipeline, claude code, claude skill, agent skill, ai writing, ai-assisted writing, llm authoring, citations, footnotes, oss-spec, spec-driven development, prompts vs cli, two audiences, technical and non-technical, audience versions
+mentions:
+  - type: highlight
+    title: oss-spec
+    description: Prescriptive spec and bootstrap CLI for open-source project layout, docs, automation, and governance — what this blog conforms to.
+    link: https://github.com/niclaslindstedt/oss-spec
 ---
 
 Since ideas are more interesting than the code, we need a place to store the ideas. The code is already stored by GitHub. This blog stores the ideas behind the code.

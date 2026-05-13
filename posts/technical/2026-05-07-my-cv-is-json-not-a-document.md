@@ -1,10 +1,27 @@
 ---
 title: My CV is JSON, not a document
 date: 2026-05-07T13:06:01Z
-edited_at: 2026-05-07T13:50:39Z
+edited_at: 2026-05-13T00:00:00Z
 summary: One schema-validated JSON object reprojected into a React site, two PDFs, an OG image, a sitemap, a search index, and an /llms.txt for agents.
 tags: cv, typescript, react, vite, resume
 keywords: cv, resume, curriculum vitae, résumé, online cv, json, json schema, ajv, schema validation, react, vite, typescript, tsx, pdf, bilingual, swedish, english, two languages, og image, open graph, satori, resvg, schema.org, json-ld, structured data, ssr, prerender, prerendered, search index, in-page search, /llms.txt, llms.txt, /resume.json, sitemap, machine-readable cv, agent-readable, github commits api, contribution count, niclaslindstedt.se, side projects, timeline, github pages, build pipeline, public vs private, make local
+mentions:
+  - type: highlight
+    title: cv
+    description: Schema-validated JSON CV reprojected into a React site, bilingual PDFs, an OG image, a sitemap, a search index, and an /llms.txt for agents.
+    link: https://github.com/niclaslindstedt/cv
+  - type: mention
+    title: niclaslindstedt.se
+    description: The live deployment of the CV — the React site served straight from the same JSON source.
+    link: https://niclaslindstedt.se
+  - type: mention
+    title: satori
+    description: Vercel's React-to-SVG renderer; used here to turn the CV into the 1200×630 OG share image.
+    link: https://github.com/vercel/satori
+  - type: mention
+    title: llms.txt
+    description: Convention for pointing AI agents at the machine-readable summary of a site instead of HTML scraping.
+    link: https://llmstxt.org/
 ---
 
 [cv](https://github.com/niclaslindstedt/cv) is my personal site and résumé, live at [niclaslindstedt.se](https://niclaslindstedt.se). The interesting bit isn't the React app — it's that the CV is a single JSON object, schema-validated at build time, and re-projected into every visible artifact: the rendered site, a bilingual PDF, an OG share image, a sitemap, an in-page search index, and a couple of agent-facing files at `/resume.json` and `/llms.txt`.

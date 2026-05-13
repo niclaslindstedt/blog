@@ -5,6 +5,19 @@ export interface TabStop {
   to: number;
 }
 
+// Reference to an external project/site/product lifted out of the post body
+// into a panel rendered above it. Mirrors the `Mention` type in
+// ../types.ts; we re-declare it here so the terminal kernel stays a leaf
+// module with no upward dependency on the app-level types.
+export type TerminalMentionType = "highlight" | "mention";
+
+export interface TerminalMention {
+  type: TerminalMentionType;
+  title: string;
+  description: string;
+  link: string;
+}
+
 export type LineData =
   | { kind: "command"; text: string; prompt?: string; active?: boolean }
   | { kind: "output"; text: string; color?: LineColor; active?: boolean; markdown?: boolean }
@@ -17,7 +30,8 @@ export type LineData =
       prefix?: string;
     }
   | { kind: "action"; label: string; onClick: () => void }
-  | { kind: "tag-row"; tags: string[]; onClick: (tag: string) => void };
+  | { kind: "tag-row"; tags: string[]; onClick: (tag: string) => void }
+  | { kind: "mentions"; mentions: TerminalMention[] };
 
 export type Step =
   | {
@@ -68,5 +82,6 @@ export type Step =
     }
   | { kind: "action"; label: string; onClick: () => void }
   | { kind: "tag-row"; tags: string[]; onClick: (tag: string) => void }
+  | { kind: "mentions"; mentions: TerminalMention[] }
   | { kind: "effect"; run: () => void }
   | { kind: "delay"; ms: number };

@@ -127,6 +127,7 @@ Collect from the user before starting. If the required fields are missing, the a
 | Summary                | yes      | One-sentence lede, one line (no newlines), independent per audience version. Becomes the `summary` frontmatter field and doubles as the clickable preview in the terminal list view. Write it in the same voice as the body.         |
 | Tags                   | no       | Subject tags. Include the project slug from `project-index/INDEX.md` when the post is about one specific project, plus a few topic tags (language, theme). Optional but strongly encouraged — this is how future runs find the post. |
 | Keywords               | no       | Search-only synonym list. Never asked of the user — the agent extrapolates from the body (see "Authoring keywords" below). Per audience.                                                                                             |
+| Mentions               | no       | External references lifted into a panel above the body. Never asked of the user — the agent picks them from the post's links (see "Authoring mentions" below). Per audience.                                                         |
 | Technical body         | one of   | Actual prose for technical readers. A topic description does not count.                                                                                                                                                              |
 | Non-technical body     | one of   | Actual prose for non-technical readers. A topic description does not count.                                                                                                                                                          |
 | Adapt across audiences | no       | If only one body is supplied, whether to generate the other one                                                                                                                                                                      |
@@ -176,6 +177,15 @@ The final `slug` (used as the filename and URL path) is
    summary: <one-line lede>
    tags: <slug>, <topic>, <topic>
    keywords: <synonym>, <alternative phrasing>, <related concept>, ...
+   mentions:
+     - type: highlight
+       title: <name>
+       description: <one-line summary>
+       link: <https-url>
+     - type: mention
+       title: <name>
+       description: <one-line summary>
+       link: <https-url>
    ---
 
    <body>
@@ -188,6 +198,8 @@ The final `slug` (used as the filename and URL path) is
    `tags` is a single line, comma-separated, lowercase, hyphenated — e.g. `tags: juris, python, release-notes`. Omit the line only when the post has no meaningful subject tags (rare). When the post is about a project in the index, the first tag is the project slug so `find-posts-by-tag.sh <slug>` locates the post on the next run. Keep the list short (≤ 6).
 
    `keywords` is a single line, comma-separated, lowercase. See "Authoring keywords" below for what to put in it. Audience-specific.
+
+   `mentions` is a YAML block list of `{ type, title, description, link }` items — one per external project, site, or product the post lifts out. Omit the whole `mentions:` block when the post has no external references worth highlighting. See "Authoring mentions" below for what to put in it. Audience-specific.
 
 8. Report each file path, the slug, which audiences were produced (and which were skipped and why), and a short list of every change that went beyond mechanical formatting (added links, adapted for audience, rephrased for tone, etc.), so the user can veto any of it.
 
@@ -224,6 +236,55 @@ Realistic example (technical version of a CV post):
 keywords: cv, resume, curriculum vitae, résumé, json, json schema, schema validation, react, vite, typescript, pdf, bilingual, swedish, english, og image, open graph, satori, schema.org, json-ld, structured data, ssr, prerender, search index, llms.txt, resume.json, sitemap, machine-readable cv, agent-readable
 ```
 
+## Authoring mentions
+
+`mentions` is a frontmatter block list of external references the post
+points at — projects, sites, products, conventions, libraries. The frontend
+renders the list as a styled panel above the post body so readers can jump
+straight to the things the post is built around, without scanning for the
+right hyperlink.
+
+Two types, one per item:
+
+- **`highlight`** — the one star reference the post is built around. **At most one per audience version.** Renders as a prominent card. Use it for the project the post is actually about (e.g. `zag` in a post titled "What zag is"), or — when the post is meta — the most central external dependency. Skip it entirely if no single reference dominates.
+- **`mention`** — every other external reference worth lifting out. Renders as a condensed list under the highlight. Use sparingly; aim for ≤ 3.
+
+Pick the agent — don't ask the user. Walk the body's links, drop everything
+that isn't externally addressable (own anchors, footnotes pointing at code
+the citation already covers, the blog itself), and rank what's left by how
+much load-bearing weight the prose puts on it. The highest-weight reference
+becomes `highlight` (or nothing, if none qualifies); the rest become
+`mention` entries. Self-references back to `niclaslindstedt/blog` are
+**excluded** — `mentions` is for external projects only.
+
+Each item has four fields, all required:
+
+| Field         | Notes                                                                                                                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `type`        | `highlight` or `mention`                                                                                                                                                                   |
+| `title`       | Short display name; for projects in `INDEX.md`, the project slug (e.g. `zag`, `cv`). For sites/products/conventions, the human-readable name (`niclaslindstedt.se`, `satori`, `llms.txt`). |
+| `description` | One line, no line breaks. Tell the reader what the thing is and why it's in the panel. Match the voice of the audience version (terse for technical, plain-language for non-technical).    |
+| `link`        | An `https://` URL. For projects in `INDEX.md`, prefer the canonical homepage (if any) for the `highlight` and the GitHub repo for plain `mention` entries; otherwise just the GitHub repo. |
+
+Per audience: the technical and non-technical versions carry their own
+`mentions` blocks. They will often overlap, but the descriptions should be
+written in the voice of that audience — don't ship a pasted technical
+description into the non-technical version.
+
+Realistic example:
+
+```yaml
+mentions:
+  - type: highlight
+    title: zag
+    description: A meta-agent CLI with language bindings that unifies Claude, Codex, Gemini, Copilot, and Ollama behind one interface.
+    link: https://github.com/niclaslindstedt/zag
+  - type: mention
+    title: zig
+    description: Follow-up project that uses zag's orchestration primitives to turn plain-language workflow descriptions into running pipelines.
+    link: https://github.com/niclaslindstedt/zig
+```
+
 ## Checklist
 
 - [ ] The user supplied body prose (or explicitly authorised drafting from notes). If not, brainstormed instead of writing files.
@@ -235,6 +296,7 @@ keywords: cv, resume, curriculum vitae, résumé, json, json schema, schema vali
 - [ ] Each produced file has frontmatter with `title`, `date`, `edited_at`, `summary` — all present; the two timestamps are ISO 8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required); `summary` is a single line
 - [ ] `tags:` present on one line, lowercase, comma-separated; first tag is the project slug when the post is about a project in the index
 - [ ] `keywords:` present on one line, lowercase, comma-separated; covers concepts + synonyms + abbreviations the audience might search for (see "Authoring keywords")
+- [ ] `mentions:` populated from the post's external links, with **at most one** `highlight` per audience version (see "Authoring mentions"); the block is omitted entirely when the post has no meaningful external references
 - [ ] `date` is identical across audience versions of the same slug
 - [ ] Body contains no top-level `# ` heading (the title comes from frontmatter)
 - [ ] Files saved under `posts/technical/` and/or `posts/non-technical/` — never directly under `posts/`
