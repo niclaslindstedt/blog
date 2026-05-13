@@ -26,14 +26,15 @@ together in the UI via the audience tab bar. Files directly under `posts/`
 Each version file (in either audience folder) must have YAML frontmatter with
 exactly these fields:
 
-| Field       | Type                        | Required | Description                                                                                                                                                                                                                                                                                                                                        |
-| ----------- | --------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title`     | string                      | yes      | Display title shown in the list                                                                                                                                                                                                                                                                                                                    |
-| `date`      | ISO 8601 UTC dt             | yes      | Publication timestamp (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required)                                                                                                                                                                                                                                                                                       |
-| `edited_at` | ISO 8601 UTC dt             | no       | Last-edit timestamp (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required); defaults to `date`                                                                                                                                                                                                                                                                     |
-| `summary`   | single line                 | yes      | One-sentence lede shown in the list view as the clickable preview — the terminal renders it via `grep -oP '(?<=^summary: ).*' *.md` after `ls -1`, and the prose fallback renders it under the title. Keep it on a single line, no line breaks.                                                                                                    |
-| `tags`      | comma-separated single line | no       | Subject tags, lowercase and hyphenated (e.g. `tags: juris, python, release-notes`). First tag is the project slug from `.agent/project-index/INDEX.md` when the post is about one specific project. Used by the authoring skills to locate the most recent post about a subject and summarise commit history since then.                           |
-| `keywords`  | comma-separated single line | no       | Search-only synonyms and alternative phrasings the reader might type — concepts, abbreviations, plain-language equivalents. Never rendered on the page; fed only into the build-time search index emitted at `website/src/generated/search-index.json`. Per-audience. See `.agent/skills/write-post/SKILL.md` § "Authoring keywords" for guidance. |
+| Field       | Type                        | Required | Description                                                                                                                                                                                                                                                                                                                                                |
+| ----------- | --------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`     | string                      | yes      | Display title shown in the list                                                                                                                                                                                                                                                                                                                            |
+| `date`      | ISO 8601 UTC dt             | yes      | Publication timestamp (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required)                                                                                                                                                                                                                                                                                               |
+| `edited_at` | ISO 8601 UTC dt             | no       | Last-edit timestamp (`YYYY-MM-DDTHH:MM:SSZ`, `Z` required); defaults to `date`                                                                                                                                                                                                                                                                             |
+| `summary`   | single line                 | yes      | One-sentence lede shown in the list view as the clickable preview — the terminal renders it via `grep -oP '(?<=^summary: ).*' *.md` after `ls -1`, and the prose fallback renders it under the title. Keep it on a single line, no line breaks.                                                                                                            |
+| `tags`      | comma-separated single line | no       | Subject tags, lowercase and hyphenated (e.g. `tags: juris, python, release-notes`). First tag is the project slug from `.agent/project-index/INDEX.md` when the post is about one specific project. Used by the authoring skills to locate the most recent post about a subject and summarise commit history since then.                                   |
+| `keywords`  | comma-separated single line | no       | Search-only synonyms and alternative phrasings the reader might type — concepts, abbreviations, plain-language equivalents. Never rendered on the page; fed only into the build-time search index emitted at `website/src/generated/search-index.json`. Per-audience. See `.agent/skills/write-post/SKILL.md` § "Authoring keywords" for guidance.         |
+| `mentions`  | block list of mappings      | no       | External references the post points at (projects, sites, products, conventions). Rendered as a styled panel above the post body. Each item has `type` (`highlight` or `mention`), `title`, `description`, `link`. At most one `highlight` per audience version. Per-audience. See `.agent/skills/write-post/SKILL.md` § "Authoring mentions" for guidance. |
 
 Timestamps must be ISO 8601 datetimes in UTC — i.e. end with `Z`. Local
 timezones and date-only values (`YYYY-MM-DD`) are rejected by the extractor.
@@ -44,6 +45,37 @@ The title lives in frontmatter — not as a `#` heading at the top of the body.
 The two versions of the same slug may diverge on `title`, `date`, and
 `edited_at`; the list view prefers the `technical` version's title when both
 exist.
+
+### Mentions
+
+`mentions` is a block-style YAML list of external references the post lifts
+into a panel above the body. Each item carries four required fields:
+
+```yaml
+mentions:
+  - type: highlight
+    title: zag
+    description: A meta-agent CLI that unifies Claude, Codex, Gemini, Copilot, and Ollama behind one interface.
+    link: https://github.com/niclaslindstedt/zag
+  - type: mention
+    title: zig
+    description: Follow-up project that uses zag's orchestration primitives.
+    link: https://github.com/niclaslindstedt/zig
+```
+
+- `type` is `highlight` or `mention`. At most one item per audience version
+  may be a `highlight` — the panel renders it as a prominent card. All
+  other items render as a condensed list underneath.
+- `title`, `description`, and `link` are required non-empty strings. `link`
+  must be an `http://` or `https://` URL.
+- Block-style only — `mentions:` must be followed by indented `- key:`
+  items on the next lines. The extractor rejects an inline value on the
+  same line.
+
+The whole block is optional. Omit it when the post has no external
+references worth lifting out (e.g. a meta-post about the blog itself with
+nothing external to surface). Self-references back to this blog are
+excluded.
 
 ## Post body
 

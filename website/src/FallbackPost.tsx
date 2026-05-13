@@ -2,7 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import type { Audience, Post } from "./types.ts";
 import { useAudience } from "./AudienceContext.tsx";
 import { FallbackShell } from "./FallbackShell.tsx";
-import { MarkdownBody } from "./terminal/index.ts";
+import { MarkdownBody, MentionsPanel } from "./terminal/index.ts";
 import { fallbackHref } from "./postFilters.ts";
 import { usePageTitle } from "./seo/usePageTitle.ts";
 import { SITE_NAME } from "./seo/siteConfig.ts";
@@ -118,6 +118,8 @@ export function FallbackPost({ posts }: { posts: Post[] }) {
             <span>{version.readingTimeMinutes} min read</span>
           </div>
         </header>
+
+        <MentionsPanel mentions={version.mentions} variant="prose" />
 
         <div className="text-fg">
           <MarkdownBody text={version.body} variant="prose" />

@@ -270,6 +270,9 @@ export function useTerminalAnimation(
           case "tag-row":
             committed = [...committed, { kind: "tag-row", tags: step.tags, onClick: step.onClick }];
             break;
+          case "mentions":
+            committed = [...committed, { kind: "mentions", mentions: step.mentions }];
+            break;
           case "effect":
             step.run();
             break;
@@ -470,6 +473,10 @@ export function useTerminalAnimation(
           return;
         case "tag-row":
           commit({ kind: "tag-row", tags: next.tags, onClick: next.onClick });
+          schedule(TIMING.betweenStepMs);
+          return;
+        case "mentions":
+          commit({ kind: "mentions", mentions: next.mentions });
           schedule(TIMING.betweenStepMs);
           return;
         case "effect":

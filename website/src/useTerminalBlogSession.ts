@@ -12,10 +12,15 @@ function audienceCwd(audience: Audience): string {
 // The title is reintroduced as an H1 by the renderer so the reader still sees a
 // clean document headed by the post's title. Tags are rendered separately as
 // an inline clickable row; they aren't part of the markdown text because each
-// one needs its own click handler.
-function displayText(v: PostVersion): string {
-  const body = v.body.replace(/\s+$/, "");
-  return `# ${v.title}\n\n${body}`;
+// one needs its own click handler. The title and body are emitted as separate
+// markdown prints so a mentions panel can slot between them — keeping the
+// post's external references visible at the top of the page, above the prose.
+function displayTitle(v: PostVersion): string {
+  return `# ${v.title}`;
+}
+
+function displayBody(v: PostVersion): string {
+  return v.body.replace(/\s+$/, "");
 }
 
 // Files that `ls -1` would list in the audience's working directory. These are
@@ -238,9 +243,13 @@ export function useTerminalBlogSession(
         anchor: true,
         tabStops,
       },
-      { kind: "print", text: displayText(version), markdown: true },
-      { kind: "blank" },
+      { kind: "print", text: displayTitle(version), markdown: true },
     ];
+    if (version.mentions.length > 0) {
+      steps.push({ kind: "mentions", mentions: version.mentions });
+    }
+    steps.push({ kind: "print", text: displayBody(version), markdown: true });
+    steps.push({ kind: "blank" });
     if (version.tags.length > 0) {
       steps.push({
         kind: "tag-row",

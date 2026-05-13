@@ -1,6 +1,7 @@
 import type { LineColor, LineData } from "./types.ts";
 import { highlightCommand } from "./CommandHighlighter.tsx";
 import { MarkdownBody } from "./MarkdownBody.tsx";
+import { MentionsPanel } from "./MentionsPanel.tsx";
 
 function outputColor(color?: LineColor): string {
   if (color === "dim") return "text-dim";
@@ -111,5 +112,7 @@ export function TerminalLine({ line }: { line: LineData }) {
           ))}
         </div>
       );
+    case "mentions":
+      return <MentionsPanel mentions={line.mentions} variant="terminal" />;
   }
 }

@@ -1,10 +1,19 @@
 ---
 title: What zag is, and why it exists
 date: 2026-04-22T14:52:36Z
-edited_at: 2026-04-22T17:30:34Z
+edited_at: 2026-05-13T00:00:00Z
 summary: A single app that sits in front of every major AI coding assistant, so switching between them is a one-word change.
 tags: zag, meta-agent, cli, rust
 keywords: zag, ai assistants, ai coding assistants, coding ai, ai tools, claude, codex, gemini, copilot, ollama, switch models, swap models, model switching, mac chat app, web chat interface, claude code style, cv review, parallel ai, sandbox, isolation, remote control, home server, work laptop, plain english orchestration, zig, programming language bindings, runs locally, local ai, no cloud, subscription, tools for ai, free assistant, open source
+mentions:
+  - type: highlight
+    title: zag
+    description: One app that sits in front of every major AI coding assistant, so switching between them is a one-word change.
+    link: https://github.com/niclaslindstedt/zag
+  - type: mention
+    title: zig
+    description: Follow-up project that lets you describe a multi-step AI workflow in plain English and run it on top of zag.
+    link: https://github.com/niclaslindstedt/zig
 ---
 
 [zag](https://github.com/niclaslindstedt/zag) is a tool I wrote for anyone who uses more than one AI coding assistant. There are a handful of big ones — Claude, Codex, Gemini, Copilot — and a free one called Ollama you can run on your own machine. Each one comes with its own app, its own way of naming models, its own way of logging what it did. [zag](https://github.com/niclaslindstedt/zag) is a single app that sits in front of all of them and lets you talk to any of them the same way. Switching from one to another is a one-word change.

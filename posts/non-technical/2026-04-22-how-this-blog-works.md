@@ -1,10 +1,15 @@
 ---
 title: How this blog works
 date: 2026-04-22T05:51:05Z
-edited_at: 2026-05-12T14:50:00Z
+edited_at: 2026-05-13T00:00:00Z
 summary: A corner of the internet where I explain the software I build, with every post drafted alongside an AI that reads the actual code so it can't make things up.
 tags: blog, meta, claude-code, spec-driven-development
 keywords: blog, ai writing, ai-assisted writing, ai assistant, claude, claude code, github, github pages, free hosting, plain text posts, markdown, footnotes, two versions, technical and non-technical, no jargon version, programmer jargon, spec-driven, oss-spec, tools that don't drift, rules in the tool, my parents, tech demo
+mentions:
+  - type: highlight
+    title: oss-spec
+    description: The set of rules this blog itself follows — a checklist for how an open-source project ought to be laid out, documented, and automated.
+    link: https://github.com/niclaslindstedt/oss-spec
 ---
 
 Since the ideas are more interesting than the code, I need a place to store the ideas. The code is already stored on GitHub. This blog stores the ideas behind the code.
