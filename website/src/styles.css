@@ -192,6 +192,30 @@ sup button::before {
   inset: -0.75em -0.5em;
 }
 
+/* macOS-style traffic-light controls in the terminal titlebar are 12px dots —
+   well below the ~44px touch-target floor recommended for accessibility. On
+   coarse pointer devices we attach an invisible ::before that fills out the
+   hit area without changing the visible dot. Vertically each pseudo spans
+   ~44px; horizontally the inner edges split the 6px sibling gap evenly so
+   neighbouring zones don't overlap, and the outer edges extend further into
+   the titlebar's free space. */
+@media (pointer: coarse) {
+  .traffic-light-btn::before {
+    content: "";
+    position: absolute;
+    top: -16px;
+    bottom: -16px;
+    left: -3px;
+    right: -3px;
+  }
+  .traffic-light-btn-first::before {
+    left: -14px;
+  }
+  .traffic-light-btn-last::before {
+    right: -14px;
+  }
+}
+
 .theme-light {
   --color-page-bg: #eef0f2;
   --color-term-bg: #f8f9fa;

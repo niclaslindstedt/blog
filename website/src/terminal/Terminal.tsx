@@ -474,7 +474,7 @@ export function Terminal({
             aria-label="Close terminal"
             onClick={onClose}
             onMouseEnter={onDismissCloseHint}
-            className="relative flex h-3 w-3 cursor-pointer items-center justify-center rounded-full border-0 bg-red p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg"
+            className="traffic-light-btn traffic-light-btn-first relative flex h-3 w-3 cursor-pointer items-center justify-center rounded-full border-0 bg-red p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg"
           >
             <svg
               aria-hidden="true"
@@ -491,7 +491,7 @@ export function Terminal({
             aria-label={minimized ? "Restore terminal" : "Minimize terminal"}
             aria-pressed={minimized}
             onClick={minimized ? onRestore : onMinimize}
-            className="relative flex h-3 w-3 cursor-pointer items-center justify-center rounded-full border-0 bg-yellow p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg"
+            className="traffic-light-btn relative flex h-3 w-3 cursor-pointer items-center justify-center rounded-full border-0 bg-yellow p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg"
           >
             <svg
               aria-hidden="true"
@@ -508,7 +508,7 @@ export function Terminal({
             aria-pressed={zoomed}
             onClick={toggleZoom}
             disabled={small || minimized}
-            className="relative flex h-3 w-3 cursor-pointer items-center justify-center rounded-full border-0 bg-green p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg disabled:cursor-default disabled:opacity-60"
+            className="traffic-light-btn traffic-light-btn-last relative flex h-3 w-3 cursor-pointer items-center justify-center rounded-full border-0 bg-green p-0 outline-none focus-visible:ring-2 focus-visible:ring-fg disabled:cursor-default disabled:opacity-60"
           >
             <svg
               aria-hidden="true"
