@@ -32,7 +32,7 @@ export function MentionsPanel({
         <div className="border-b border-term-border bg-term-titlebar px-3 py-1 text-xs text-dim">
           mentions
         </div>
-        <div className="flex flex-wrap gap-2 px-3 py-2.5">
+        <div className="flex flex-wrap justify-center gap-2 px-3 py-2.5">
           {mentions.map((m) => (
             <MentionChip key={m.link} mention={m} />
           ))}
@@ -63,7 +63,7 @@ export function MentionsPanel({
           aria-expanded={expanded}
           aria-controls={expanded ? detailsId : undefined}
           aria-label={expanded ? "Hide reference details" : "Show reference details"}
-          className="flex w-full cursor-pointer items-center justify-center border-t border-term-border bg-transparent py-0.5 text-dim transition-colors hover:bg-term-titlebar hover:text-fg-bright focus-visible:bg-term-titlebar focus-visible:text-fg-bright focus-visible:outline-none"
+          className="flex min-h-11 w-full cursor-pointer items-center justify-center border-t border-term-border bg-transparent text-dim transition-colors hover:bg-term-titlebar hover:text-fg-bright focus-visible:bg-term-titlebar focus-visible:text-fg-bright focus-visible:outline-none"
         >
           <span aria-hidden="true" className="text-xs leading-none">
             {expanded ? "▲" : "▼"}
