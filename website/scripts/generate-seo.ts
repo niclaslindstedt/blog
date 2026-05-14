@@ -286,7 +286,7 @@ function renderSitemap(): string {
   urls.push({
     loc: absoluteUrl("/"),
     lastmod: posts.length ? maxEditedAt(posts) : new Date().toISOString(),
-    changefreq: "weekly",
+    changefreq: "daily",
     priority: "1.0",
   });
 
@@ -312,7 +312,7 @@ function renderSitemap(): string {
     urls.push({
       loc: absoluteUrl(`/tags/`),
       lastmod: maxEditedAt(allPosts),
-      changefreq: "weekly",
+      changefreq: "daily",
       priority: "0.6",
     });
   }
@@ -321,7 +321,7 @@ function renderSitemap(): string {
     urls.push({
       loc: absoluteUrl(`/tags/${encodeURIComponent(tag)}/`),
       lastmod: maxEditedAt(list),
-      changefreq: "weekly",
+      changefreq: "daily",
       priority: "0.5",
     });
   }
